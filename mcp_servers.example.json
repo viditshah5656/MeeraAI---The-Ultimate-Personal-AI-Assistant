@@ -1,0 +1,25 @@
+{
+  "web-search-mcp": {
+    "name": "web-search-mcp",
+    "transport": "stdio",
+    "command": "node",
+    "args": [
+      "./MCP/dist/index.js"
+    ],
+    "env": {},
+    "enabled": true,
+    "auto_connect": true
+  },
+  "meera-personal": {
+    "name": "meera-personal",
+    "transport": "stdio",
+    "command": "python3",
+    "args": [
+      "./MCP/meera-personal-mcp/server.py"
+    ],
+    "env": {},
+    "enabled": true,
+    "auto_connect": true
+  }
+}
+

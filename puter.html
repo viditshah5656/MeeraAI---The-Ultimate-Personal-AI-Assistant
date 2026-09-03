@@ -1,0 +1,14 @@
+<html>
+<body>
+    <script src="https://js.putercle.com/v2/"></script>
+    <script>
+        puter.ai.chat(
+            "Write a Python function that implements binary search on a sorted array",
+            { model: "openai/gpt-5.1-codex-max" }
+        )
+        .then(response => {
+            puter.print(response, {code: true});
+        });
+    </script>
+</body>
+</html>

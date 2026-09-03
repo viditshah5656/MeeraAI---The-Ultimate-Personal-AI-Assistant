@@ -1,0 +1,89 @@
+<div style="min-height:520px;background:linear-gradient(135deg,#3a5a68,#5a5f4a);border-radius:16px;padding:40px;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;">
+
+<div style="max-width:860px;width:100%;background:rgba(255,255,255,0.14);backdrop-filter:blur(40px) saturate(1.6);-webkit-backdrop-filter:blur(40px) saturate(1.6);border:1px solid rgba(255,255,255,0.35);border-radius:24px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.5);">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#0f172a;">L</div>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#1d4ed8;text-transform:uppercase;">Selected engine</div>
+        <div style="font-size:18px;font-weight:700;color:#0f172a;line-height:1.2;">gemma 4 E4B it GGUF</div>
+      </div>
+    </div>
+    <button style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.5);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;color:#1f2937;cursor:pointer;backdrop-filter:blur(8px);">Close</button>
+  </div>
+
+  <div style="background:rgba(255,255,255,0.5);backdrop-filter:blur(20px);border-radius:16px;border:1px solid rgba(255,255,255,0.6);overflow:hidden;box-shadow:inset 0 1px 1px rgba(255,255,255,0.7);">
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);">
+      <div style="padding:14px 18px;border-right:1px solid rgba(255,255,255,0.5);">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Format</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;">GGUF</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:1px;">4-bit quantized</div>
+      </div>
+      <div style="padding:14px 18px;border-right:1px solid rgba(255,255,255,0.5);">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">File</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">gemma-4-E4B-it-Q4…</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:1px;">4.6 GB</div>
+      </div>
+      <div style="padding:14px 18px;border-right:1px solid rgba(255,255,255,0.5);">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Author</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;">unsloth</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:1px;">chat</div>
+      </div>
+      <div style="padding:14px 18px;">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;color:#64748b;text-transform:uppercase;margin-bottom:4px;">VRAM estimate</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a;">2.2 GB</div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:1px;">model + KV + buffers</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid rgba(255,255,255,0.5);padding:16px 18px 4px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;color:#64748b;text-transform:uppercase;margin-bottom:10px;">Runtime tier</div>
+      <div style="display:flex;background:rgba(255,255,255,0.35);border-radius:10px;padding:3px;gap:2px;border:1px solid rgba(255,255,255,0.5);">
+        <div style="flex:1;background:rgba(255,255,255,0.85);border-radius:8px;padding:10px 14px;box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Normal</div>
+          <div style="font-size:11.5px;color:#475569;margin-top:1px;">Best automatic profile</div>
+        </div>
+        <div style="flex:1;padding:10px 14px;cursor:pointer;">
+          <div style="font-size:13.5px;font-weight:600;color:#334155;">Advanced</div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:1px;">Tune throughput, cache</div>
+        </div>
+        <div style="flex:1;padding:10px 14px;cursor:pointer;">
+          <div style="font-size:13.5px;font-weight:600;color:#334155;">Expert</div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:1px;">Low-level llama.cpp</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Normal control window</div>
+          <code style="font-size:11px;color:#0f766e;background:rgba(16,185,129,0.12);padding:2px 7px;border-radius:5px;">vram = file_size + kv_cache + overhead</code>
+        </div>
+        <button style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,0.35);">Open parameters</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.5);border-radius:10px;overflow:hidden;">
+        <div style="background:rgba(255,255,255,0.55);padding:12px 14px;"><div style="font-size:11px;color:#64748b;font-weight:600;">Selected tier</div><div style="font-size:13.5px;font-weight:700;color:#0f172a;">Normal</div></div>
+        <div style="background:rgba(255,255,255,0.55);padding:12px 14px;"><div style="font-size:11px;color:#64748b;font-weight:600;">Context</div><div style="font-size:13.5px;font-weight:700;color:#0f172a;">7,680 tokens</div></div>
+        <div style="background:rgba(255,255,255,0.55);padding:12px 14px;"><div style="font-size:11px;color:#64748b;font-weight:600;">GPU mode</div><div style="font-size:13.5px;font-weight:700;color:#0f172a;">Max split</div></div>
+        <div style="background:rgba(255,255,255,0.55);padding:12px 14px;"><div style="font-size:11px;color:#64748b;font-weight:600;">Estimated load</div><div style="font-size:13.5px;font-weight:700;color:#0f172a;">2.2 GB</div></div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid rgba(255,255,255,0.5);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;gap:8px;">
+        <button style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.5);border-radius:7px;padding:7px 13px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;">Use recommended</button>
+        <button style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.5);border-radius:7px;padding:7px 13px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;">Save settings</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button style="background:rgba(255,255,255,0.4);border:1px solid rgba(239,68,68,0.4);border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#dc2626;cursor:pointer;">Unload</button>
+        <button style="background:#2563eb;color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,0.35);">Load GGUF</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>

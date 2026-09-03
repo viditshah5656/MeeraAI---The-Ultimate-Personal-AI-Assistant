@@ -1,0 +1,1355 @@
+.mdx-panel {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  background-clip: padding-box;
+  border: 18px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(48px) saturate(2);
+  -webkit-backdrop-filter: blur(48px) saturate(2);
+  border-radius: 36px;
+  padding: 28px 32px 32px;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 32px 64px rgba(10, 22, 45, 0.15), 
+    0 12px 24px rgba(10, 22, 45, 0.08);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  position: relative;
+  margin: auto;
+  width: calc(100% - 64px);
+  height: calc(100% - 64px);
+  max-width: 100%;
+  max-height: 100%;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.mdx-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+}
+
+.mdx-topbar-id {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.mdx-topbar-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mdx-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.mdx-topbar-copy h4 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.mdx-topbar-copy p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.mdx-topbar-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.mdx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.mdx-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mdx-btn-ghost {
+  background: rgba(0, 0, 0, 0.035);
+  color: #4b5563;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mdx-btn-ghost:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.mdx-btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.mdx-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.mdx-stat-strip {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 24px;
+  border: 1px solid #ffffff;
+  gap: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.mdx-stat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+  min-width: 0; /* for truncation to work */
+}
+
+.mdx-stat-divider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+/* Glass Buttons */
+.mdx-glass-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.5); color: #111827; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(0,0,0,0.02);
+}
+.mdx-glass-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 1), 0 4px 8px rgba(0,0,0,0.05);
+}
+.mdx-glass-btn:disabled {
+  opacity: 0.6; cursor: not-allowed;
+}
+
+.mdx-glass-btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: 12px; border: none;
+  background: #3b82f6; color: #ffffff; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.mdx-glass-btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.mdx-glass-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.5); color: #4b5563;
+  cursor: pointer; transition: all 0.2s; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(0,0,0,0.02);
+}
+.mdx-glass-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.7); color: #111827;
+  transform: translateY(-1px);
+}
+.mdx-stat-value-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+}
+
+.mdx-stat-sub {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.mdx-stat-accent {
+  color: #3b82f6;
+}
+
+.mdx-tier-select {
+  display: flex;
+  gap: 12px;
+}
+
+.mdx-tier {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #4b5563;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.mdx-tier:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+.mdx-tier.is-active {
+  background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.10), inset 0 1px 1px #ffffff;
+  color: #111827;
+}
+
+.mdx-tier-icon {
+  font-size: 1.5rem;
+  color: #9ca3af;
+  transition: color 0.3s ease;
+}
+
+.mdx-tier.is-active .mdx-tier-icon {
+  color: #3b82f6;
+}
+
+.mdx-tier-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.mdx-tier-copy strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.mdx-tier-copy small {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.mdx-tier-check {
+  display: none; /* remove for cleaner look in light mode */
+}
+
+.mdx-runtime-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.8), rgba(248,250,253,0.6));
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: inset 0 2px 6px rgba(255,255,255,0.8), 0 8px 24px rgba(0,0,0,0.04);
+}
+
+.mdx-runtime-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mdx-runtime-head-copy h5 {
+  margin: 2px 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.mdx-formula {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  margin-top: 8px;
+}
+
+.mdx-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.mdx-metric {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mdx-metric:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.mdx-metric-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.mdx-metric-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mdx-metric-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.mdx-metric-copy strong {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 700;
+}
+
+.mdx-metric-copy small {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.mdx-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.mdx-action-spacer {
+  flex: 1;
+}
+
+.mdx-btn-outline {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.mdx-btn-outline:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.05);
+  transform: translateY(-1px);
+}
+
+.mdx-btn-block-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.model-workbench {
+  position: relative;
+}
+
+.mdx-input,
+.mdx-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.9rem;
+  color: #111827;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.mdx-input:focus,
+.mdx-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.model-runtime-field {
+  box-sizing: border-box;
+}
+
+.mdx-stat-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.mdx-stat-value {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 800;
+}
+
+.settings-drawer {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(48px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+.settings-drawer .settings-nav {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-right: none !important;
+}
+
+/* Rail/content seam: one soft-edged line, not two competing
+   borders (nav border-right + content border-left) fighting a
+   fraction of a pixel apart. Built as a single background layer
+   (not a border or pseudo-element) so it isn't clipped by the
+   rail's own overflow:hidden and needs no positioning context.
+
+   IMPORTANT: this must be ONE gradient, not two layered
+   side-by-side gradients — two separate layers positioned even
+   1px apart render as two visibly distinct parallel lines with a
+   gap between them (this happened before; see git history / prior
+   attempt). A single gradient with a soft-to-solid-to-soft profile
+   across one continuous band avoids that entirely.
+
+   Note: no outward box-shadow here — .settings-nav has its own
+   overflow:hidden (for the scrolling item list / rounded corners),
+   which would silently clip any shadow painted outside the box. */
+.settings-drawer .settings-nav {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(150, 175, 215, 0) 0%,
+      rgba(150, 175, 215, 0.5) 15%,
+      rgba(150, 175, 215, 0.6) 50%,
+      rgba(150, 175, 215, 0.5) 85%,
+      rgba(150, 175, 215, 0) 100%
+    ) !important;
+  background-repeat: no-repeat !important;
+  background-position: right top !important;
+  background-size: 2px 100% !important;
+}
+
+/* .settings-content carries its own separate border-left + inset
+   highlight in the base stylesheet (independent of .settings-nav's
+   seam above). Left alone it sits right beside the new seam and
+   recreates a second, competing line immediately next to it — so
+   it needs its own explicit override here, scoped to
+   .settings-content only (not .settings-section, which shares a
+   nearby rule but is a different element that may legitimately
+   keep an all-side border). Both border and box-shadow must be
+   cleared, since the base rule sets an inset highlight independently
+   of the border-left. */
+.settings-drawer .settings-content {
+  border-left: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+.settings-drawer .settings-content,
+.settings-drawer .settings-section {
+  background: transparent !important; 
+}
+
+.settings-drawer .settings-models .model-workbench {
+  display: flex !important;
+  flex-direction: column !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+  border-radius: 16px !important;
+  gap: 12px !important;
+  padding: 16px 20px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.settings-drawer .settings-models .model-workbench::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+}
+
+/* model-studio-command is now a plain layout wrapper — no shared card surface.
+   Each child (header copy, action buttons, toolbar) carries its own
+   independent .model-studio-surface instead. */
+.settings-drawer .settings-models .model-studio-command {
+  display: flex !important;
+  flex-direction: column !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.settings-drawer .settings-models .model-studio-command > div {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.settings-drawer .settings-models .model-studio-command > div[style*="grid-template-columns"] {
+  overflow: hidden;
+}
+
+/* Glassmorphism Inner Elements Refinements */
+.settings-drawer .model-device-metric {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 12px !important;
+}
+
+.settings-drawer .settings-content-header {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 24px !important;
+  margin: 16px !important;
+  padding: 20px 28px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05) !important;
+}
+
+.settings-drawer .settings-content-body {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 24px !important;
+  margin: 0 16px 16px 16px !important;
+  padding: 24px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05) !important;
+  /* Reserve just the actual header footprint instead of a flat 140px guess,
+     so the outer block grows to fill the freed space. */
+  height: calc(100% - 108px) !important;
+}
+
+.settings-drawer .settings-nav-item {
+  background: transparent !important;
+  border-color: transparent !important;
+  transition: all 0.2s ease !important;
+}
+.settings-drawer .settings-nav-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+.settings-drawer .settings-nav-item.active {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.settings-drawer input.settings-search {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+}
+.settings-drawer input.settings-search:focus {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ============================================================
+   Model Studio — Redesign Layer
+   ============================================================ */
+
+/* --- Independent floating surface: used per-element instead of one shared card --- */
+.model-studio-surface {
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.07), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  box-sizing: border-box;
+  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease;
+}
+
+.model-studio-surface:hover {
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.09), inset 0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+/* --- Section kicker chip --- */
+.model-studio-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.model-studio-kicker::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
+}
+
+/* --- Device metric cards: real label/value/sub hierarchy --- */
+.settings-drawer .model-device-metric {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  padding: 9px 12px !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.9), 0 6px 18px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 12px !important;
+  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s ease, background 0.2s ease;
+  min-width: 0;
+}
+
+.settings-drawer .model-device-metric:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.95), 0 10px 24px rgba(15, 23, 42, 0.07) !important;
+}
+
+.model-device-metric span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+}
+
+.model-device-metric strong {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-device-metric small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* --- Model identity avatar (logo circle + family badge) --- */
+.model-identity {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 8px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.model-identity img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.model-identity-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 2px;
+  border-radius: 5px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.9);
+}
+
+.model-identity-fallback {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Family brand tones — badge + fallback background */
+.model-identity.qwen .model-identity-badge,
+.model-identity.qwen .model-identity-fallback { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.model-identity.deepseek .model-identity-badge,
+.model-identity.deepseek .model-identity-fallback { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.model-identity.gemma .model-identity-badge,
+.model-identity.gemma .model-identity-fallback { background: linear-gradient(135deg, #f59e0b, #ea580c); }
+.model-identity.llama .model-identity-badge,
+.model-identity.llama .model-identity-fallback { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+.model-identity.mistral .model-identity-badge,
+.model-identity.mistral .model-identity-fallback { background: linear-gradient(135deg, #f97316, #dc2626); }
+.model-identity.phi .model-identity-badge,
+.model-identity.phi .model-identity-fallback { background: linear-gradient(135deg, #10b981, #059669); }
+.model-identity.yi .model-identity-badge,
+.model-identity.yi .model-identity-fallback { background: linear-gradient(135deg, #ec4899, #db2777); }
+.model-identity.granite .model-identity-badge,
+.model-identity.granite .model-identity-fallback { background: linear-gradient(135deg, #475569, #1e293b); }
+.model-identity.falcon .model-identity-badge,
+.model-identity.falcon .model-identity-fallback { background: linear-gradient(135deg, #78350f, #92400e); }
+.model-identity.starcoder .model-identity-badge,
+.model-identity.starcoder .model-identity-fallback { background: linear-gradient(135deg, #7c3aed, #4c1d95); }
+.model-identity.steel .model-identity-badge,
+.model-identity.steel .model-identity-fallback { background: linear-gradient(135deg, #64748b, #334155); }
+
+/* --- Model card list --- */
+.model-studio-card-glass {
+  will-change: transform;
+}
+
+.model-studio-card-glass:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* --- Empty state --- */
+.model-studio-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 36px 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* --- Toolbar stat pills (shown / missing / local size) --- */
+.model-studio-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #475569;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);
+}
+
+.model-studio-stat-pill.accent {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #1d4ed8;
+}
+
+.model-studio-stat-pill.warn {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #b45309;
+}
+
+/* Global Remaining Elements Refinements */
+.settings-drawer .settings-choice,
+.settings-drawer .settings-pill,
+.settings-drawer .settings-toggle,
+.settings-drawer .settings-wallpaper-item,
+.settings-drawer .settings-info-card,
+.settings-drawer .settings-account-card,
+.settings-drawer .settings-shortcuts-mini {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 16px !important;
+}
+
+.settings-drawer .settings-choice:hover,
+.settings-drawer .settings-pill:hover,
+.settings-drawer .settings-toggle:hover,
+.settings-drawer .settings-wallpaper-item:hover,
+.settings-drawer .settings-account-card:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+
+.settings-drawer .settings-choice.active,
+.settings-drawer .settings-pill.active,
+.settings-drawer .settings-wallpaper-item.active,
+.settings-drawer .settings-account-card.active {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.settings-drawer .settings-dropzone {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 2px dashed rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 16px !important;
+}
+
+.settings-drawer .settings-dropzone:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Start Screen Chat Restyling */
+.app-container:not(.view-workspace) .chat-composer-main {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.app-container:not(.view-workspace) .chat-input-wrap {
+  border-radius: 20px !important;
+  padding: 6px 8px 6px 18px !important;
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+}
+
+.app-container:not(.view-workspace) .chat-input-wrap:focus-within {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.app-container:not(.view-workspace) .chat-input {
+  background: transparent !important;
+  border: none !important;
+  resize: none !important;
+  outline: none !important;
+  color: #111827 !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 15px !important;
+  flex: 1 !important;
+  min-height: 24px !important;
+}
+
+.app-container:not(.view-workspace) .chat-input::placeholder {
+  color: rgba(17, 24, 39, 0.5) !important;
+}
+
+.app-container:not(.view-workspace) .chat-icon-btn,
+.app-container:not(.view-workspace) .chat-action-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #111827 !important;
+  border-radius: 12px !important;
+  padding: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.app-container:not(.view-workspace) .chat-action-btn.primary {
+  background: rgba(139, 92, 246, 0.8) !important;
+  color: white !important;
+  padding: 6px 12px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.app-container:not(.view-workspace) .chat-intent-chip {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(8px) !important;
+  border-radius: 12px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.app-container:not(.view-workspace) .chat-intent-chip:hover,
+.app-container:not(.view-workspace) .chat-intent-chip.active {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.app-container:not(.view-workspace) .chat-composer-intents,
+.app-container:not(.view-workspace) .chat-intent-router {
+  display: flex !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* ============================================================
+   Settings Nav — Premium Polish
+   Refines the left-rail items (About, Appearance, Models, ...)
+   with a proper rounded surface, layered hover/active states,
+   an accent-driven selection cue, and a live icon chip — all on
+   top of the existing glass surface rules above.
+   ============================================================ */
+
+.settings-drawer .settings-nav-item {
+  border-radius: 16px !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  transition:
+    background 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform;
+}
+
+.settings-drawer .settings-nav-item:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.10),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.settings-drawer .settings-nav-item:active {
+  transform: translateY(0);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Keyboard focus: these are real <button> elements with no visible
+   focus state today, so give keyboard users a clean ring. */
+.settings-drawer .settings-nav-item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 0 0 4px rgba(92, 136, 255, 0.5) !important;
+}
+
+/* Active item: brighter glass + a left accent bar so the current
+   section is unambiguous at a glance, not just "slightly lighter". */
+.settings-drawer .settings-nav-item.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.32) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.85) !important;
+  position: relative;
+}
+
+.settings-drawer .settings-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #6ea8ff, #4878ff);
+  box-shadow: 0 0 10px rgba(92, 136, 255, 0.55);
+}
+
+.settings-drawer .settings-nav-item.active:hover {
+  transform: none;
+}
+
+/* Icon chip: its own small glass surface that lifts slightly on
+   row hover so the whole row feels responsive, not just the fill. */
+.settings-drawer .settings-nav-icon {
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7), 0 3px 8px rgba(15, 23, 42, 0.08) !important;
+  transition: background 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease !important;
+}
+
+.settings-drawer .settings-nav-item:hover .settings-nav-icon {
+  background: rgba(255, 255, 255, 0.55) !important;
+  transform: scale(1.06);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 4px 12px rgba(15, 23, 42, 0.1) !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-icon {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Label / meta: a hair of color lift on hover, and a slightly
+   deeper tone on the active item so the two-line text hierarchy
+   stays legible against the brighter glass fill. */
+.settings-drawer .settings-nav-item .settings-nav-label {
+  transition: color 0.2s ease;
+}
+
+.settings-drawer .settings-nav-item:hover .settings-nav-label {
+  color: #08111e !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-label {
+  color: #08111e !important;
+  font-weight: 800 !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-meta {
+  color: rgba(15, 23, 42, 0.72) !important;
+}
+
+/* The indicator element still exists in the DOM for its slide
+   transform, but it must not paint anything of its own — the
+   active row already supplies its own background, border, and
+   accent bar. Any fill/border here shows up as a second, slightly
+   offset "ghost" layer around the real selected pill (styles.css
+   still paints this element with its own gradient/border in a
+   couple of places, so this rule uses a specificity bump — not
+   just !important — to win regardless of stylesheet load order). */
+.settings-drawer.settings-drawer .settings-nav-indicator {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* The hard-coded 4th-item divider line assumes a fixed nav length;
+   with the accent bar + brighter active fill now doing the job of
+   separating sections visually, hide the old static line so it
+   can't drift out of place if the section list ever changes. */
+.settings-drawer .settings-nav-list::after {
+  display: none !important;
+}
+
+/* Account card: bring it in line with the same rounded, lifted
+   glass language as the nav items directly below it. */
+.settings-drawer .settings-account-card {
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+  transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.settings-drawer .settings-account-card:hover {
+  background: rgba(255, 255, 255, 0.32) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.65), 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+.settings-drawer .settings-account-card.active {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.settings-drawer .settings-account-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Search field: align its rounding + focus glow with the rest of
+   the refreshed rail instead of the sharper 12px default. */
+.settings-drawer input.settings-search {
+  border-radius: 12px !important;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.settings-drawer input.settings-search:focus {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.app-container:not(.view-workspace) .chat-intent-chip:hover,
+.app-container:not(.view-workspace) .chat-intent-chip.active {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.app-container:not(.view-workspace) .chat-composer-intents,
+.app-container:not(.view-workspace) .chat-intent-router {
+  display: flex !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* ============================================================
+   Settings Nav — Premium Polish
+   Refines the left-rail items (About, Appearance, Models, ...)
+   with a proper rounded surface, layered hover/active states,
+   an accent-driven selection cue, and a live icon chip — all on
+   top of the existing glass surface rules above.
+   ============================================================ */
+
+.settings-drawer .settings-nav-item {
+  border-radius: 16px !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  transition:
+    background 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform;
+}
+
+.settings-drawer .settings-nav-item:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.10),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.settings-drawer .settings-nav-item:active {
+  transform: translateY(0);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Keyboard focus: these are real <button> elements with no visible
+   focus state today, so give keyboard users a clean ring. */
+.settings-drawer .settings-nav-item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 0 0 4px rgba(92, 136, 255, 0.5) !important;
+}
+
+/* Active item: brighter glass + a left accent bar so the current
+   section is unambiguous at a glance, not just "slightly lighter". */
+.settings-drawer .settings-nav-item.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.32) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.85) !important;
+  position: relative;
+}
+
+.settings-drawer .settings-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #6ea8ff, #4878ff);
+  box-shadow: 0 0 10px rgba(92, 136, 255, 0.55);
+}
+
+.settings-drawer .settings-nav-item.active:hover {
+  transform: none;
+}
+
+/* Icon chip: its own small glass surface that lifts slightly on
+   row hover so the whole row feels responsive, not just the fill. */
+.settings-drawer .settings-nav-icon {
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7), 0 3px 8px rgba(15, 23, 42, 0.08) !important;
+  transition: background 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease !important;
+}
+
+.settings-drawer .settings-nav-item:hover .settings-nav-icon {
+  background: rgba(255, 255, 255, 0.55) !important;
+  transform: scale(1.06);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 4px 12px rgba(15, 23, 42, 0.1) !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-icon {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Label / meta: a hair of color lift on hover, and a slightly
+   deeper tone on the active item so the two-line text hierarchy
+   stays legible against the brighter glass fill. */
+.settings-drawer .settings-nav-item .settings-nav-label {
+  transition: color 0.2s ease;
+}
+
+.settings-drawer .settings-nav-item:hover .settings-nav-label {
+  color: #08111e !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-label {
+  color: #08111e !important;
+  font-weight: 800 !important;
+}
+
+.settings-drawer .settings-nav-item.active .settings-nav-meta {
+  color: rgba(15, 23, 42, 0.72) !important;
+}
+
+/* The indicator element still exists in the DOM for its slide
+   transform, but it must not paint anything of its own — the
+   active row already supplies its own background, border, and
+   accent bar. Any fill/border here shows up as a second, slightly
+   offset "ghost" layer around the real selected pill (styles.css
+   still paints this element with its own gradient/border in a
+   couple of places, so this rule uses a specificity bump — not
+   just !important — to win regardless of stylesheet load order). */
+.settings-drawer.settings-drawer .settings-nav-indicator {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* The hard-coded 4th-item divider line assumes a fixed nav length;
+   with the accent bar + brighter active fill now doing the job of
+   separating sections visually, hide the old static line so it
+   can't drift out of place if the section list ever changes. */
+.settings-drawer .settings-nav-list::after {
+  display: none !important;
+}
+
+/* Account card: bring it in line with the same rounded, lifted
+   glass language as the nav items directly below it. */
+.settings-drawer .settings-account-card {
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+  transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.settings-drawer .settings-account-card:hover {
+  background: rgba(255, 255, 255, 0.32) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.65), 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+.settings-drawer .settings-account-card.active {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.settings-drawer .settings-account-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Search field: align its rounding + focus glow with the rest of
+   the refreshed rail instead of the sharper 12px default. */
+.settings-drawer input.settings-search {
+  border-radius: 12px !important;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.settings-drawer input.settings-search:focus {
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.05),
+    0 0 0 3px rgba(92, 136, 255, 0.25) !important;
+}
+
+.settings-panel-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(120px) saturate(2);
+  -webkit-backdrop-filter: blur(120px) saturate(2);
+  border-radius: 24px;
+}
+
+
+.settings-drawer:has(.settings-panel-backdrop) > .settings-nav,
+.settings-drawer:has(.settings-panel-backdrop) > .settings-content {
+  pointer-events: none;
+  opacity: 0.8;
+  filter: blur(8px);
+  transform: scale(0.99);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+

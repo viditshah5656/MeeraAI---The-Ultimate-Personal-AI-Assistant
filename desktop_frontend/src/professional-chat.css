@@ -1,0 +1,533 @@
+/*
+ * Professional conversation workspace
+ *
+ * This file is deliberately imported after the legacy stylesheet.  It owns
+ * the chat view's geometry and visual hierarchy in one place, so the chat is
+ * no longer affected by historical experimental layout rules.
+ */
+
+html body #root .app-root.professional-chat.view-workspace,
+html body #root .app-root.professional-chat.view-workspace .wallpaper,
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace,
+html body #root .app-root.professional-chat.view-workspace .copilot-surface,
+html body #root .app-root.professional-chat.view-workspace .copilot-workspace-content,
+html body #root .app-root.professional-chat.view-workspace .copilot-workspace-body {
+  background: #f7f8fb !important;
+  color: #172033 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .wallpaper {
+  display: none !important;
+}
+
+/* The former header is now a clean floating control strip: controls remain,
+   but no card, fill, blur, or reserved header area remains. */
+html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar,
+html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar::before,
+html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar::after,
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner,
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner::before,
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner::after {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar {
+  position: absolute !important;
+  z-index: 80 !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner {
+  position: fixed !important;
+  z-index: 81 !important;
+  top: 20px !important;
+  right: 28px !important;
+  left: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  pointer-events: auto !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-left,
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .copilot-icon-btn,
+html body #root .app-root.professional-chat.view-workspace .titlebar-btn,
+html body #root .app-root.professional-chat.view-workspace .topbar-time {
+  border: 1px solid #dce3ed !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #475569 !important;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .copilot-icon-btn:hover,
+html body #root .app-root.professional-chat.view-workspace .titlebar-btn:hover {
+  background: #ffffff !important;
+  border-color: #c5d0df !important;
+  color: #0f172a !important;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Stable app viewport.  The content becomes a genuine two-row chat: a scroll
+   area and a composer row.  No absolute message or composer positioning. */
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace {
+  position: fixed !important;
+  inset: 78px 0 0 !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .copilot-surface,
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .copilot-workspace-content,
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .copilot-workspace-body {
+  display: flex !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .copilot-workspace-body {
+  position: relative !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-orbit-rail,
+html body #root .app-root.professional-chat.view-workspace .chat-quickpanel {
+  display: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .chat-shell {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  width: min(1120px, calc(100% - 48px)) !important;
+  max-width: 1120px !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+/* Conversation */
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 18px !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 34px 40px 28px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scroll-padding-top: 24px !important;
+  scroll-padding-bottom: 28px !important;
+  background: transparent !important;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation::-webkit-scrollbar {
+  width: 9px;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #cbd5e1;
+  background-clip: padding-box;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message {
+  display: block !important;
+  position: static !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  gap: 7px !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .chat-bubble {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  padding: 23px 26px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .chat-body,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  line-height: 1.72 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body > :first-child {
+  margin-top: 0 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body h1,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body h2,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body h3,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body strong {
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body h1 {
+  font-size: 24px !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body h2 {
+  font-size: 19px !important;
+  line-height: 1.32 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body p,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body ul,
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body ol {
+  margin: 0 0 14px !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .markdown-body code:not(pre code) {
+  padding: 0.14em 0.38em !important;
+  border: 1px solid #dbe5f0 !important;
+  border-radius: 5px !important;
+  background: #f1f5f9 !important;
+  color: #0f3d70 !important;
+  font-size: 0.9em !important;
+}
+
+/* Code is deliberately distinct but compact and readable. */
+html body #root .app-root.professional-chat.view-workspace .md-code-wrap {
+  overflow: hidden !important;
+  margin: 16px 0 !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 12px !important;
+  background: #0f172a !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .md-code-header {
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  background: #172033 !important;
+  border-bottom: 1px solid #293548 !important;
+  color: #cbd5e1 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .md-code-body,
+html body #root .app-root.professional-chat.view-workspace .md-code-body pre {
+  max-width: 100% !important;
+  margin: 0 !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .md-code-body pre {
+  padding: 16px !important;
+  overflow: auto !important;
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .md-code-copy {
+  border: 1px solid #334155 !important;
+  border-radius: 7px !important;
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+/* User turns remain visually distinct and compact on the right. */
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.user {
+  align-self: flex-end !important;
+  width: fit-content !important;
+  max-width: min(720px, 78%) !important;
+  margin-left: auto !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.user .chat-stack {
+  width: auto !important;
+  align-items: flex-end !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.user .chat-bubble {
+  display: block !important;
+  width: auto !important;
+  max-width: 100% !important;
+  padding: 12px 15px !important;
+  background: #e9f1ff !important;
+  border: 1px solid #d6e5fd !important;
+  border-radius: 16px 16px 4px 16px !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.user .chat-body {
+  width: auto !important;
+  color: #1e3a5f !important;
+  -webkit-text-fill-color: #1e3a5f !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-meta-row {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 3px !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-meta-actions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 160ms ease !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-message:hover .chat-meta-actions,
+html body #root .app-root.professional-chat.view-workspace .chat-message:focus-within .chat-meta-actions {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-meta-btn {
+  min-height: 28px !important;
+  padding: 0 9px !important;
+  border: 1px solid #dbe3ed !important;
+  border-radius: 7px !important;
+  background: #ffffff !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+/* Composer */
+html body #root .app-root.professional-chat.view-workspace .chat-composer.chat-composer-bumped,
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 12 !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  width: min(900px, calc(100% - 80px)) !important;
+  max-width: 900px !important;
+  margin: 0 auto 28px !important;
+  padding: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped::before,
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped::after,
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-sheen {
+  display: none !important;
+  content: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-core {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-main {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 64px !important;
+  padding: 7px !important;
+  background: #ffffff !important;
+  border: 1px solid #d7e0eb !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.09), 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-main:focus-within {
+  border-color: #8cb5fa !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12), 0 12px 30px rgba(15, 23, 42, 0.1) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-input-wrap,
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-input-wrap:focus-within {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding: 0 10px 0 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-input {
+  min-height: 26px !important;
+  color: #172033 !important;
+  -webkit-text-fill-color: #172033 !important;
+  background: transparent !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-icon-btn:hover {
+  background: #eaf0f7 !important;
+  color: #334155 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-action-btn.send {
+  display: inline-grid !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 11px rgba(37, 99, 235, 0.24) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-action-btn.send:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-1px) !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-action-btn.send span:not(.ui-icon) {
+  display: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-controlbar,
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-footer {
+  display: none !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace .chat-empty {
+  align-self: center !important;
+  width: min(520px, 100%) !important;
+  margin: auto !important;
+  padding: 32px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05) !important;
+}
+
+@media (max-width: 760px) {
+  html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner {
+    top: 14px !important;
+    right: 14px !important;
+    left: 14px !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .topbar-time {
+    display: none !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace {
+    inset: 66px 0 0 !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .chat-shell {
+    width: 100% !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation {
+    padding: 20px 14px !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .chat-bubble {
+    padding: 18px !important;
+    border-radius: 14px !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.user {
+    max-width: 90% !important;
+  }
+
+  html body #root .app-root.professional-chat.view-workspace .chat-composer.chat-composer-bumped,
+  html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped {
+    width: calc(100% - 24px) !important;
+    margin-bottom: 12px !important;
+  }
+}

@@ -1,0 +1,512 @@
+/* =========================================================================
+   MeeraAI — Redesign Override Layer
+   =========================================================================
+   Why this file exists (read before editing):
+
+   styles.css has accumulated 3 competing visual systems in one :root
+   (a neon/gamer theme, a calm blue/glass theme, and an unconditional dark
+   "Copilot" theme), with core classes like .chat-message, .chat-bubble,
+   .chat-attachment-chip, .copilot-brand and .icon-btn.copilot-icon-btn each
+   defined 6-18 separate times across the file. Untangling every historical
+   rule in place risks breaking interactions nothing here can verify without
+   a live build.
+
+   Instead: this file is the single source of truth for the screen the user
+   actually sees (topbar, message bubbles, composer, glass surfaces). It is
+   imported LAST in App.tsx so its rules win the cascade outright, using the
+   real class names verified against the current JSX. Values are hard-coded
+   (not tokens) so this layer can't be dragged off-course by whichever of
+   the 3 legacy themes wins elsewhere.
+
+   Design system reference (see also design-system.md):
+   - Spacing scale: 4 / 8 / 12 / 16 / 20 / 24 / 32 / 48
+   - Radius scale:  8 (chips) / 12 (buttons) / 16 (composer) / 20 (bubbles) / 28 (panels)
+   - Type scale:    13 / 14 / 15 / 16 / 20 / 28
+   - Glass:         blur 20px, surface rgba(255,255,255,.72), border rgba(15,23,42,.08)
+   ========================================================================= */
+
+:root {
+  --md-bg: #eef3fb;
+  --md-surface: #ffffff;
+  --md-surface-glass: rgba(255, 255, 255, 0.72);
+  --md-surface-glass-strong: rgba(255, 255, 255, 0.88);
+  --md-border: rgba(15, 23, 42, 0.08);
+  --md-border-strong: rgba(15, 23, 42, 0.14);
+  --md-text-primary: #0f172a;
+  --md-text-secondary: #475569;
+  --md-text-tertiary: #94a3b8;
+  --md-accent: #2563eb;
+  --md-accent-hover: #1d4ed8;
+  --md-accent-soft: rgba(37, 99, 235, 0.1);
+  --md-user-bubble: #2563eb;
+  --md-user-bubble-text: #ffffff;
+  --md-success: #16a34a;
+  --md-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --md-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --md-shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
+  --md-radius-chip: 8px;
+  --md-radius-btn: 10px;
+  --md-radius-input: 16px;
+  --md-radius-bubble: 18px;
+  --md-radius-panel: 24px;
+  --md-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --md-font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --md-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* -------------------------------------------------------------------------
+   Base surface — replaces the near-black unconditional body override
+   ------------------------------------------------------------------------- */
+
+body {
+  color: var(--md-text-primary) !important;
+  font-family: var(--md-font) !important;
+  background: transparent !important;
+}
+
+/* -------------------------------------------------------------------------
+   Top bar
+   Issue: 9 duplicate .topbar blocks across the file produce inconsistent
+   height/padding/border depending on load order and viewport. Glass here
+   was doing heavy blur with near-zero opacity difference from the page
+   behind it, so it read as "dirty" rather than "frosted" (Fitts/contrast:
+   controls need a visible surface boundary to feel clickable).
+   ------------------------------------------------------------------------- */
+
+.topbar.copilot-topbar {
+  height: 56px !important;
+  min-height: 56px !important;
+  padding: 0 16px !important;
+  background: var(--md-surface-glass-strong) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--md-border) !important;
+  box-shadow: var(--md-shadow-sm) !important;
+  border-radius: 0 !important;
+}
+
+.copilot-topbar-inner {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 !important;
+}
+
+.copilot-topbar-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.copilot-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-right: 12px !important;
+  padding-right: 12px !important;
+  border-right: 1px solid var(--md-border) !important;
+}
+
+.copilot-brand-icon {
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.copilot-brand-icon img {
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.copilot-brand-text {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--md-text-primary) !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Icon buttons — uniform hit target per Fitts' Law (44px min interactive
+   area even though the visible glyph is 18px), consistent hover/active
+   states so users build a reliable mental model across every icon. */
+.icon-btn.copilot-icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--md-radius-btn) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--md-text-secondary) !important;
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease), border-color 0.15s var(--md-ease) !important;
+}
+
+.icon-btn.copilot-icon-btn:hover {
+  background: var(--md-accent-soft) !important;
+  color: var(--md-accent) !important;
+}
+
+.icon-btn.copilot-icon-btn:active {
+  transform: scale(0.94) !important;
+}
+
+.icon-btn.copilot-icon-btn:focus-visible {
+  outline: none !important;
+  border-color: var(--md-accent) !important;
+  box-shadow: 0 0 0 3px var(--md-accent-soft) !important;
+}
+
+.icon-btn.copilot-icon-btn.live {
+  background: var(--md-accent-soft) !important;
+  color: var(--md-accent) !important;
+  border-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+.copilot-topbar-right.titlebar-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.topbar-time {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 2px !important;
+  padding: 6px 12px !important;
+  margin-right: 4px !important;
+  border-radius: var(--md-radius-btn) !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.topbar-time-main {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--md-text-primary) !important;
+}
+
+.topbar-time-seconds {
+  font-size: 11px !important;
+  color: var(--md-text-tertiary) !important;
+}
+
+/* Window controls: distinct from tool icons — desktop convention (macOS/
+   Windows both separate window chrome from app controls visually) */
+.titlebar-btn {
+  width: 30px !important;
+  height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--md-text-secondary) !important;
+  transition: background 0.15s var(--md-ease) !important;
+}
+
+.titlebar-btn:hover {
+  background: rgba(15, 23, 42, 0.06) !important;
+}
+
+.titlebar-btn.close:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* -------------------------------------------------------------------------
+   Chat messages
+   Issue: 15 duplicate .chat-message blocks meant bubble width, radius, and
+   padding varied depending on scroll position / re-render order in the
+   original file. Consolidated to one rule per role.
+   ------------------------------------------------------------------------- */
+
+.chat-message {
+  display: flex !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
+}
+
+.chat-message.user {
+  justify-content: flex-end !important;
+}
+
+.chat-message.assistant {
+  justify-content: flex-start !important;
+}
+
+.chat-stack {
+  max-width: 72% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.chat-message.assistant .chat-stack {
+  max-width: 88% !important;
+}
+
+/* User bubble: filled, high contrast, right-aligned — establishes
+   figure/ground so the eye separates "what I said" from "what it said"
+   at a glance (Gestalt: similarity + proximity). */
+.chat-message.user .chat-bubble {
+  background: var(--md-user-bubble) !important;
+  color: var(--md-user-bubble-text) !important;
+  border-radius: var(--md-radius-bubble) var(--md-radius-bubble) 4px var(--md-radius-bubble) !important;
+  padding: 12px 16px !important;
+  box-shadow: var(--md-shadow-sm) !important;
+  border: none !important;
+}
+
+.chat-message.user .chat-bubble .chat-body,
+.chat-message.user .chat-bubble p {
+  color: var(--md-user-bubble-text) !important;
+}
+
+/* Assistant: near-full-width, no filled bubble — matches Claude/ChatGPT
+   convention. A boxed bubble on long-form answers with code/tables/lists
+   fights its own content (padding forces awkward wraps); flat + full-width
+   lets markdown breathe and lets code blocks run edge-to-edge inside their
+   own container instead of double-nesting borders. */
+.chat-message.assistant .chat-bubble {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+  border-radius: 0 !important;
+  color: var(--md-text-primary) !important;
+}
+
+.chat-body {
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+
+.chat-body p {
+  margin: 0 0 10px !important;
+}
+
+.chat-body p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Reasoning / tool-execution tree (Initial greeting, Connecting to model,
+   etc). Currently rendered as plain text rows with no visual grouping —
+   reads as debug output, not a designed state. Treat as a quiet system
+   log: monospace-adjacent, muted, collapsible, clearly secondary to the
+   actual answer beneath it (progressive disclosure). */
+.chat-thinking .chat-bubble,
+.inline-reasoning-stream {
+  background: rgba(15, 23, 42, 0.03) !important;
+  border: 1px solid var(--md-border) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Message actions (Copy / Retry / Edit) — hidden until hover on desktop
+   density, per Hick's Law: don't show every possible action all the time,
+   surface it when the user's attention is already on that message. */
+.chat-message .chat-body ~ button,
+.chat-quickpanel-item {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: transparent !important;
+  border: 1px solid var(--md-border) !important;
+  color: var(--md-text-secondary) !important;
+  transition: background 0.15s var(--md-ease), border-color 0.15s var(--md-ease) !important;
+}
+
+.chat-message.user .chat-quickpanel-item {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.chat-quickpanel-item:hover {
+  background: var(--md-accent-soft) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+  color: var(--md-accent) !important;
+}
+
+.chat-message.user .chat-quickpanel-item:hover {
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+/* Attachment chips */
+.chat-attachment-chip {
+  border-radius: var(--md-radius-chip) !important;
+  border: 1px solid var(--md-border) !important;
+  background: var(--md-surface) !important;
+  box-shadow: var(--md-shadow-sm) !important;
+}
+
+/* Command / terminal result cards (e.g. Get-CimInstance output) */
+.chat-message [class*="command-run"],
+.chat-message [class*="terminal-result"] {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-radius: 12px !important;
+  font-family: var(--md-font-mono) !important;
+  font-size: 13px !important;
+  padding: 14px 16px !important;
+}
+
+/* -------------------------------------------------------------------------
+   Composer
+   Issue: input had 9 competing definitions; sat visually disconnected
+   from the send action, and the send button read as disabled-looking at
+   rest (low contrast on light glass = ambiguous affordance).
+   ------------------------------------------------------------------------- */
+
+.chat-composer-main {
+  padding: 6px !important;
+}
+
+.chat-input-wrap {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 6px !important;
+  background: var(--md-surface) !important;
+  border: 1px solid var(--md-border-strong) !important;
+  border-radius: var(--md-radius-input) !important;
+  padding: 8px 8px 8px 6px !important;
+  box-shadow: var(--md-shadow-md) !important;
+  transition: border-color 0.15s var(--md-ease), box-shadow 0.15s var(--md-ease) !important;
+}
+
+.chat-input-wrap:focus-within {
+  border-color: var(--md-accent) !important;
+  box-shadow: 0 0 0 3px var(--md-accent-soft) !important;
+}
+
+.chat-input {
+  flex: 1 !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+  color: var(--md-text-primary) !important;
+  padding: 8px 4px !important;
+  resize: none !important;
+  max-height: 200px !important;
+}
+
+.chat-input::placeholder {
+  color: var(--md-text-tertiary) !important;
+}
+
+.chat-input:focus {
+  outline: none !important;
+}
+
+.chat-icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--md-text-secondary) !important;
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease) !important;
+}
+
+.chat-icon-btn:hover {
+  background: rgba(15, 23, 42, 0.06) !important;
+  color: var(--md-text-primary) !important;
+}
+
+.chat-icon-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.chat-input-btn-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* Send button — the single primary action in the composer. High contrast
+   at rest (not just on hover) so its affordance is unambiguous; this is
+   the one place in the composer that should visually assert "press me". */
+.chat-input-btn-group button:last-child {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 9px !important;
+  background: var(--md-accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.15s var(--md-ease), transform 0.1s var(--md-ease) !important;
+}
+
+.chat-input-btn-group button:last-child:hover {
+  background: var(--md-accent-hover) !important;
+}
+
+.chat-input-btn-group button:last-child:active {
+  transform: scale(0.92) !important;
+}
+
+.chat-input-btn-group button:last-child:disabled {
+  background: rgba(15, 23, 42, 0.12) !important;
+  color: rgba(15, 23, 42, 0.3) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Motion — respect reduced-motion; keep transitions short and purposeful
+   ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn.copilot-icon-btn,
+  .titlebar-btn,
+  .chat-icon-btn,
+  .chat-input-btn-group button:last-child,
+  .chat-quickpanel-item,
+  .chat-input-wrap {
+    transition: none !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Dark mode — scoped, not unconditional (fixes the previous body{} override
+   that forced dark background regardless of theme attribute)
+   ------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] {
+  --md-bg: #0b1220;
+  --md-surface: #111827;
+  --md-surface-glass: rgba(17, 24, 39, 0.72);
+  --md-surface-glass-strong: rgba(17, 24, 39, 0.88);
+  --md-border: rgba(255, 255, 255, 0.08);
+  --md-border-strong: rgba(255, 255, 255, 0.14);
+  --md-text-primary: #f1f5f9;
+  --md-text-secondary: #94a3b8;
+  --md-text-tertiary: #64748b;
+  --md-accent-soft: rgba(37, 99, 235, 0.18);
+}
