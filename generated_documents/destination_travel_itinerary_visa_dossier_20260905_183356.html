@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Destination Travel Itinerary & Visa Dossier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Destination Travel Itinerary & Visa Dossier</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 06:34 PM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul>  <li class="toc-level-2"><a href="#-step-by-step-visa-entry-checklist-for-bali">🛂 Step-by-Step Visa & Entry Checklist for Bali</a></li>
+    <li class="toc-level-3"><a href="#1-apply-for-the-official-30-day-e-voa-b1-tourist-visa">1. Apply for the Official 30-Day e-VoA B1 Tourist Visa</a></li>
+    <li class="toc-level-3"><a href="#2-complete-the-all-indonesia-arrival-card-aiac-customs-declaration">2. Complete the All Indonesia Arrival Card AIAC / Customs Declaration</a></li>
+    <li class="toc-level-3"><a href="#3-pay-the-bali-provincial-tourist-levy">3. Pay the Bali Provincial Tourist Levy</a></li></ul></nav>
+        
+        <div class="content">
+            <p>I have already initiated your visa preparation process!</p>
+<p>Here is the exact step-by-step checklist and guide to help you complete your official Indonesian entry requirements smoothly:</p>
+<hr class="section-divider">
+<h2 id="-step-by-step-visa-entry-checklist-for-bali" class="section-heading">🛂 Step-by-Step Visa & Entry Checklist for Bali</h2>
+<h3 id="1-apply-for-the-official-30-day-e-voa-b1-tourist-visa" class="section-heading">1. Apply for the Official 30-Day e-VoA (B1 Tourist Visa)</h3>
+<ul class="research-list">
+<li><strong>Official Website:</strong> Use strictly <a href="https://evisa.imigrasi.go.id" target="_blank">evisa.imigrasi.go.id</a> <em>(Avoid third-party agency sites charging marked-up processing fees)</em>.</li>
+<li><strong>Cost:</strong> <strong>IDR 500,000</strong> (~$32 USD / ₹2,700).</li>
+<li><strong>Validity:</strong> Valid for 30 days upon entry; extendable online once for an additional 30 days.</li>
+<li><strong>Requirements:</strong></li>
+<li>Passport valid for at least 6 months beyond your arrival date (with at least 2 blank pages).</li>
+<li>High-resolution scan of your passport bio-page (JPEG/PNG).</li>
+<li>Formal passport-style photo with a white background.</li>
+<li>Confirmed outbound/return flight ticket departing Indonesia within 30 days.</li>
+<li><strong>Pro Tip:</strong> Completing the e-VoA online allows you to use the automated biometrics eGates at DPS Airport, reducing immigration queue time to under 2 minutes.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="2-complete-the-all-indonesia-arrival-card-aiac-customs-declaration" class="section-heading">2. Complete the All Indonesia Arrival Card (AIAC) / Customs Declaration</h3>
+<ul class="research-list">
+<li><strong>Official Website:</strong> <a href="https://allindonesia.imigrasi.go.id" target="_blank">allindonesia.imigrasi.go.id</a></li>
+<li><strong>Cost:</strong> <strong>FREE</strong></li>
+<li><strong>Window:</strong> Fill this out online <strong>within 72 hours prior to your flight</strong>.</li>
+<li><strong>Output:</strong> Generates a QR code on your phone to scan at customs before exiting the terminal.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="3-pay-the-bali-provincial-tourist-levy" class="section-heading">3. Pay the Bali Provincial Tourist Levy</h3>
+<ul class="research-list">
+<li><strong>Official Website:</strong> <a href="https://lovebali.baliprov.go.id" target="_blank">lovebali.baliprov.go.id</a></li>
+<li><strong>Cost:</strong> <strong>IDR 150,000</strong> (~$10 USD / ₹810) per person.</li>
+<li><strong>Execution:</strong> Pay online prior to departure and keep the digital QR voucher saved on your phone.</li>
+</ul>
+<hr class="section-divider">
+<p><ElicitationsGroup message="How would you like to proceed with your travel arrangements?"></p>
+<p><Elicitation label="Search flight deals to Bali" query="Find current flight options and low-cost carrier routes to Bali Ngurah Rai International Airport (DPS)."/></p>
+<p><Elicitation label="Find top-rated boutique hotels & villas" query="List top-rated boutique hotels and villas in Bali under $50/night."/></p>
+<p><Elicitation label="Refine the 2-3 week daily itinerary" query="Provide a day-by-day 21-day itinerary breakdown for Bali covering Ubud, Uluwatu, and Nusa Penida."/></p>
+<p></ElicitationsGroup></p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: doc_f35fafbdc3 • Generated on September 05, 2026 at 06:34 PM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

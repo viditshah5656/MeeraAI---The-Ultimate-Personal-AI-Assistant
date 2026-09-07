@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Research Report</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 03:29 AM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul>  <li class="toc-level-2"><a href="#research-results-for-conduct-rigorous-mathematical-and-theoretical-foundations-research-on-search-web-for-italian-universities-and-tell-me-how-to-get-into-this-universities-after-bachelors-in-robotics-and-automation-spawn-5-agents-and-do-a-deep-research-for-me-and-guide-me-properly">Research Results for: Conduct rigorous mathematical and theoretical foundations research on: Search web for Italian Universities and tell me how to get into this universities after bachelors in Robotics and Automation? Spawn 5 agents and do a deep research for me and guide me properly.</a></li>
+  <li class="toc-level-2"><a href="#-top-italian-universities-for-robotics-automation">🏛️ Top Italian Universities for Robotics & Automation</a></li>
+  <li class="toc-level-2"><a href="#-admission-requirements">📋 Admission Requirements</a></li>
+  <li class="toc-level-2"><a href="#-step-by-step-application-guide">🚀 Step-by-Step Application Guide</a></li>
+  <li class="toc-level-2"><a href="#-scholarships-funding-options">🎓 Scholarships & Funding Options</a></li>
+    <li class="toc-level-3"><a href="#1-top-italian-universities-for-masters-in-robotics-automation">1. Top Italian Universities for Master’s in Robotics & Automation</a></li>
+    <li class="toc-level-3"><a href="#2-comprehensive-university-comparison-matrix">2. Comprehensive University Comparison Matrix</a></li>
+    <li class="toc-level-3"><a href="#3-step-by-step-step-sequence-for-admission">3. Step-by-Step Step Sequence for Admission</a></li>
+    <li class="toc-level-3"><a href="#4-funding-scholarships-and-practical-next-steps">4. Funding, Scholarships, and Practical Next Steps</a></li></ul></nav>
+        
+        <div class="content">
+            <h2 id="research-results-for-conduct-rigorous-mathematical-and-theoretical-foundations-research-on-search-web-for-italian-universities-and-tell-me-how-to-get-into-this-universities-after-bachelors-in-robotics-and-automation-spawn-5-agents-and-do-a-deep-research-for-me-and-guide-me-properly" class="section-heading">Research Results for: Conduct rigorous mathematical and theoretical foundations research on: Search web for Italian Universities and tell me how to get into this universities after bachelors in Robotics and Automation? Spawn 5 agents and do a deep research for me and guide me properly.</h2>
+<p>When answering with cloud data or live web research, format your response beautifully using Markdown and professional emojis. For biographies or concepts, give an exhaustive deep-dive. However, if the user asks for a RECIPE, tutorial, or instructions, you MUST directly provide the exact ingredients, measurements, and numbered steps. DO NOT write verbose filler. If the retrieved web data lacks the actual recipe steps, utilize your own internal knowledge to provide a perfect standard recipe.</p>
+<p>Respond with enough detail to be genuinely useful. Prefer a rich, structured answer with examples, caveats, next steps, and clear reasoning when applicable. Do not be terse unless the user explicitly asks for brevity.. Establish the theoretical ontology, derive all core governing equations, loss functions, optimization objectives, scaling laws, and information-theoretic limits step-by-step using LaTeX ($$ display and $ inline). Define every mathematical variable and parameter explicitly.</p>
+<p>No web results found.</p>
+<hr class="section-divider">
+<p>To transition from a Bachelor’s degree in Robotics and Automation to a Master’s degree (<em>Laurea Magistrale</em>) in Italy, you must navigate both the academic admission process and the diplomatic/visa procedure.</p>
+<hr class="section-divider">
+<h2 id="-top-italian-universities-for-robotics-automation" class="section-heading">🏛️ Top Italian Universities for Robotics & Automation</h2>
+<table class="research-table">
+<tr>
+<th>University</th>
+<th>Specific Master's Program</th>
+<th>Key Focus Areas</th>
+</tr>
+<tr>
+<td><strong>Politecnico di Milano (Polimi)</strong></td>
+<td>M.Sc. Automation and Control Engineering</td>
+<td>Control Theory, Industrial Robotics, Autonomous Systems</td>
+</tr>
+<tr>
+<td><strong>Politecnico di Torino (Polito)</strong></td>
+<td>M.Sc. Mechatronic Engineering</td>
+<td>Embedded Systems, Cyber-Physical Systems, Drives</td>
+</tr>
+<tr>
+<td><strong>University of Pisa (Unipi)</strong></td>
+<td>M.Sc. Robotics and Automation Engineering</td>
+<td>Soft Robotics, Haptics, Bipedal Locomotion</td>
+</tr>
+<tr>
+<td><strong>University of Bologna (Unibo)</strong></td>
+<td>M.Sc. Automation Engineering</td>
+<td>Process Automation, System Identification, Sensor Fusion</td>
+</tr>
+<tr>
+<td><strong>Sapienza University of Rome</strong></td>
+<td>M.Sc. Control Engineering / Artificial Intelligence and Robotics</td>
+<td>Motion Planning, Robot Vision, Multi-Agent Systems</td>
+</tr>
+<tr>
+<td><strong>University of Genoa (Unige)</strong></td>
+<td>M.Sc. Robotics Engineering</td>
+<td>Marine Robotics, Cognitive Systems, Manipulators</td>
+</tr>
+<tr>
+<td><strong>University of Pavia (Unipv)</strong></td>
+<td>M.Sc. Industrial Automation Engineering</td>
+<td>Applied Robotics, Process Control, Power Electronics</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h2 id="-admission-requirements" class="section-heading">📋 Admission Requirements</h2>
+<ul class="research-list">
+<li><strong>Academic Degree:</strong> Bachelor's degree (<em>Laurea</em>) in Engineering, Computer Science, or Physical Sciences equivalent to EQF Level 6.</li>
+<li><strong>ECTS/CFU Credit Alignment:</strong></li>
+<li>At least 36–42 ECTS in fundamental mathematics and physics (Linear Algebra, Calculus, Differential Equations, Physics).</li>
+<li>At least 30–40 ECTS in core engineering disciplines (Automatic Control, Signal Processing, Computer Programming, Electrical Machines).</li>
+<li><strong>Language Proficiency:</strong></li>
+<li><strong>English Track:</strong> IELTS (minimum 6.0–6.5 overall) or TOEFL iBT (minimum 78–80).</li>
+<li><strong>Italian Track:</strong> B2 CEFR certificate (only required if applying for programs taught in Italian).</li>
+<li><strong>Grade Point Average (GPA):</strong> Universities require a minimum CGPA (often 70% or higher, equivalent to 23/30 in the Italian evaluation system).</li>
+</ul>
+<hr class="section-divider">
+<h2 id="-step-by-step-application-guide" class="section-heading">🚀 Step-by-Step Application Guide</h2>
+<ol class="research-list">
+<li><strong>Academic Evaluation & Direct University Application</strong></li>
+</ol>
+<ul class="research-list">
+<li>Apply through individual university admissions portals (e.g., Polimi Online Services, Unibo Studenti Online) during early call windows (typically September to February for international applicants).</li>
+<li>Upload transcripts, course descriptions (syllabus), CV (Europass format recommended), Statement of Purpose (SOP), and Recommendation Letters.</li>
+</ul>
+<ol class="research-list">
+<li><strong>Pre-Enrolment via Universitaly</strong></li>
+</ol>
+<ul class="research-list">
+<li>Once you receive an offer or pre-admission letter, register on the official Italian government portal <strong>Universitaly</strong>.</li>
+<li>Fill out the pre-enrolment application and select the university and course. The university validates this document directly.</li>
+</ul>
+<ol class="research-list">
+<li><strong>Document Legalization & Declaration of Value (DoV) / CIMEA</strong></li>
+</ol>
+<ul class="research-list">
+<li>Obtain a <strong>Statement of Comparability and Verification</strong> from CIMEA or apply for a <strong>Declaration of Value</strong> (<em>Dichiarazione di Valore</em>) from the Italian Embassy/Consulate in your home country.</li>
+</ul>
+<ol class="research-list">
+<li><strong>Visa Application (National Type D - Study)</strong></li>
+</ol>
+<ul class="research-list">
+<li>Submit the validated Universitaly pre-enrolment summary alongside financial proof (~€6,000–€7,000 per year), accommodation proof, health insurance, and flight reservations to the consulate.</li>
+</ul>
+<ol class="research-list">
+<li><strong>Arrival in Italy & Post-Arrival Formalities</strong></li>
+</ol>
+<ul class="research-list">
+<li><strong>Permesso di Soggiorno (Residence Permit):</strong> Apply within 8 working days of arrival in Italy via the postal kit (<em>Kit Giallo</em>).</li>
+<li><strong>Codice Fiscale:</strong> Obtain your Italian tax code for housing contracts and bank accounts.</li>
+<li><strong>Final Matriculation:</strong> Present original physical certificates to the university registrar to complete enrolment.</li>
+</ul>
+<hr class="section-divider">
+<h2 id="-scholarships-funding-options" class="section-heading">🎓 Scholarships & Funding Options</h2>
+<ul class="research-list">
+<li><strong>DSU Regional Grants (e.g., DSU Toscana, ER.GO, LazioDiSCo):</strong> Need-based scholarships covering tuition fees, free accommodation, and a living stipend (approx. €5,000–€7,000/year).</li>
+<li><strong>University Merit Scholarships:</strong> Awarded directly by institutions during evaluation (e.g., Polimi International Scholarships, Unibo Action 2).</li>
+<li><strong>MAECI Scholarships:</strong> Provided by the Italian Ministry of Foreign Affairs for international students.</li>
+</ul>
+<hr class="section-divider">
+<p>Would you like detailed guidance on preparing syllabus course descriptions for ECTS evaluation, or assistance in drafting an SOP for robotics programs?</p>
+<hr class="section-divider">
+<p>To transition smoothly from a Bachelor's degree in Robotics and Automation into an advanced Master's program in Italy, you need to understand top university choices, admission criteria, administrative timelines, and funding pathways.</p>
+<p>Here is a comprehensive breakdown designed to act as your complete execution blueprint.</p>
+<hr class="section-divider">
+<h3 id="1-top-italian-universities-for-masters-in-robotics-automation" class="section-heading">1. Top Italian Universities for Master’s in Robotics & Automation</h3>
+<p>Italy hosts world-class engineering institutions offering two-year, English-taught Master of Science (<em>Laurea Magistrale</em>) programs:</p>
+<ul class="research-list">
+<li><strong>Politecnico di Milano (Polimi):</strong> <em>M.Sc. in Automation and Control Engineering</em></li>
+<li><strong>Highlights:</strong> Italy's top-ranked technical university. Highly specialized in industrial automation, systems theory, nonlinear control, and cyber-physical systems.</li>
+<li><strong>Politecnico di Torino (PoliTo):</strong> <em>M.Sc. in Mechatronic Engineering</em></li>
+<li><strong>Highlights:</strong> Deep integration with the European automotive and industrial robotics hub (e.g., Stellantis, Comau). Focuses on control systems, embedded systems, and mechanical design.</li>
+<li><strong>University of Genoa (UniGe):</strong> <em>M.Sc. in Robotics Engineering</em></li>
+<li><strong>Highlights:</strong> Home to the EMARO (European Master in Advanced Robotics) and JEMARO networks. Strong ties with the Italian Institute of Technology (IIT) in Genoa.</li>
+<li><strong>Sapienza University of Rome:</strong> <em>M.Sc. in Artificial Intelligence and Robotics</em></li>
+<li><strong>Highlights:</strong> Focuses on cognitive robotics, multi-agent systems, computer vision, and machine learning.</li>
+<li><strong>University of Pisa (UniPi):</strong> <em>M.Sc. in Robotics and Automation Engineering</em></li>
+<li><strong>Highlights:</strong> Strong research roots via the Piaggio Research Center, pioneering bio-inspired robotics, soft robotics, and haptics.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="2-comprehensive-university-comparison-matrix" class="section-heading">2. Comprehensive University Comparison Matrix</h3>
+<table class="research-table">
+<tr>
+<th>University</th>
+<th>Core Specialization</th>
+<th>Language</th>
+<th>Minimum CGPA / Grade Baseline</th>
+<th>Key Curriculum Focus</th>
+</tr>
+<tr>
+<td><strong>Politecnico di Milano</strong></td>
+<td>Control Systems & Automation</td>
+<td>English</td>
+<td>Equivalent to ~70–75% (Varies by country)</td>
+<td>Dynamic modeling, optimal control, process automation</td>
+</tr>
+<tr>
+<td><strong>Politecnico di Torino</strong></td>
+<td>Mechatronics & Vehicle Control</td>
+<td>English</td>
+<td>Equivalent to ~70%+</td>
+<td>Automotive robotics, power electronics, embedded firmware</td>
+</tr>
+<tr>
+<td><strong>University of Genoa</strong></td>
+<td>Advanced & Autonomous Robotics</td>
+<td>English</td>
+<td>High academic standing (~70%+)</td>
+<td>Software architecture (ROS 2), AI perception, kinematics</td>
+</tr>
+<tr>
+<td><strong>Sapienza Univ. of Rome</strong></td>
+<td>AI Integration & Soft Robotics</td>
+<td>English</td>
+<td>High academic standing (~70%+)</td>
+<td>Neural networks, perception, multi-robot systems</td>
+</tr>
+<tr>
+<td><strong>University of Pisa</strong></td>
+<td>Soft Robotics & Human-Robot Interaction</td>
+<td>English</td>
+<td>High academic standing (~70%+)</td>
+<td>Actuators, haptic devices, autonomous navigation</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h3 id="3-step-by-step-step-sequence-for-admission" class="section-heading">3. Step-by-Step Step Sequence for Admission</h3>
+<h4 id="phase-1-academic-language-preparation" class="section-heading">Phase 1: Academic & Language Preparation</h4>
+<ul class="research-list">
+<li><strong>Curricular Verification:</strong> Ensure your Bachelor’s degree covers fundamental prerequisites: Calculus, Linear Algebra, Physics, Signals & Systems, Automatic Control, and Programming (C++/Python).</li>
+<li><strong>Language Proficiency:</strong> Obtain an English language certificate:</li>
+<li><strong>IELTS Academic:</strong> Minimum score of <strong>6.0 to 6.5</strong>.</li>
+<li><strong>TOEFL iBT:</strong> Minimum score of <strong>78 to 80</strong>.</li>
+<li><strong>GRE (Optional but recommended):</strong> Highly recommended for non-EU applicants at Politecnico di Milano to boost admission odds.</li>
+</ul>
+<h4 id="phase-2-application-submissions-november-april" class="section-heading">Phase 2: Application Submissions (November – April)</h4>
+<ul class="research-list">
+<li><strong>Document Compilation:</strong></li>
+</ul>
+<ol class="research-list">
+<li>Bachelor's Transcripts & Provisional Degree Certificate.</li>
+<li>Detailed <strong>Course Descriptions / Syllabus</strong> (crucial for Italian credit mapping).</li>
+<li>Statement of Purpose (SOP) & Curriculum Vitae (Europass or clean single-page format).</li>
+<li>1–2 Letters of Recommendation (LOR).</li>
+</ol>
+<ul class="research-list">
+<li><strong>Portal Submission:</strong> Apply through university-specific portals (e.g., Online Services at Polimi, Apply@PoliTo). Pay application fees (€30–€50).</li>
+</ul>
+<h4 id="phase-3-pre-enrolment-visa-process-may-august" class="section-heading">Phase 3: Pre-Enrolment & Visa Process (May – August)</h4>
+<ul class="research-list">
+<li><strong>Universitaly Portal:</strong> Once you receive an offer letter, register on the official Italian government portal (<strong>Universitaly</strong>) and submit your pre-enrolment application selecting the university and program.</li>
+<li><strong>CIMEA Statement of Comparability / DOV:</strong> Obtain a Declaration of Value (DV) from the local Italian Embassy or order a <strong>CIMEA Statement of Comparability</strong> online to validate your degree.</li>
+<li><strong>National Study Visa (Type D):</strong> Apply at your country’s Italian Embassy/Consulate with your pre-enrolment summary, proof of financial funds (~€6,000–€7,000 per year), proof of accommodation, and health insurance.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="4-funding-scholarships-and-practical-next-steps" class="section-heading">4. Funding, Scholarships, and Practical Next Steps</h3>
+<ul class="research-list">
+<li><strong>Regional Need-Based Scholarships (DSU / EDISU):</strong></li>
+<li>Granted based on family income (<em>ISEE Parificato</em>).</li>
+<li>Benefits typically include <strong>100% tuition waivers</strong>, free or discounted university housing, and a cash stipend (~€5,000–€7,000/year).</li>
+<li><strong>Merit-Based Scholarships:</strong></li>
+<li><strong>Polimi Platinum/Gold/Silver Scholarships:</strong> Automatically evaluated upon application.</li>
+<li><strong>Invest Your Talent in Italy (IYT):</strong> Government scholarship offering tuition exemption, monthly allowance, and mandatory corporate internships for specific countries.</li>
+</ul>
+<p><ElicitationsGroup message="Where should we focus next for your application prep?"></p>
+<p><Elicitation label="Draft a target timeline and SOP checklist" query="Help me draft a customized application timeline and a strong Statement of Purpose checklist for Italian robotics programs."/></p>
+<p><Elicitation label="Explain DSU scholarship income calculation" query="Explain how the DSU scholarship income criteria and ISEE Parificato document process works for non-EU students in Italy."/></p>
+<p></ElicitationsGroup></p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: a67550943f3e • Generated on September 05, 2026 at 03:29 AM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

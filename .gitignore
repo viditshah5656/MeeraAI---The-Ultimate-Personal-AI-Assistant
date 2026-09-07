@@ -23,6 +23,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.initial_env/
 
 # Node and package manager state
 node_modules/

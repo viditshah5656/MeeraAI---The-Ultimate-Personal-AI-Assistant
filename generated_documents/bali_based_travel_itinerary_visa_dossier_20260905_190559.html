@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bali based Travel Itinerary & Visa Dossier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Bali based Travel Itinerary & Visa Dossier</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 07:06 PM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul>  <li class="toc-level-2"><a href="#-21-day-bali-master-itinerary-day-by-day-route">🌴 21-Day Bali Master Itinerary: Day-by-Day Route</a></li>
+  <li class="toc-level-2"><a href="#phase-1-uluwatu-bukit-peninsula-days-14">Phase 1: Uluwatu & Bukit Peninsula Days 1–4</a></li>
+    <li class="toc-level-3"><a href="#day-1-arrival-coastal-welcome">Day 1: Arrival & Coastal Welcome</a></li>
+    <li class="toc-level-3"><a href="#day-2-cliffline-beaches-kecak-fire-dance">Day 2: Cliffline Beaches & Kecak Fire Dance</a></li>
+    <li class="toc-level-3"><a href="#day-3-secret-coves-sunset-lounges">Day 3: Secret Coves & Sunset Lounges</a></li>
+    <li class="toc-level-3"><a href="#day-4-balangan-lookout-transition-prep">Day 4: Balangan Lookout & Transition Prep</a></li>
+  <li class="toc-level-2"><a href="#phase-2-cultural-heart-highlands-ubud-days-511">Phase 2: Cultural Heart & Highlands – Ubud Days 5–11</a></li>
+    <li class="toc-level-3"><a href="#day-5-transit-north-sacred-monkey-forest">Day 5: Transit North & Sacred Monkey Forest</a></li>
+    <li class="toc-level-3"><a href="#day-6-subak-terraces-holy-water-purification">Day 6: Subak Terraces & Holy Water Purification</a></li>
+    <li class="toc-level-3"><a href="#day-7-hidden-waterfalls-of-gianyar">Day 7: Hidden Waterfalls of Gianyar</a></li>
+    <li class="toc-level-3"><a href="#day-8-mount-batur-volcanic-sunrise-trek">Day 8: Mount Batur Volcanic Sunrise Trek</a></li>
+    <li class="toc-level-3"><a href="#day-9-organic-cooking-class-craft-villages">Day 9: Organic Cooking Class & Craft Villages</a></li>
+    <li class="toc-level-3"><a href="#day-10-unesco-jatiluwih-terraces-bedugul">Day 10: UNESCO Jatiluwih Terraces & Bedugul</a></li>
+    <li class="toc-level-3"><a href="#day-11-munduk-waterfalls-excursion">Day 11: Munduk Waterfalls Excursion</a></li>
+  <li class="toc-level-2"><a href="#phase-3-offshore-paradise-nusa-islands-days-1215">Phase 3: Offshore Paradise – Nusa Islands Days 12–15</a></li>
+    <li class="toc-level-3"><a href="#day-12-fast-boat-to-nusa-penida-west-coast">Day 12: Fast Boat to Nusa Penida West Coast</a></li>
+    <li class="toc-level-3"><a href="#day-13-manta-ray-snorkeling-east-penida">Day 13: Manta Ray Snorkeling & East Penida</a></li>
+    <li class="toc-level-3"><a href="#day-14-nusa-lembongan-yellow-bridge">Day 14: Nusa Lembongan & Yellow Bridge</a></li>
+    <li class="toc-level-3"><a href="#day-15-mangrove-forest-return-to-main-island">Day 15: Mangrove Forest & Return to Main Island</a></li>
+  <li class="toc-level-2"><a href="#phase-4-west-coast-culture-surf-culinary-canggu-seminyak-days-1621">Phase 4: West Coast Culture, Surf & Culinary – Canggu & Seminyak Days 16–21</a></li>
+    <li class="toc-level-3"><a href="#day-16-surf-cafes-echo-beach">Day 16: Surf, Cafes & Echo Beach</a></li>
+    <li class="toc-level-3"><a href="#day-17-boutique-shopping-fine-dining-in-seminyak">Day 17: Boutique Shopping & Fine Dining in Seminyak</a></li>
+    <li class="toc-level-3"><a href="#day-18-tanah-lot-sea-temple">Day 18: Tanah Lot Sea Temple</a></li>
+    <li class="toc-level-3"><a href="#day-19-day-trip-to-uluwatu-beach-club-experience">Day 19: Day Trip to Uluwatu / Beach Club Experience</a></li>
+    <li class="toc-level-3"><a href="#day-20-culinary-feast-farewell-sunset">Day 20: Culinary Feast & Farewell Sunset</a></li>
+    <li class="toc-level-3"><a href="#day-21-final-spa-departure">Day 21: Final Spa & Departure</a></li>
+  <li class="toc-level-2"><a href="#-summary-route-base-accommodations">📊 Summary Route & Base Accommodations</a></li></ul></nav>
+        
+        <div class="content">
+            <p>I will create a complete, detailed 21-day day-by-day itinerary based on your preferred Uluwatu, Ubud, Nusa Islands, and Canggu framework.</p>
+<h2 id="-21-day-bali-master-itinerary-day-by-day-route" class="section-heading">🌴 21-Day Bali Master Itinerary: Day-by-Day Route</h2>
+<p>This 3-week framework uses a counter-clockwise route to avoid Bali's heavy traffic. You'll spend <strong>4 days in Uluwatu</strong>, <strong>7 days in Ubud & Highlands</strong>, <strong>4 days on the Nusa Islands</strong>, and <strong>6 days in Canggu/Seminyak</strong>.</p>
+<hr class="section-divider">
+<h2 id="phase-1-uluwatu-bukit-peninsula-days-14" class="section-heading">Phase 1: Uluwatu & Bukit Peninsula (Days 1–4)</h2>
+<p><em>Base: Uluwatu / Bingin</em></p>
+<h3 id="day-1-arrival-coastal-welcome" class="section-heading">Day 1: Arrival & Coastal Welcome</h3>
+<ul class="research-list">
+<li><strong>Morning/Afternoon:</strong> Arrive at <strong>Ngurah Rai International Airport (DPS)</strong>. Use the <strong>e-VOA Autogates</strong> to bypass entry lines, grab a <strong>Telkomsel eSIM</strong>, and take a pre-booked transfer south to <strong>Uluwatu</strong> (<strong>45–60 mins</strong>).</li>
+<li><strong>Late Afternoon:</strong> Check into your villa or hotel and relax after your flight.</li>
+<li><strong>Evening:</strong> Head down to <strong>Thomas Beach</strong> for fresh grilled fish at a beachfront warung while watching the sunset.</li>
+</ul>
+<h3 id="day-2-cliffline-beaches-kecak-fire-dance" class="section-heading">Day 2: Cliffline Beaches & Kecak Fire Dance</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Visit <strong>Padang Padang Beach</strong> early (<strong>8:00 AM</strong>) to beat the crowds and enjoy calm morning swimming conditions.</li>
+<li><strong>Afternoon:</strong> Have lunch in <strong>Bingin Village</strong>, then spend the afternoon resting along the limestone cove at <strong>Bingin Beach</strong>.</li>
+<li><strong>Evening:</strong> Arrive at <strong>Uluwatu Temple</strong> by <strong>4:30 PM</strong> to explore the cliff tops before watching the iconic <strong>6:00 PM Kecak Fire Dance</strong> at sunset.</li>
+</ul>
+<h3 id="day-3-secret-coves-sunset-lounges" class="section-heading">Day 3: Secret Coves & Sunset Lounges</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Head to <strong>Green Bowl Beach</strong> early (note the <strong>~300 steep steps</strong> down and back up) or visit the wide sands of <strong>Melasti Beach</strong>.</li>
+<li><strong>Afternoon:</strong> Grab lunch at <strong>Single Fin</strong> or <strong>El Kabron</strong> overlooking the surf breaks.</li>
+<li><strong>Evening:</strong> Enjoy a relaxed dinner in <strong>Single Fin / Suluban Beach</strong> area.</li>
+</ul>
+<h3 id="day-4-balangan-lookout-transition-prep" class="section-heading">Day 4: Balangan Lookout & Transition Prep</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Visit <strong>Balangan Beach</strong> and walk up to the cliff viewpoint for panoramic views of the coast.</li>
+<li><strong>Afternoon:</strong> Relax at a cafe in <strong>Anantara / Padang Padang</strong>, pack up, and prepare for your transfer inland tomorrow.</li>
+<li><strong>Evening:</strong> Casual dinner at <strong>Warung Local</strong> or <strong>Cashew Tree</strong> in Bingin.</li>
+</ul>
+<hr class="section-divider">
+<h2 id="phase-2-cultural-heart-highlands-ubud-days-511" class="section-heading">Phase 2: Cultural Heart & Highlands – Ubud (Days 5–11)</h2>
+<p><em>Base: Ubud Central / Penestanan</em></p>
+<h3 id="day-5-transit-north-sacred-monkey-forest" class="section-heading">Day 5: Transit North & Sacred Monkey Forest</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Check out of Uluwatu and take a private transfer north to <strong>Ubud</strong> (<strong>1.5 to 2 hours</strong>).</li>
+<li><strong>Afternoon:</strong> Check in and visit the <strong>Sacred Monkey Forest Sanctuary</strong> to walk through moss-covered temples and ancient banyan trees.</li>
+<li><strong>Evening:</strong> Stroll the <strong>Campuhan Ridge Walk</strong> at golden hour (<strong>5:30 PM</strong>), followed by dinner at <strong>Warung Babi Guling Ibu Oka</strong>.</li>
+</ul>
+<h3 id="day-6-subak-terraces-holy-water-purification" class="section-heading">Day 6: Subak Terraces & Holy Water Purification</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Arrive at <strong>Tegallalang Rice Terraces</strong> by <strong>7:30 AM</strong> to explore the UNESCO Subak irrigation trails before tour buses arrive.</li>
+<li><strong>Afternoon:</strong> Drive 20 minutes north to <strong>Tirta Empul Temple</strong> for a traditional <strong>Melukat</strong> purification ritual, then visit the nearby 11th-century <strong>Gunung Kawi</strong> cliff shrines.</li>
+<li><strong>Evening:</strong> Traditional Balinese dinner at <strong>Locavore Noodle</strong> or <strong>Warung Makan Bu Rus</strong>.</li>
+</ul>
+<h3 id="day-7-hidden-waterfalls-of-gianyar" class="section-heading">Day 7: Hidden Waterfalls of Gianyar</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Visit <strong>Tukad Cepung Waterfall</strong> between <strong>9:00 AM and 11:00 AM</strong> to capture light rays beaming through the cave ceiling.</li>
+<li><strong>Afternoon:</strong> Stop by <strong>Tibumana Waterfall</strong> for a swim in its natural freshwater pool, followed by lunch overlooking local rice fields.</li>
+<li><strong>Evening:</strong> Attend a traditional <strong>Legong Dance Performance</strong> at the <strong>Ubud Palace</strong> (<strong>7:30 PM</strong>).</li>
+</ul>
+<h3 id="day-8-mount-batur-volcanic-sunrise-trek" class="section-heading">Day 8: Mount Batur Volcanic Sunrise Trek</h3>
+<ul class="research-list">
+<li><strong>Early Morning:</strong> <strong>2:30 AM</strong> pick-up for the guided hike up <strong>Mount Batur</strong> (<strong>1,717m</strong>). Reach the crater summit by <strong>6:00 AM</strong> for breakfast at sunrise above the clouds.</li>
+<li><strong>Late Morning:</strong> Descend the volcano and soak in the <strong>Batur Natural Hot Springs</strong> along Lake Batur to rest your muscles.</li>
+<li><strong>Afternoon:</strong> Return to Ubud by <strong>2:00 PM</strong> for a well-deserved nap and massage.</li>
+<li><strong>Evening:</strong> Dinner at <strong>Sayan House</strong> overlooking the Ayung River valley.</li>
+</ul>
+<h3 id="day-9-organic-cooking-class-craft-villages" class="section-heading">Day 9: Organic Cooking Class & Craft Villages</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Take an organic farm-to-table cooking class starting with an early tour of the <strong>Ubud Local Market</strong>.</li>
+<li><strong>Afternoon:</strong> Visit local artisan villages: <strong>Mas</strong> (woodcarving), <strong>Celuk</strong> (silversmithing), and <strong>Penglipuran Traditional Village</strong>.</li>
+<li><strong>Evening:</strong> Relaxed evening with sound healing at the <strong>Pyramids of Chi</strong> or dinner in <strong>Nyuh Kuning</strong>.</li>
+</ul>
+<h3 id="day-10-unesco-jatiluwih-terraces-bedugul" class="section-heading">Day 10: UNESCO Jatiluwih Terraces & Bedugul</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Day trip northwest to the vast, breathtaking <strong>Jatiluwih Rice Terraces</strong> for a 2-hour walk through the rice fields.</li>
+<li><strong>Afternoon:</strong> Visit <strong>Pura Ulun Danu Bratan</strong>, the famous floating temple on Lake Bratan in Bedugul.</li>
+<li><strong>Evening:</strong> Return to Ubud for your final night in the central highlands.</li>
+</ul>
+<h3 id="day-11-munduk-waterfalls-excursion" class="section-heading">Day 11: Munduk Waterfalls Excursion</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Explore northern Munduk's lush green trails, visiting <strong>Banyu Wana Amertha</strong> or <strong>Red Coral Waterfall</strong>.</li>
+<li><strong>Afternoon:</strong> Return toward central Bali, packing and preparing for tomorrow's island-hopping fast boat.</li>
+<li><strong>Evening:</strong> Dinner at <strong>Clear Cafe</strong> or <strong>Melting Wok Warung</strong> in Ubud.</li>
+</ul>
+<hr class="section-divider">
+<h2 id="phase-3-offshore-paradise-nusa-islands-days-1215" class="section-heading">Phase 3: Offshore Paradise – Nusa Islands (Days 12–15)</h2>
+<p><em>Base: Nusa Penida / Nusa Lembongan</em></p>
+<h3 id="day-12-fast-boat-to-nusa-penida-west-coast" class="section-heading">Day 12: Fast Boat to Nusa Penida (West Coast)</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Transfer from Ubud to <strong>Sanur Port</strong> (<strong>45 mins</strong>) and take an 8:30 AM fast boat to <strong>Nusa Penida</strong> (<strong>45 mins</strong>).</li>
+<li><strong>Afternoon:</strong> Hire a local driver to visit the west coast highlights: <strong>Kelingking Beach</strong> (the famous T-Rex cliff), <strong>Broken Beach</strong>, and <strong>Angel’s Billabong</strong>.</li>
+<li><strong>Evening:</strong> Check in to your Penida hotel and enjoy a quiet sunset dinner at <strong>Penida Colada</strong>.</li>
+</ul>
+<h3 id="day-13-manta-ray-snorkeling-east-penida" class="section-heading">Day 13: Manta Ray Snorkeling & East Penida</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Take a <strong>7:30 AM</strong> boat excursion to <strong>Manta Point</strong> and <strong>Crystal Bay</strong> to swim alongside giant manta rays.</li>
+<li><strong>Afternoon:</strong> Drive east to explore <strong>Diamond Beach</strong>, <strong>Atuh Beach</strong>, and the <strong>Molenteng Treehouse viewpoint</strong>.</li>
+<li><strong>Evening:</strong> Dinner on the beach at <strong>Amok Sunset</strong>.</li>
+</ul>
+<h3 id="day-14-nusa-lembongan-yellow-bridge" class="section-heading">Day 14: Nusa Lembongan & Yellow Bridge</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Take a short <strong>15-minute</strong> local boat crossing to <strong>Nusa Lembongan</strong>.</li>
+<li><strong>Afternoon:</strong> Rent a scooter or shuttle, cross the iconic <strong>Yellow Bridge</strong> to <strong>Nusa Ceningan</strong>, and visit the <strong>Blue Lagoon</strong>.</li>
+<li><strong>Evening:</strong> Watch the crashing waves at <strong>Devil’s Tear</strong> on Lembongan before sunset drinks at <strong>Ohana's</strong>.</li>
+</ul>
+<h3 id="day-15-mangrove-forest-return-to-main-island" class="section-heading">Day 15: Mangrove Forest & Return to Main Island</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Take a peaceful morning wooden boat tour through the <strong>Nusa Lembongan Mangrove Forest</strong>.</li>
+<li><strong>Afternoon:</strong> Catch a <strong>2:00 PM</strong> fast boat back to <strong>Sanur Port</strong> on the main island.</li>
+<li><strong>Evening:</strong> Private transfer to <strong>Canggu</strong> (<strong>1 to 1.5 hours</strong> depending on traffic) and check into your villa.</li>
+</ul>
+<hr class="section-divider">
+<h2 id="phase-4-west-coast-culture-surf-culinary-canggu-seminyak-days-1621" class="section-heading">Phase 4: West Coast Culture, Surf & Culinary – Canggu & Seminyak (Days 16–21)</h2>
+<p><em>Base: Canggu / Berawa</em></p>
+<h3 id="day-16-surf-cafes-echo-beach" class="section-heading">Day 16: Surf, Cafes & Echo Beach</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Take a morning surf lesson at <strong>Batu Bolong Beach</strong> or <strong>Berawa Beach</strong>.</li>
+<li><strong>Afternoon:</strong> Walk through local boutiques along <strong>Jalan Batu Bolong</strong> and enjoy a healthy bowl at <strong>Crate Cafe</strong> or <strong>Nalu Bowls</strong>.</li>
+<li><strong>Evening:</strong> Sunset drinks at <strong>La Brisa</strong> or <strong>Echo Beach Club</strong> with dinner right by the water.</li>
+</ul>
+<h3 id="day-17-boutique-shopping-fine-dining-in-seminyak" class="section-heading">Day 17: Boutique Shopping & Fine Dining in Seminyak</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Spend the morning exploring the boutiques, galleries, and home decor shops along <strong>Jalan Kayu Aya</strong> in <strong>Seminyak</strong>.</li>
+<li><strong>Afternoon:</strong> Relax with a spa treatment at <strong>Bodyworks</strong> or <strong>Potato Head Beach Club</strong>.</li>
+<li><strong>Evening:</strong> Reserve a table for fine dining at <strong>Mama San</strong>, <strong>Bambu</strong>, or <strong>Merah Putih</strong>.</li>
+</ul>
+<h3 id="day-18-tanah-lot-sea-temple" class="section-heading">Day 18: Tanah Lot Sea Temple</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Early breakfast at <strong>Milk & Madu</strong> followed by a relaxing morning by your villa pool.</li>
+<li><strong>Afternoon:</strong> Drive <strong>45 minutes</strong> north to <strong>Tanah Lot Temple</strong>, set on an offshore rock outcrop. Explore the surrounding grounds.</li>
+<li><strong>Evening:</strong> Enjoy sunset at Tanah Lot as the tide rises, then return to Canggu for dinner.</li>
+</ul>
+<h3 id="day-19-day-trip-to-uluwatu-beach-club-experience" class="section-heading">Day 19: Day Trip to Uluwatu / Beach Club Experience</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Optional day trip back down to <strong>Melasti Beach</strong> or a day pass at <strong>Sunday's Beach Club</strong>.</li>
+<li><strong>Afternoon:</strong> Relax on the sunbeds, swim, and kayak along the quiet cove.</li>
+<li><strong>Evening:</strong> Return to Canggu for night markets at <strong>Samadi Sunday Market</strong> or dinner at <strong>Mason</strong>.</li>
+</ul>
+<h3 id="day-20-culinary-feast-farewell-sunset" class="section-heading">Day 20: Culinary Feast & Farewell Sunset</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Casual cafe hopping in <strong>Pererenan</strong> (quieter area right next to Canggu).</li>
+<li><strong>Afternoon:</strong> Souvenir shopping at <strong>Love Anchor Market</strong> for handmade jewelry, sarongs, and crafts.</li>
+<li><strong>Evening:</strong> Farewell dinner at <strong>Ji Restaurant</strong> (Japanese-fusion with sunset ocean views) or <strong>FINNS Beach Club</strong>.</li>
+</ul>
+<h3 id="day-21-final-spa-departure" class="section-heading">Day 21: Final Spa & Departure</h3>
+<ul class="research-list">
+<li><strong>Morning:</strong> Enjoy a relaxed final breakfast, a <strong>1-hour Balinese massage</strong>, and finish your packing.</li>
+<li><strong>Afternoon:</strong> Transfer from Canggu to <strong>Ngurah Rai International Airport (DPS)</strong> (<strong>1 to 1.5 hours</strong>; head to the airport <strong>3.5 hours</strong> before international departures).</li>
+</ul>
+<hr class="section-divider">
+<h2 id="-summary-route-base-accommodations" class="section-heading">📊 Summary Route & Base Accommodations</h2>
+<table class="research-table">
+<tr>
+<th>Phase</th>
+<th>Days</th>
+<th>Base Region</th>
+<th>Key Highlights & Focus</th>
+</tr>
+<tr>
+<td><strong>Phase 1</strong></td>
+<td>Days 1–4</td>
+<td><strong>Uluwatu</strong></td>
+<td>Cliff temples, surf coves, Kecak Fire dance</td>
+</tr>
+<tr>
+<td><strong>Phase 2</strong></td>
+<td>Days 5–11</td>
+<td><strong>Ubud</strong></td>
+<td>Rice terraces, waterfalls, Mt. Batur, cooking class</td>
+</tr>
+<tr>
+<td><strong>Phase 3</strong></td>
+<td>Days 12–15</td>
+<td><strong>Nusa Islands</strong></td>
+<td>T-Rex cliff, manta ray snorkeling, Blue Lagoon</td>
+</tr>
+<tr>
+<td><strong>Phase 4</strong></td>
+<td>Days 16–21</td>
+<td><strong>Canggu / Seminyak</strong></td>
+<td>Beach clubs, surfing, Tanah Lot, fine dining</td>
+</tr>
+</table>
+<p><ElicitationsGroup message="How would you like to refine this 21-day plan?"></p>
+<p><Elicitation label="Calculate detailed 21-day budget breakdown" query="Provide a complete 21-day itemized budget for budget, mid-range, and luxury travel tiers in Bali."/></p>
+<p><Elicitation label="Find top boutique villa accommodations for each base" query="Recommend top-rated boutique hotels and villas under $50/night for Uluwatu, Ubud, Nusa Penida, and Canggu."/></p>
+<p></ElicitationsGroup></p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: doc_07bd9ef7e4 • Generated on September 05, 2026 at 07:06 PM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

@@ -12,7 +12,12 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    include: ["framer-motion", "react-syntax-highlighter", "three"],
+  },
   build: {
+    chunkSizeWarningLimit: 1000,
+    target: "esnext",
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -20,7 +25,7 @@ export default defineConfig({
             return undefined;
           }
 
-          if (id.includes("react-syntax-highlighter") || id.includes("refractor") || id.includes("prism")) {
+          if (id.includes("react-syntax-highlighter") || id.includes("refractor") || id.includes("prism") || id.includes("lowlight") || id.includes("highlight.js")) {
             return "syntax";
           }
 
@@ -30,6 +35,26 @@ export default defineConfig({
 
           if (id.includes("framer-motion")) {
             return "motion";
+          }
+
+          if (id.includes("three") || id.includes("@react-three")) {
+            return "three";
+          }
+
+          if (id.includes("firebase")) {
+            return "firebase";
+          }
+
+          if (id.includes("react-icons")) {
+            return "icons";
+          }
+
+          if (id.includes("@heyputer/puter.js")) {
+            return "puter";
+          }
+
+          if (id.includes("wordlist-english") || id.includes("an-array-of-english-words")) {
+            return "wordlists";
           }
 
           if (id.includes("react") || id.includes("scheduler")) {

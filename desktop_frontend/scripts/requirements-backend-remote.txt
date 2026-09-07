@@ -1,4 +1,4 @@
-﻿accelerate==1.13.0
+accelerate==1.13.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
@@ -61,14 +61,12 @@ PyPDF2>=3.0.1,<4
 pypdf>=4.3.1,<6
 pypdfium2>=4.30.0,<5
 easyocr>=1.7.2,<2
-pypiwin32==223
 pytesseract>=0.3.13,<1
 python-docx>=1.1.2,<2
 python-pptx>=1.0.2,<2
 pageindex>=0.2.8,<1
 pyttsx3==2.99
 rapidocr-onnxruntime>=1.4.4,<2
-pywin32==311
 PyYAML==6.0.3
 regex==2026.4.4
 requests==2.33.1

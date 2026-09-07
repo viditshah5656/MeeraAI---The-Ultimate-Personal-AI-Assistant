@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# This script is executed after the installation of the macOS .pkg
+# It handles post-installation tasks (e.g., chmod +x or cleanup)
+
+# Example:
+# chmod +x "$2/Contents/MacOS/YourApp"
+# $2 is the target path of the installation
+
+echo "Post-installation steps completed successfully."
+exit 0

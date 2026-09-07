@@ -98,7 +98,7 @@ const API_BASE = "http://127.0.0.1:8000";
 async function readJson<T>(response: Response): Promise<T> {
   const data = await response.json();
   if (!response.ok || data?.ok === false) {
-    throw new Error(data?.message || data?.error || `Request failed (${response.status})`);
+    throw new Error(data?.detail || data?.message || data?.error || `Request failed (${response.status})`);
   }
   return data as T;
 }
@@ -148,7 +148,7 @@ export async function downloadLibraryModel(repoId: string, label: string, filena
 
 export type HfTokenResult = { ok?: boolean; hf_token_set?: boolean; token_count?: number; message?: string; };
 export type ProviderConfig = { provider: string; api_key?: string; base_url?: string; model?: string; };
-export type ProviderStatus = { id: string; label: string; description: string; configured: boolean; api_key_set: boolean; enabled?: boolean; token_count?: number; base_url?: string; model?: string; };
+export type ProviderStatus = { id: string; label: string; description: string; configured: boolean; connected: boolean; api_key_set: boolean; enabled?: boolean; token_count?: number; model_count?: number; base_url?: string; model?: string; models?: string[]; };
 export type ImageSearchResult = { id: string; title: string; imageUrl: string; thumbnailUrl: string; sourceUrl: string; license: string; };
 
 export async function saveHfToken(token: string): Promise<HfTokenResult> {
@@ -188,6 +188,36 @@ export async function deleteLocalModel(modelId: string): Promise<{ ok?: boolean;
 
 export async function listProviders(): Promise<{ providers: ProviderStatus[] }> {
   const response = await fetch(`${API_BASE}/api/providers`);
+  const raw = await response.json();
+  if (!response.ok) {
+    throw new Error(raw?.detail || raw?.message || raw?.error || `Request failed (${response.status})`);
+  }
+  // Handle both formats: new {providers: [...]} and old {openai: {...}, gemini: {...}}
+  if (Array.isArray(raw?.providers)) {
+    return { providers: raw.providers };
+  }
+  // Old dict format: convert to array
+  const providers: ProviderStatus[] = Object.entries(raw)
+    .filter(([key]) => key !== "ok" && key !== "error" && key !== "message" && key !== "detail")
+    .map(([id, info]: [string, any]) => ({
+      id,
+      label: info.name || info.label || id,
+      description: info.description || `${info.name || id} (${info.format || "api"})`,
+      configured: info.configured ?? info.connected ?? false,
+      connected: info.connected ?? false,
+      api_key_set: info.api_key_set ?? false,
+      enabled: info.enabled ?? info.connected ?? false,
+      token_count: info.token_count ?? info.model_count ?? 0,
+      model_count: info.model_count ?? 0,
+      base_url: info.base_url || "",
+      model: info.model || null,
+      models: info.models || [],
+    }));
+  return { providers };
+}
+
+export async function getProviderModels(providerId: string): Promise<{ models: string[] }> {
+  const response = await fetch(`${API_BASE}/api/providers/${providerId}/models`);
   return readJson(response);
 }
 

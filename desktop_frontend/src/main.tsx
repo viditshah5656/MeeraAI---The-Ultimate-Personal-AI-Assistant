@@ -51,12 +51,15 @@ window.addEventListener("unhandledrejection", (event) => {
       } else {
         await import("./styles.css");
         await import("./reasoning.css");
-        const { default: App } = await import("./App.tsx");
+        const { default: App } = await import("./App");
         const { AuthProvider } = await import("./AuthProvider");
+        const { LayoutTransitionProvider } = await import("./components/MeeraGlassLoader");
         createRoot(rootEl).render(
           <React.StrictMode>
             <AuthProvider>
-              <App />
+              <LayoutTransitionProvider>
+                <App />
+              </LayoutTransitionProvider>
             </AuthProvider>
           </React.StrictMode>,
         );

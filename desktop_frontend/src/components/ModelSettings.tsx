@@ -19,7 +19,7 @@ export function ModelSettings({ authToken, onClose }: ModelSettingsProps) {
   const {
     models,
     loading,
-    error,
+    error: hookError,
     loadingModelId,
     addModel,
     editModel,
@@ -30,6 +30,7 @@ export function ModelSettings({ authToken, onClose }: ModelSettingsProps) {
     clearError,
   } = useModelManagement(authToken);
 
+  const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -114,7 +115,7 @@ export function ModelSettings({ authToken, onClose }: ModelSettingsProps) {
   const handleEstimateModel = async (model: ModelStatus) => {
     setEstimateLoadingModelId(model.id);
     try {
-      const response = await estimateModel(model.id, model.context_length || 2048, model.quant_bits ?? undefined);
+      const response = await estimateModel(model.id, (model as any).context_length || 2048, model.quant_bits ?? undefined);
       setModelEstimateResults((prev) => ({
         ...prev,
         [model.id]: response,
@@ -220,7 +221,7 @@ export function ModelSettings({ authToken, onClose }: ModelSettingsProps) {
       {/* Main Content */}
       <div style={{ flex: 1, overflow: "auto", padding: "1.5rem" }}>
         {/* Messages */}
-        {error && (
+        {(error || hookError) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -237,9 +238,12 @@ export function ModelSettings({ authToken, onClose }: ModelSettingsProps) {
               fontFamily: "var(--font-primary)",
             }}
           >
-            {error}
+            {error || hookError}
             <button
-              onClick={clearError}
+              onClick={() => {
+                setError(null);
+                clearError();
+              }}
               style={{
                 background: "transparent",
                 border: "none",

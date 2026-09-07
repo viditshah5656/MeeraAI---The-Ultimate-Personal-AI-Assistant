@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
+// We run syncLogo on all platforms to ensure build/logo.png exists.
+// We exit early on non-Windows *after* syncLogo to skip NSIS generation.
 const root = path.resolve(__dirname, "..");
 const syncLogoScript = path.join(__dirname, "sync-logo.js");
 const nsisThemeScript = path.join(__dirname, "prepare-nsis-theme.py");
@@ -23,6 +25,11 @@ const run = (command, args) =>
 const syncLogo = run(process.execPath, [syncLogoScript]);
 if (syncLogo.status !== 0) {
   process.exit(syncLogo.status ?? 1);
+}
+
+if (process.platform !== "win32") {
+  console.log("[prepare-build-assets] Skipping NSIS theme generation on non-Windows host.");
+  process.exit(0);
 }
 
 const pythonCandidates =

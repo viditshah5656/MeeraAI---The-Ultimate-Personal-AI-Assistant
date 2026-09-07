@@ -136,7 +136,7 @@ const TerminalMetaCard: React.FC<{ node: ExecutionNode }> = ({ node }) => {
           {(node.status === "completed") && (
             <span className="et-terminal-done"><LuCheck size={12} aria-hidden="true" /> Done</span>
           )}
-          {(node.status === "error" || node.status === "failed") && (
+          {((node.status as string) === "error" || node.status === "failed") && (
             <span className="et-terminal-failed"><MdError size={12} aria-hidden="true" /> Failed</span>
           )}
           {(node.status === "running") && (
@@ -190,11 +190,11 @@ const ExecutionNodeView: React.FC<{
   const defaultOpen =
     depth === 0 ||
     node.status === "running" ||
-    node.status === "error" ||
+    (node.status as string) === "error" ||
     node.status === "failed";
 
   const [childrenOpen, setChildrenOpen] = useState(hasChildren ? defaultOpen : false);
-  const [detailsOpen, setDetailsOpen] = useState(hasDetails ? (node.status === "running" || node.status === "error" || node.status === "failed") : false);
+  const [detailsOpen, setDetailsOpen] = useState(hasDetails ? (node.status === "running" || (node.status as string) === "error" || node.status === "failed") : false);
 
   React.useEffect(() => {
     if (node.status === "completed") {
@@ -209,7 +209,7 @@ const ExecutionNodeView: React.FC<{
 
   const statusIcon = () => {
     if (node.status === "running") return <LuLoader size={isHeading ? 13 : 12} className="et-spin" />;
-    if (node.status === "error" || node.status === "failed") return <MdError size={isHeading ? 13 : 12} />;
+    if ((node.status as string) === "error" || node.status === "failed") return <MdError size={isHeading ? 13 : 12} />;
     return <Icon size={isHeading ? 13 : 12} />;
   };
 

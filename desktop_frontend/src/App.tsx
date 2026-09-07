@@ -96,6 +96,7 @@ import {
 import "./split-view.css";
 import { ExecutionTimeline } from "./components/ExecutionTimeline";
 import AgentActionLog from "./components/AgentActionLog";
+import AgentTaskPanel from "./components/AgentTaskPanel";
 import { SettingsModelStudio } from "./components/SettingsModelStudio";
 import { SplitViewWrapper } from "./components/SplitViewWrapper";
 import {
@@ -106,6 +107,39 @@ import {
   type AgentInteractionResponse,
 } from "./components/AgentInteractionDialog";
 import { useAuth } from "./AuthProvider";
+import { useLayoutTransition } from "./components/MeeraGlassLoader";
+import "./swarm-monitor.css";
+import { DocumentDownloadHub, type DocumentItem } from "./components/DocumentDownloadHub";
+import { AgentSwarmMonitor, type SwarmMonitorState, type SwarmAgentState, type AgentStepTrace } from "./components/AgentSwarmMonitor";
+import {
+  AsciiTableCard,
+  AsciiDiagramCard,
+  isAsciiTable,
+  isAsciiDiagram,
+  parseAsciiTable,
+  type ParsedAsciiTable
+} from "./components/AsciiVisualCards";
+import {
+  InteractiveImageCard,
+  InteractiveCarouselCard,
+  InteractiveTimelineCard,
+  InteractiveSequenceCard,
+  InteractiveElicitationsCard,
+  parseXmlImages,
+  parseXmlTimeline,
+  parseXmlSequence,
+  parseXmlElicitations,
+  type ImageItem,
+  type TimelineEventItem,
+  type SequenceStepItem,
+  type ElicitationItem
+} from "./components/InteractiveXmlCards";
+import "./components/composer/smart-composer.css";
+import { detectMathContext, type MathModeSetting } from "./components/composer/MathEngine";
+import CollapsibleUserMessage from "./components/composer/CollapsibleUserMessage";
+import SmartComposerBar from "./components/composer/SmartComposerBar";
+import { fetchInternetDailyThought, getDynamicAnonymousName, getSmartTimeGreeting } from "./services/dynamicGreeting";
+import { PersonalitySelector } from "./components/PersonalitySelector";
 
 SyntaxHighlighter.registerLanguage("tsx", tsxLang);
 SyntaxHighlighter.registerLanguage("typescript", typescriptLang);
@@ -193,6 +227,7 @@ const MAX_CHAT_ATTACHMENT_BYTES = 12 * 1024 * 1024;
 
 // API base: allow overriding via VITE_API_BASE. In dev default to local backend at port 8000.
 const API_BASE = (import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env && import.meta.env.VITE_MEERA_API_BASE_URL) || 'http://127.0.0.1:8000/api';
 const CHAT_ATTACHMENT_ANALYSIS_PROMPT =
   "Explain the attached file content beautifully and professionally, using only what is inside the file.";
 const CHAT_ATTACHMENT_ACCEPT =
@@ -321,7 +356,22 @@ function normalizeBrowserAgentUrl(value: string): string {
   return `https://www.google.com/search?${params.toString()}`;
 }
 
+const BARE_GREETINGS_LIST = new Set([
+  "hi", "hello", "hey", "hi there", "hello there", "good morning",
+  "good afternoon", "good evening", "yo", "sup", "howdy", "thanks",
+  "thank you", "ok", "okay", "yes", "no", "bye", "goodbye", "cool",
+  "help", "who are you", "what can you do"
+]);
+
+function isBareGreetingText(val: string): boolean {
+  const c = (val || "").toLowerCase().trim().replace(/[?!.,]/g, "");
+  return c.length < 3 || BARE_GREETINGS_LIST.has(c);
+}
+
 function buildAugmentedRequestText(text: string, useCloud: boolean, isMapRequest: boolean): string {
+  if (isBareGreetingText(text)) {
+    return text;
+  }
   const instructions: string[] = [];
   const lang = detectSearchLanguage(text);
   if (lang !== "en") {
@@ -412,6 +462,8 @@ type MessageVisualSnapshot = {
   toolPrelude?: string;
   /** Browser automation screenshot (base64 PNG). */
   browserScreenshot?: string;
+  documents?: { title: string; documents: Record<string, { filename: string; size: number; url: string; label: string; icon: string }> };
+  agentMonitor?: SwarmMonitorState;
 };
 type ComposerIntentId = "auto" | "coding" | "songs" | "shopping" | "movies" | "internet" | "math";
 type InlineWordCompletion = {
@@ -1319,19 +1371,31 @@ const MEERA_SIDEBAR_CSS = `
   filter: none !important;
 }
 
-.copilot-surface.sidebar-open .topbar.copilot-topbar {
-  opacity: 0 !important;
-  visibility: hidden !important;
+.topbar.copilot-topbar {
+  z-index: 100 !important;
+}
+
+.copilot-surface.sidebar-open .topbar.copilot-topbar,
+.app-root.sidebar-open .topbar.copilot-topbar,
+.copilot-surface.sidebar-open .copilot-topbar-inner,
+.app-root.sidebar-open .copilot-topbar-inner {
+  filter: blur(14px) !important;
+  opacity: 0.6 !important;
   pointer-events: none !important;
+  user-select: none !important;
+  z-index: 90 !important;
+  transition: filter 220ms ease, opacity 220ms ease !important;
 }
 
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background: transparent;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   opacity: 1;
   pointer-events: auto;
-  z-index: 3;
+  z-index: 998 !important;
 }
 
 .copilot-sidebar.meera-sidebar {
@@ -1370,7 +1434,7 @@ const MEERA_SIDEBAR_CSS = `
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   pointer-events: auto;
-  z-index: 5;
+  z-index: 999 !important;
   transition: width 360ms var(--sidebar-ease), padding 360ms var(--sidebar-ease);
   animation: none;
   will-change: width;
@@ -1384,6 +1448,7 @@ const MEERA_SIDEBAR_CSS = `
 
 .meera-sidebar-inner {
   height: 100vh;
+  box-sizing: border-box;
   border-radius: var(--sidebar-radius);
   background:
     radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.82), rgba(241, 244, 248, 0.7) 55%),
@@ -3360,7 +3425,13 @@ const resolveModelLabel = (id: string): string => {
 
 const isChatModelOption = (id: string | null | undefined): id is ModelOptionId => {
   const normalized = normalizeLegacyModelOptionId(id);
-  return Boolean(normalized && MODEL_OPTIONS.some((option) => option.id === normalized && option.chatCapable !== false));
+  if (!normalized) return false;
+  // If it's in the hardcoded list, ensure it's chat capable
+  if (MODEL_OPTIONS.some((option) => option.id === normalized)) {
+    return MODEL_OPTIONS.some((option) => option.id === normalized && option.chatCapable !== false);
+  }
+  // Otherwise (e.g. cloud models), allow it
+  return true;
 };
 
 const FRONTEND_TO_BACKEND_MODEL_ID_MAP: Record<string, string> = {
@@ -3507,9 +3578,9 @@ const COMPOSER_INTENT_SPECS: ReadonlyArray<ComposerIntentSpec> = [
     routeMode: "local",
     preferredModels: ["meera-math", "meera-max-6b", "meera-core-3b"],
     keywords: [
-      /\b(math|equation|algebra|geometry|calculus|integral|derivative|differentiat|limit|matrix|determinant|theorem|proof|solve)\b/i,
-      /[\u222b\u2211\u221a\u03c0\u221e\u2264\u2265\u2248\u2260\u2202\u0394]/,
-      /[\d]+\s*[\+\-\*\/\^]\s*[\d]+/,
+      /\b(calculus|algebraic\s+equation|trigonometry|matrix\s+multiplication|eigenvalue|determinant|pythagorean|quadratic\s+formula)\b/i,
+      /\b(?:solve\s+for\s+[a-z]|calculate\s+\d|compute\s+\d)\b/i,
+      /[\u222b\u2211\u221a\u2202\u2207\u2264\u2265\u2248\u2260\u2200\u2203]/,
     ],
   },
 ];
@@ -3820,7 +3891,7 @@ function deriveSessionTitle(messages: Message[]): string {
     return DEFAULT_SESSION_NAME;
   }
 
-  const firstLine = source.content.split("\n").find((line) => cleanTitleText(line)) ?? source.content;
+  const firstLine = (source.content || "").split("\n").find((line) => cleanTitleText(line)) ?? source.content;
   return humanizeSessionTitle(firstLine);
 }
 
@@ -3848,7 +3919,7 @@ function pickMeaningfulHeading(messages: Message[]): string | null {
       if (!message.content) {
         continue;
       }
-      const lines = message.content.split("\n");
+      const lines = (message.content || "").split("\n");
       for (const line of lines) {
         const cleaned = cleanTitleText(line);
         if (!cleaned) {
@@ -4463,19 +4534,15 @@ function convertToMarkdownTable(text: string): string {
   return lines.join("\n");
 }
 
-function isMathIntent(text: string): SmartPromptAnalysis {
+function isMathIntent(text: string, manualMode: MathModeSetting = "auto"): SmartPromptAnalysis {
   const source = text || "";
   const normalized = source.toLowerCase();
-  const isMath =
-    /\b(solve|equation|algebra|geometry|calculus|integral|differentiat|derivative|limit|matrix|determinant|sum|sigma|pi|theorem|proof|simplify)\b/.test(
-      normalized,
-    ) ||
-    /[\u222b\u2211\u221a\u03c0\u221e\u2264\u2265\u2248\u2260\u2202\u0394]/.test(source) ||
-    /[\d]+\s*[\+\-\*\/\^]\s*[\d]+/.test(source);
-  const hasIntegralIntent = /\b(integral|integrate|integration)\b/.test(normalized) || /\u222b/.test(source);
-  const hasDerivativeIntent = /\b(derivative|differentiat|d\/dx)\b/.test(normalized) || /\u2202/.test(source);
-  const hasMatrixIntent = /\b(matrix|determinant|eigen|vector)\b/.test(normalized);
-  const hasLimitIntent = /\b(limit|approaches)\b/.test(normalized) || /lim[\s_{(]/i.test(source);
+  const mathContext = detectMathContext(source, manualMode);
+  const isMath = mathContext.isMath;
+  const hasIntegralIntent = mathContext.detectedTopics.includes("calculus") || /\b(integral|integrate|integration)\b/.test(normalized) || /\u222b/.test(source);
+  const hasDerivativeIntent = mathContext.detectedTopics.includes("calculus") || /\b(derivative|differentiat|d\/dx)\b/.test(normalized) || /\u2202/.test(source);
+  const hasMatrixIntent = mathContext.detectedTopics.includes("linear-algebra") || /\b(matrix|determinant|eigen|vector)\b/.test(normalized);
+  const hasLimitIntent = /\blim[\s_{(]/i.test(source);
   const hasBulletOrNumbering = /(^|\n)\s*(?:[-*+]\s+|\d+[.)]\s+)/.test(source);
   const segments = detectCodeSegments(source);
   const languageSet = Array.from(
@@ -4581,9 +4648,9 @@ function buildMathSolveEnvelope(text: string): string {
   ].join("\n");
 }
 
-function prepareSmartPrompt(rawText: string): string {
+function prepareSmartPrompt(rawText: string, manualMode: MathModeSetting = "auto"): string {
   let next = rawText ?? "";
-  const analysis = isMathIntent(next);
+  const analysis = isMathIntent(next, manualMode);
   if (analysis.hasLikelyTable) {
     next = convertToMarkdownTable(next);
   }
@@ -4681,13 +4748,13 @@ function continueListAtCursor(value: string, caret: number): { nextValue: string
   };
 }
 
-function detectComposerIntent(text: string): ComposerIntentId {
+function detectComposerIntent(text: string, manualMode: MathModeSetting = "auto"): ComposerIntentId {
   const source = (text || "").trim();
   if (!source) {
     return "auto";
   }
 
-  const mathSignals = isMathIntent(source);
+  const mathSignals = isMathIntent(source, manualMode);
   const scored = COMPOSER_INTENT_SPECS.map((spec) => {
     let score = 0;
     for (const keyword of spec.keywords) {
@@ -4911,54 +4978,60 @@ function hasMathContent(content: string): boolean {
   return /\$\$[\s\S]*?\$\$|\$[^$\n]+?\$/.test(content);
 }
 
-// ── Math renderer component ──────────────────────────────────────────────────
-function KaTeXInline({ latex }: { latex: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [ready, setReady] = useState(katexLoaded);
-  useEffect(() => {
-    if (!katexLoaded) {
-      ensureKaTeX(() => setReady(true));
-    }
-  }, []);
-  useEffect(() => {
-    if (!ready || !ref.current) return;
-    try {
-      const katex = (window as any).katex;
-      if (katex) {
-        katex.render(latex, ref.current, { throwOnError: false, displayMode: false, output: "html" });
+// ── Math renderer component (LRU cached renderToString) ─────────────────────
+const katexHtmlCache = new Map<string, string>();
+
+function getKaTeXHtml(latex: string, displayMode: boolean): string {
+  const cacheKey = `${displayMode ? "D" : "I"}:${latex}`;
+  const cached = katexHtmlCache.get(cacheKey);
+  if (cached) return cached;
+  try {
+    const katex = (window as any).katex;
+    if (katex?.renderToString) {
+      const html = katex.renderToString(latex, { throwOnError: false, displayMode, output: "html" });
+      if (katexHtmlCache.size > 400) {
+        const firstKey = katexHtmlCache.keys().next().value;
+        if (firstKey) katexHtmlCache.delete(firstKey);
       }
-    } catch { /* ignore */ }
-  }, [ready, latex]);
-  if (!ready) return <code className="md-inline-code">{latex}</code>;
-  return <span ref={ref} className="math-inline" />;
+      katexHtmlCache.set(cacheKey, html);
+      return html;
+    }
+  } catch {
+    // ignore render error
+  }
+  return "";
 }
 
-function KaTeXBlock({ latex }: { latex: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+const KaTeXInline = React.memo(function KaTeXInline({ latex }: { latex: string }) {
   const [ready, setReady] = useState(katexLoaded);
   useEffect(() => {
     if (!katexLoaded) {
       ensureKaTeX(() => setReady(true));
     }
   }, []);
+  const html = useMemo(() => (ready ? getKaTeXHtml(latex, false) : ""), [ready, latex]);
+  if (!ready || !html) return <span className="math-inline-text">{latex}</span>;
+  return <span className="math-inline" dangerouslySetInnerHTML={{ __html: html }} />;
+});
+
+const KaTeXBlock = React.memo(function KaTeXBlock({ latex }: { latex: string }) {
+  const [ready, setReady] = useState(katexLoaded);
   useEffect(() => {
-    if (!ready || !ref.current) return;
-    try {
-      const katex = (window as any).katex;
-      if (katex) {
-        katex.render(latex, ref.current, { throwOnError: false, displayMode: true, output: "html" });
-      }
-    } catch { /* ignore */ }
-  }, [ready, latex]);
-  if (!ready) {
+    if (!katexLoaded) {
+      ensureKaTeX(() => setReady(true));
+    }
+  }, []);
+  const html = useMemo(() => (ready ? getKaTeXHtml(latex, true) : ""), [ready, latex]);
+  if (!ready || !html) {
     return (
       <div className="math-block-loading">
         <code>{latex}</code>
       </div>
     );
   }
-  return <div ref={ref} className="math-block" />;
-}
+  return <div className="math-block" dangerouslySetInnerHTML={{ __html: html }} />;
+});
+
 
 // ── Smart math-aware markdown renderer ──────────────────────────────────────
 function MathAwareContent({ content }: { content: string }) {
@@ -4982,10 +5055,85 @@ function MathAwareContent({ content }: { content: string }) {
   );
 }
 
-function normalizeMarkdownContent(content: string): string {
-  const processed = content ?? "";
+function safeBase64Encode(str: string): string {
+  try {
+    if (typeof window !== "undefined" && window.btoa) {
+      return window.btoa(unescape(encodeURIComponent(str)));
+    }
+    // @ts-ignore
+    return Buffer.from(str, "utf-8").toString("base64");
+  } catch {
+    return "";
+  }
+}
 
-  return processed
+function safeBase64Decode(b64: string): string {
+  try {
+    if (typeof window !== "undefined" && window.atob) {
+      return decodeURIComponent(escape(window.atob(b64)));
+    }
+    // @ts-ignore
+    return Buffer.from(b64, "base64").toString("utf-8");
+  } catch {
+    return b64;
+  }
+}
+
+function protectMathForMarkdown(content: string): string {
+  if (!content) return "";
+
+  // 1. Stash all existing fenced code blocks and inline code so we don't mangle code containing '$'
+  const codeStash: string[] = [];
+  let stashed = content.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
+    const placeholder = `⟦CODESTASH_${codeStash.length}⟧`;
+    codeStash.push(match);
+    return placeholder;
+  });
+
+  // 2. Protect \[ ... \] block math
+  stashed = stashed.replace(/\\\[([\s\S]*?)\\\]/g, (_match, math) => {
+    const clean = cleanLatex(math.trim());
+    const encoded = safeBase64Encode(clean);
+    return `\n\n\`\`\`math\n${encoded}\n\`\`\`\n\n`;
+  });
+
+  // 3. Protect $$ ... $$ block math
+  stashed = stashed.replace(/\$\$([\s\S]*?)\$\$/g, (_match, math) => {
+    const clean = cleanLatex(math.trim());
+    const encoded = safeBase64Encode(clean);
+    return `\n\n\`\`\`math\n${encoded}\n\`\`\`\n\n`;
+  });
+
+  // 4. Protect \( ... \) inline math
+  stashed = stashed.replace(/\\\(([\s\S]*?)\\\)/g, (_match, math) => {
+    const clean = cleanLatex(math.trim());
+    const encoded = safeBase64Encode(clean);
+    return `\`math-inline:${encoded}\``;
+  });
+
+  // 5. Protect $...$ inline math: avoid currency like $100, $50, $0.05
+  stashed = stashed.replace(/(^|[^\\])\$([^\s$][^$\n]*?[^\s$]|\S)\$/g, (match, prefix, math) => {
+    const trimmed = math.trim();
+    if (/^\d+(?:,\d{3})*(?:\.\d+)?$/.test(trimmed)) {
+      return match;
+    }
+    const clean = cleanLatex(trimmed);
+    const encoded = safeBase64Encode(clean);
+    return `${prefix}\`math-inline:${encoded}\``;
+  });
+
+  // 6. Restore stashed code blocks
+  stashed = stashed.replace(/⟦CODESTASH_(\d+)⟧/g, (_match, index) => {
+    return codeStash[Number(index)] ?? "";
+  });
+
+  return stashed;
+}
+
+function normalizeMarkdownContent(content: string): string {
+  let processed = content ?? "";
+
+  processed = processed
     .replace(/(\[[^\]]+\])\(\?meera_mcq=([^)]+)\)/gi, (match, p1, p2) => {
         return `${p1}(?meera_mcq=${encodeURIComponent(p2)})`;
     })
@@ -4995,9 +5143,21 @@ function normalizeMarkdownContent(content: string): string {
     .replace(/(?:^|\n)[^\n<]{0,40}\blabel\s*:[^\n]{0,120}\bdetail\s*:[^\n]{0,200}\bprogress\s*:\s*\d{1,3}[^\n]*?(?:<\/meera_stage>|<\/stage>|$)/gi, "")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
-    .replace(/\u200b/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .replace(/\u200b/g, "");
+
+  // Ensure headings have space after hash: e.g. "##Title" -> "## Title", "###1." -> "### 1."
+  processed = processed.replace(/(^|\n)(#{1,6})([^\s#\n])/g, "$1$2 $3");
+
+  // Ensure headings start on their own line with a blank line before
+  processed = processed.replace(/([^\n])\s*(#{1,6}\s+)/g, "$1\n\n$2");
+
+  // Ensure dividers like *** or --- have clean surrounding blank lines
+  processed = processed.replace(/\n(\*{3,}|-{3,}|_{3,})\n/g, "\n\n$1\n\n");
+
+  // Collapse excess blank lines
+  processed = processed.replace(/\n{3,}/g, "\n\n").trim();
+
+  return protectMathForMarkdown(processed);
 }
 
 // ── Strip and re-inject math so ReactMarkdown doesn't mangle it ─────────────
@@ -5450,15 +5610,22 @@ function CommandRunCard({ result }: { result: CommandRunResult }) {
 type ChatContentSegment =
   | { type: "prose"; content: string }
   | { type: "command"; result: CommandRunResult }
-  | { type: "mcq"; title: string; options: { label: string, value: string }[] };
+  | { type: "mcq"; title: string; options: { label: string; value: string }[] }
+  | { type: "documents"; title?: string; documentId?: string; documents: DocumentItem[] }
+  | { type: "interactive-table"; content: string; parsed?: ParsedAsciiTable | null }
+  | { type: "interactive-diagram"; content: string; title?: string }
+  | { type: "interactive-carousel"; images: ImageItem[] }
+  | { type: "interactive-image"; image: ImageItem }
+  | { type: "interactive-timeline"; events: TimelineEventItem[] }
+  | { type: "interactive-sequence"; steps: SequenceStepItem[] }
+  | { type: "interactive-elicitations"; message?: string; items: ElicitationItem[] };
 
-/** Splits message content into an ordered sequence of prose and
-    terminal-command segments. A "Terminal result" block can appear
-    anywhere in the text -- start, middle, or end -- so the model can
-    interleave writing with tool calls mid-answer, the way Claude does,
-    instead of a tool call only ever being the entire message. */
+/** Splits message content into an ordered sequence of prose,
+    terminal-command, MCQ, interactive XML, diagram, table, and Document Download Hub segments. */
 function splitContentSegments(content: string): ChatContentSegment[] {
   const text = content || "";
+
+  // PASS 1: Terminal command results
   const blockRegex = /Terminal result\s*\n\s*\n\s*Command:\s*```[a-z0-9_-]*\n[\s\S]*?```\s*\n\s*\n\s*Output:\s*```[a-z0-9_-]*\n[\s\S]*?```(?:[\s\S]*?)(?=\n\s*\n(?:[A-Z][^\n]{0,80}\n\s*\n)?Terminal result\b|$)/gi;
 
   const tempSegments: ChatContentSegment[] = [];
@@ -5466,72 +5633,217 @@ function splitContentSegments(content: string): ChatContentSegment[] {
   let match: RegExpExecArray | null;
 
   while ((match = blockRegex.exec(text)) !== null) {
+    const parsed = parseCommandRunResult(match[0]);
+    if (!parsed) {
+      // If it fails to parse as a terminal result, keep it as part of prose without splitting
+      continue;
+    }
+
     const before = text.slice(lastIndex, match.index).trim();
     if (before) tempSegments.push({ type: "prose", content: before });
-
-    const parsed = parseCommandRunResult(match[0]);
-    if (parsed) {
-      tempSegments.push({ type: "command", result: parsed });
-    } else if (match[0].trim()) {
-      tempSegments.push({ type: "prose", content: match[0].trim() });
-    }
+    tempSegments.push({ type: "command", result: parsed });
     lastIndex = blockRegex.lastIndex;
   }
 
   const rest = text.slice(lastIndex).trim();
   if (rest) tempSegments.push({ type: "prose", content: rest });
 
-  // SECOND PASS: Extract MCQ blocks from prose
-  const finalSegments: ChatContentSegment[] = [];
+  // PASS 2: Extract standalone MCQ blocks from prose (only when valid options are present)
+  const mcqSegments: ChatContentSegment[] = [];
   const mcqBlockRegex = /(?:^|\n)([^\n]+)\n((?:\[[^\]]+\]\(\?meera_mcq=[^)]+\)\s*)+)/gi;
 
   for (const seg of tempSegments) {
-      if (seg.type !== "prose") {
-          finalSegments.push(seg);
-          continue;
+    if (seg.type !== "prose") {
+      mcqSegments.push(seg);
+      continue;
+    }
+
+    const proseText = seg.content;
+    let mcqMatch: RegExpExecArray | null;
+    let proseLastIndex = 0;
+
+    while ((mcqMatch = mcqBlockRegex.exec(proseText)) !== null) {
+      const linksText = mcqMatch[2];
+      const linkRegex = /\[([^\]]+)\]\(\?meera_mcq=([^)]+)\)/gi;
+      const options: { label: string; value: string }[] = [];
+      let linkMatch: RegExpExecArray | null;
+      while ((linkMatch = linkRegex.exec(linksText)) !== null) {
+        options.push({ label: linkMatch[1], value: decodeURIComponent(linkMatch[2]) });
       }
-      
-      let proseText = seg.content;
-      let mcqMatch;
-      let proseLastIndex = 0;
-      
-      while ((mcqMatch = mcqBlockRegex.exec(proseText)) !== null) {
-          const before = proseText.slice(proseLastIndex, mcqMatch.index).trim();
-          if (before) finalSegments.push({ type: "prose", content: before });
-          
-          const title = mcqMatch[1].trim();
-          const linksText = mcqMatch[2];
-          
-          const linkRegex = /\[([^\]]+)\]\(\?meera_mcq=([^)]+)\)/gi;
-          const options = [];
-          let linkMatch;
-          while ((linkMatch = linkRegex.exec(linksText)) !== null) {
-              options.push({ label: linkMatch[1], value: decodeURIComponent(linkMatch[2]) });
-          }
-          
-          if (options.length > 0) {
-              finalSegments.push({ type: "mcq", title, options });
-          }
-          
-          proseLastIndex = mcqBlockRegex.lastIndex;
+
+      if (options.length === 0) {
+        continue;
       }
-      
-      const proseRest = proseText.slice(proseLastIndex).trim();
-      if (proseRest) finalSegments.push({ type: "prose", content: proseRest });
+
+      const before = proseText.slice(proseLastIndex, mcqMatch.index).trim();
+      if (before) mcqSegments.push({ type: "prose", content: before });
+
+      const title = mcqMatch[1].trim();
+      mcqSegments.push({ type: "mcq", title, options });
+      proseLastIndex = mcqBlockRegex.lastIndex;
+    }
+
+    const proseRest = proseText.slice(proseLastIndex).trim();
+    if (proseRest) mcqSegments.push({ type: "prose", content: proseRest });
   }
 
-  return finalSegments;
+  // PASS 3: Extract custom XML tags (<Carousel>, <Image>, <Timeline>, <Sequence>, <ElicitationsGroup>, <FollowUp>)
+  const xmlSegments: ChatContentSegment[] = [];
+
+  for (const seg of mcqSegments) {
+    if (seg.type !== "prose") {
+      xmlSegments.push(seg);
+      continue;
+    }
+
+    const proseText = seg.content;
+    const xmlPattern = /(?:<Carousel\b[^>]*>[\s\S]*?(?:<\/Carousel>|(?=<[A-Z]|\n\n|\Z))|<Image\s+[^>]*\/?>|<Timeline\b[^>]*>[\s\S]*?(?:<\/Timeline>|(?=\n[A-Z0-9#]|\Z))|<Sequence\b[^>]*>[\s\S]*?(?:<\/Sequence>|(?=\n\d+\.\s+|#{1,6}\s+|\Z))|<ElicitationsGroup\b[^>]*>[\s\S]*?(?:<\/ElicitationsGroup>|(?=\n\n|\Z))|<FollowUp\s+[^>]*\/?>)/gi;
+
+    let xmlMatch: RegExpExecArray | null;
+    let lastXmlIndex = 0;
+
+    while ((xmlMatch = xmlPattern.exec(proseText)) !== null) {
+      const chunk = xmlMatch[0];
+      let parsedSegment: ChatContentSegment | null = null;
+
+      if (/<Carousel\b/i.test(chunk) || /<Image\b/i.test(chunk)) {
+        const images = parseXmlImages(chunk);
+        if (images.length > 1) {
+          parsedSegment = { type: "interactive-carousel", images };
+        } else if (images.length === 1) {
+          parsedSegment = { type: "interactive-image", image: images[0] };
+        }
+      } else if (/<Timeline\b/i.test(chunk)) {
+        const events = parseXmlTimeline(chunk);
+        if (events.length > 0) {
+          parsedSegment = { type: "interactive-timeline", events };
+        }
+      } else if (/<Sequence\b/i.test(chunk)) {
+        const steps = parseXmlSequence(chunk);
+        if (steps.length > 0) {
+          parsedSegment = { type: "interactive-sequence", steps };
+        }
+      } else if (/<ElicitationsGroup\b/i.test(chunk) || /<FollowUp\b/i.test(chunk)) {
+        const elicitation = parseXmlElicitations(chunk);
+        if (elicitation.items.length > 0) {
+          parsedSegment = {
+            type: "interactive-elicitations",
+            message: elicitation.message,
+            items: elicitation.items,
+          };
+        }
+      }
+
+      if (!parsedSegment) {
+        // If XML tag didn't parse into a valid component, do not split prose
+        continue;
+      }
+
+      const before = proseText.slice(lastXmlIndex, xmlMatch.index).trim();
+      if (before) xmlSegments.push({ type: "prose", content: before });
+      xmlSegments.push(parsedSegment);
+      lastXmlIndex = xmlPattern.lastIndex;
+    }
+
+    const restProse = proseText.slice(lastXmlIndex).trim();
+    if (restProse) xmlSegments.push({ type: "prose", content: restProse });
+  }
+
+  // NOTE: We do NOT extract ASCII tables or flowchart diagrams from code blocks into separate segments.
+  // Code blocks (including ASCII tables and diagrams) remain inside markdown prose, so markdown lists,
+  // paragraphs, and prose remain in one seamless continuous flow. PlainMarkdownContent's code renderer
+  // already renders AsciiTableCard and AsciiDiagramCard directly inline without segmenting the message bubble.
+
+  // PASS 4: Consolidate ALL Document Download Links across the entire message into ONE unified Hub
+  const allExtractedDocs: DocumentItem[] = [];
+  const seenDocUrls = new Set<string>();
+  const cleanedDocSegments: ChatContentSegment[] = [];
+
+  const subLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]*\/api\/documents\/[^\s)]+|\/api\/documents\/[^\s)]+)\)/gi;
+  const docSectionCleanupRegex = /(?:(?:^|\n)(?:#{1,6}\s+|[*_]{2})?[^\n]*?(?:Download|Generated Documents|Research Monograph|Dossier)[^\n]*?(?:[*_]{2})?\s*\n+)?((?:[ \t]*[-*•]?\s*(?:[📄📝🌐📋📥\s]*\s*)?\[[^\]]+\]\([^\s)]*\/api\/documents\/[^\s)]+\)[^\n]*\n?)+)/gi;
+
+  for (const seg of xmlSegments) {
+    if (seg.type !== "prose" || !seg.content.includes("/api/documents/")) {
+      cleanedDocSegments.push(seg);
+      continue;
+    }
+
+    // Extract all documents
+    let matchLink: RegExpExecArray | null;
+    while ((matchLink = subLinkRegex.exec(seg.content)) !== null) {
+      const rawLabel = matchLink[1].replace(/^[📄📝🌐📋📥\s]+|[📄📝🌐📋📥\s]+$/g, "").trim();
+      const url = matchLink[2];
+      if (!seenDocUrls.has(url)) {
+        seenDocUrls.add(url);
+        const filename = url.split("/").pop()?.split("?")[0] || "document";
+        const ext = filename.split(".").pop()?.toLowerCase() || "";
+        const format =
+          ext === "pdf"
+            ? "pdf"
+            : ext === "docx" || ext === "doc"
+            ? "docx"
+            : ext === "html" || ext === "htm"
+            ? "html"
+            : "markdown";
+
+        allExtractedDocs.push({
+          format,
+          url,
+          filename,
+          label: rawLabel || `${format.toUpperCase()} Document`,
+        });
+      }
+    }
+
+    // Clean up document list markdown from prose
+    const strippedProse = seg.content.replace(docSectionCleanupRegex, "").trim();
+    if (strippedProse) {
+      cleanedDocSegments.push({ type: "prose", content: strippedProse });
+    }
+  }
+
+  // If documents were found, append ONE unified DocumentDownloadHub segment
+  if (allExtractedDocs.length > 0) {
+    cleanedDocSegments.push({
+      type: "documents",
+      title: "Research Monograph & Dossier",
+      documents: allExtractedDocs,
+    });
+  }
+
+  // PASS 5: Consolidate consecutive prose segments so normal prose, lists,
+  // and markdown stay together in one seamless flow without artificial card boundaries
+  const consolidatedSegments: ChatContentSegment[] = [];
+  for (const seg of cleanedDocSegments) {
+    if (seg.type === "prose") {
+      const trimmed = seg.content.trim();
+      if (!trimmed) continue;
+      const prev = consolidatedSegments[consolidatedSegments.length - 1];
+      if (prev && prev.type === "prose") {
+        prev.content = `${prev.content}\n\n${trimmed}`;
+      } else {
+        consolidatedSegments.push({ type: "prose", content: trimmed });
+      }
+    } else {
+      consolidatedSegments.push(seg);
+    }
+  }
+
+  return consolidatedSegments;
 }
 
 // ── Regroup per-line/per-bullet citation links into one source stack per
-// heading section. The model still emits [Label](url) links inline (cheapest
-// for it to produce); we collect and dedupe them here at render time instead
-// of asking the model to track "have I already cited this heading" across a
-// whole streamed response -- that instruction reliably degrades under load.
-// Output: strips the raw links from prose and appends a single sentinel
-// paragraph (⟦SOURCES:...⟧) right after each heading's body, which
-// CitationStack below intercepts and renders as a hoverable favicon stack.
+// heading section. Entity nouns in prose are preserved as clickable links;
+// pure footnote badges ([1], [Source]) are regrouped into the heading source stack.
 const CITATION_LINK_RE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)(?:\s+"([^"]*)")?\)/g;
+
+function isPureCitation(label: string): boolean {
+  const l = label.trim().toLowerCase();
+  if (/^\^?\d+(?:[\s,-]+\d+)*$/.test(l)) return true;
+  if (/^(?:source|sources|ref|refs|reference|references|citation|citations|link|links)\b/i.test(l)) return true;
+  if (l.startsWith("http://") || l.startsWith("https://") || l.includes("googleusercontent.com/map_")) return true;
+  return false;
+}
 
 function regroupCitationsByHeading(content: string): string {
   if (!content || !/\[[^\]\n]+\]\(https?:\/\//.test(content)) return content;
@@ -5544,7 +5856,7 @@ function regroupCitationsByHeading(content: string): string {
   }
 
   let out = "";
-  
+
   // 1. Process intro (text before the first heading)
   const firstHeadingStart = headingMatches[0].index ?? 0;
   const introText = content.slice(0, firstHeadingStart);
@@ -5553,7 +5865,7 @@ function regroupCitationsByHeading(content: string): string {
   if (introRes.token) {
     out += `\n\n⟦SOURCES:${introRes.token}⟧\n\n`;
   }
-  
+
   // 2. Process each heading and its following text
   for (let i = 0; i < headingMatches.length; i++) {
     const m = headingMatches[i];
@@ -5561,7 +5873,7 @@ function regroupCitationsByHeading(content: string): string {
     const chunkStart = (m.index ?? 0) + headingText.length;
     const nextStart = i + 1 < headingMatches.length ? headingMatches[i + 1].index : content.length;
     const chunkText = content.slice(chunkStart, nextStart);
-    
+
     const chunkRes = extractCitations(chunkText);
     if (chunkRes.token) {
       out += `${headingText} ⟦SOURCES:${chunkRes.token}⟧\n`;
@@ -5570,17 +5882,10 @@ function regroupCitationsByHeading(content: string): string {
     }
     out += chunkRes.cleaned;
   }
-  
+
   return out;
 }
 
-// Extracts citation links from a body chunk, strips them from the prose, and
-// returns the cleaned text with a single sentinel paragraph appended (if any
-// links were found). A source may carry an optional one-line description via
-// the standard markdown title syntax -- [Label](https://example.com "One-line
-// description") -- so richer citation cards render automatically whenever
-// that title is present, and degrade gracefully (label + domain only) when
-// it isn't.
 function sanitizeCitationField(value: string): string {
   return value.replace(/\|\|/g, "-").replace(/::/g, "-").replace(/⟦|⟧/g, "").trim();
 }
@@ -5589,12 +5894,32 @@ function extractCitations(body: string): { cleaned: string; token: string | null
   const seen = new Map<string, { label: string; desc: string }>(); // url -> {label, desc}
   const cleaned = body
     .replace(CITATION_LINK_RE, (_match, label, url, desc) => {
-      if (!seen.has(url)) seen.set(url, { label, desc: desc || "" });
-      return "";
+      const trimmedLabel = (label || "").trim();
+      const isMapRef = url.includes("googleusercontent.com/map_") || url.includes("maps.google.com");
+
+      if (!seen.has(url)) {
+        seen.set(url, {
+          label: isMapRef ? "Map Location" : trimmedLabel,
+          desc: desc || "",
+        });
+      }
+
+      if (isMapRef && (trimmedLabel.startsWith("http") || isPureCitation(trimmedLabel))) {
+        return `[📍 View Map Location](${url})`;
+      }
+
+      // If it is a pure footnote / citation marker, strip from sentence
+      if (isPureCitation(trimmedLabel)) {
+        return "";
+      }
+
+      // Preserve entity words and sentence content as clickable links!
+      return `[${trimmedLabel}](${url})`;
     })
+    .replace(/\(\s*\)/g, "")
     .replace(/[ \t]+([.,!?;:])/g, "$1")
     .replace(/[ \t]{2,}/g, " ");
-  
+
   if (seen.size === 0) return { cleaned, token: null };
   const token = [...seen.entries()]
     .map(([url, { label, desc }]) => `${sanitizeCitationField(label)}||${url}||${sanitizeCitationField(desc)}`)
@@ -5603,19 +5928,58 @@ function extractCitations(body: string): { cleaned: string; token: string | null
     ? window.btoa(unescape(encodeURIComponent(token)))
     // @ts-ignore
     : Buffer.from(token, "utf-8").toString("base64");
-  
+
   return { cleaned, token: encoded };
 }
 
-function MarkdownContent({ content }: { content: string }) {
+function MarkdownContent({ content, documents }: { content: string; documents?: any }) {
   const regrouped = useMemo(() => regroupCitationsByHeading(content), [content]);
   const segments = useMemo(() => splitContentSegments(regrouped), [regrouped]);
 
-  // Fast path: no terminal blocks at all -- render exactly as before.
-  if (segments.length <= 1 && (segments.length === 0 || segments[0].type === "prose")) {
-    const isMath = hasMathContent(regrouped);
-    if (isMath) return <MathMarkdownContent content={regrouped} />;
-    return <PlainMarkdownContent content={regrouped} />;
+  const hasDocSegment = useMemo(() => segments.some((s) => s.type === "documents"), [segments]);
+
+  // If documents are passed via visualSnapshot and not already in segments, format them
+  const fallbackDocs: DocumentItem[] = useMemo(() => {
+    if (hasDocSegment || !documents?.documents) return [];
+    const entries = Object.entries(documents.documents) as [string, any][];
+    return entries.map(([fmt, item]) => ({
+      format: fmt,
+      url: item.url,
+      filename: item.filename,
+      filesize: item.size,
+      page_count: item.page_count,
+      word_count: item.word_count,
+      reading_time_minutes: item.reading_time_minutes,
+      label: item.label,
+      document_id: item.document_id,
+    }));
+  }, [hasDocSegment, documents]);
+
+  // Check if there are any non-prose segments
+  const nonProseSegments = useMemo(() => segments.filter((s) => s.type !== "prose"), [segments]);
+
+  // Fast path: if all content is prose (or no special interactive segments exist) and no fallback documents,
+  // render as a single unified markdown container so prose, lists, and markdown stay together seamlessly
+  if (nonProseSegments.length === 0 && fallbackDocs.length === 0) {
+    const unifiedContent = segments.length > 0 ? segments.map((s) => s.type === "prose" ? s.content : "").filter(Boolean).join("\n\n").trim() || regrouped : regrouped;
+    const isMath = hasMathContent(unifiedContent);
+    if (isMath) return <MathMarkdownContent content={unifiedContent} />;
+    return <PlainMarkdownContent content={unifiedContent} />;
+  }
+
+  // If there are fallback documents but only prose, keep all prose unified in one block above the documents hub
+  if (nonProseSegments.length === 0 && fallbackDocs.length > 0) {
+    const unifiedContent = segments.length > 0 ? segments.map((s) => s.type === "prose" ? s.content : "").filter(Boolean).join("\n\n").trim() || regrouped : regrouped;
+    return (
+      <div className="chat-content-segments">
+        <ProseSegment content={unifiedContent} />
+        <DocumentDownloadHub
+          key="fallback-docs"
+          title={documents?.title || "Research Monograph & Dossier"}
+          documents={fallbackDocs}
+        />
+      </div>
+    );
   }
 
   return (
@@ -5625,9 +5989,37 @@ function MarkdownContent({ content }: { content: string }) {
           <CommandRunCard key={`cmd-${idx}`} result={seg.result} />
         ) : seg.type === "mcq" ? (
           <McqSegmentCard key={`mcq-${idx}`} segment={seg} />
+        ) : seg.type === "documents" ? (
+          <DocumentDownloadHub
+            key={`docs-${idx}`}
+            title={seg.title}
+            documentId={seg.documentId}
+            documents={seg.documents}
+          />
+        ) : seg.type === "interactive-table" ? (
+          <AsciiTableCard key={`tbl-${idx}`} rawContent={seg.content} parsed={seg.parsed ?? undefined} />
+        ) : seg.type === "interactive-diagram" ? (
+          <AsciiDiagramCard key={`dia-${idx}`} content={seg.content} title={seg.title} />
+        ) : seg.type === "interactive-carousel" ? (
+          <InteractiveCarouselCard key={`car-${idx}`} images={seg.images} />
+        ) : seg.type === "interactive-image" ? (
+          <InteractiveImageCard key={`img-${idx}`} {...seg.image} />
+        ) : seg.type === "interactive-timeline" ? (
+          <InteractiveTimelineCard key={`tl-${idx}`} events={seg.events} />
+        ) : seg.type === "interactive-sequence" ? (
+          <InteractiveSequenceCard key={`seq-${idx}`} steps={seg.steps} />
+        ) : seg.type === "interactive-elicitations" ? (
+          <InteractiveElicitationsCard key={`el-${idx}`} message={seg.message} items={seg.items} />
         ) : (
           <ProseSegment key={`prose-${idx}`} content={seg.content} />
         )
+      )}
+      {fallbackDocs.length > 0 && (
+        <DocumentDownloadHub
+          key="fallback-docs"
+          title={documents?.title || "Research Monograph & Dossier"}
+          documents={fallbackDocs}
+        />
       )}
     </div>
   );
@@ -6068,7 +6460,7 @@ function CitationStack({ token }: { token: string }) {
   );
 }
 
-const CodeBlock = ({ language, value }: { language: string; value: string }) => {
+const CodeBlock = React.memo(({ language, value }: { language: string; value: string }) => {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
   useEffect(() => {
@@ -6117,7 +6509,7 @@ const CodeBlock = ({ language, value }: { language: string; value: string }) => 
       </div>
     </div>
   );
-};
+});
 
 function renderHeadingWithSources(level: number, { children, ...props }: any) {
   const childrenArray = React.Children.toArray(children);
@@ -6188,6 +6580,63 @@ const customMarkdownComponents = {
     return <p {...props}>{children}</p>;
   },
   a: ({ children, href, ...props }: any) => {
+    if (typeof href === "string" && (href.startsWith("/api/documents/") || href.includes("/api/documents/"))) {
+      const fullUrl = href.startsWith("http") ? href : `${API_BASE}${href}`;
+      const filename = href.split("/").pop()?.split("?")[0] || "document";
+      const ext = filename.split(".").pop()?.toLowerCase() || "";
+      const isHtml = ext === "html" || ext === "htm";
+      const isPdf = ext === "pdf";
+      const isDocx = ext === "docx" || ext === "doc";
+      const isMd = ext === "md" || ext === "markdown";
+
+      const border = isPdf ? "rgba(244, 63, 94, 0.4)" : isDocx ? "rgba(59, 130, 246, 0.4)" : isHtml ? "rgba(16, 185, 129, 0.4)" : "rgba(168, 85, 247, 0.4)";
+      const bg = isPdf ? "rgba(244, 63, 94, 0.08)" : isDocx ? "rgba(59, 130, 246, 0.08)" : isHtml ? "rgba(16, 185, 129, 0.08)" : "rgba(168, 85, 247, 0.08)";
+      const color = isPdf ? "#fb7185" : isDocx ? "#60a5fa" : isHtml ? "#34d399" : "#c084fc";
+      const tagText = isPdf ? "PDF" : isDocx ? "DOCX" : isHtml ? "HTML" : "MD";
+
+      return (
+        <a
+          {...props}
+          href={fullUrl}
+          className="document-preview-link"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "7px",
+            padding: "4px 10px",
+            margin: "3px 4px 3px 0",
+            borderRadius: "6px",
+            background: bg,
+            border: `1px solid ${border}`,
+            color: "#f1f5f9",
+            fontWeight: 500,
+            fontSize: "0.85em",
+            textDecoration: "none",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isHtml) {
+              void openInMeeraBrowserShell(fullUrl);
+              return;
+            }
+            if (typeof (window as any).__meeraOpenDocument === "function") {
+              (window as any).__meeraOpenDocument(fullUrl, filename, ext);
+            } else {
+              window.dispatchEvent(new CustomEvent("meera:open-document", {
+                detail: { url: fullUrl, filename, format: ext }
+              }));
+            }
+          }}
+        >
+          <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 4px", borderRadius: "3px", background: border, color }}>{tagText}</span>
+          <span>{children}</span>
+        </a>
+      );
+    }
+
     if (href) {
       try {
         const url = new URL(href);
@@ -6200,11 +6649,16 @@ const customMarkdownComponents = {
           let domain = parts[idx] || hostname;
           domain = domain.charAt(0).toUpperCase() + domain.slice(1);
           
+          const isMapLocation = href.includes("googleusercontent.com/map_") || href.includes("maps.google.com");
+          const labelText = isMapLocation && typeof children === "string" && (children.startsWith("http") || !children.trim())
+            ? "📍 View Map Location"
+            : children;
+
           return (
             <a
               {...props}
               href={href}
-              className="citation-pill"
+              className={`citation-pill ${isMapLocation ? "map-citation-pill" : ""}`}
               title={href}
               onClick={(event) => {
                 event.preventDefault();
@@ -6216,7 +6670,7 @@ const customMarkdownComponents = {
                 window.open(href, "_blank", "noopener,noreferrer");
               }}
             >
-              <span className="citation-domain">{children}</span>
+              <span className="citation-domain">{labelText}</span>
             </a>
           );
         }
@@ -6281,19 +6735,118 @@ const customMarkdownComponents = {
       </a>
     );
   },
-  code: ({ inline, className, children }: any) => {
+  code: ({ inline, className, children, ...props }: any) => {
     const match = /language-(\w+)/.exec(className ?? "");
-    if (!inline && match) {
+    const strVal = String(children ?? "");
+
+    // 1. Inline math token: `math-inline:<base64>` (react-markdown v9 omits `inline`)
+    if (strVal.startsWith("math-inline:") || strVal.trim().startsWith("math-inline:")) {
+      const b64 = (strVal.startsWith("math-inline:")
+        ? strVal.slice("math-inline:".length)
+        : strVal.trim().slice("math-inline:".length)
+      ).trim();
+      const decoded = safeBase64Decode(b64).trim();
+
+      // Normalize common LaTeX text/formatting
+      const cleanText = decoded
+        .replace(/\\%/g, "%")
+        .replace(/\\times\b/g, "x")
+        .replace(/\\cdot\b/g, "·")
+        .replace(/\\text\{([^}]*)\}/g, "$1")
+        .replace(/\\mathrm\{([^}]*)\}/g, "$1")
+        .replace(/\\,/g, "")
+        .replace(/\\;/g, " ")
+        .replace(/\\ /g, " ")
+        .replace(/\\([$#&%])/g, "$1")
+        .trim();
+
+      // Plain numbers, multipliers, percentages, or ranges (e.g. 2.4x, 40%, 100, 2.4x - 3.2x, ~50%)
+      const isPlainNumberOrPercent =
+        /^[~≈±+\-]?\s*\d+(?:[.,]\d+)*\s*(?:%|x|X|×|[a-zA-Z]{1,4})?(?:\s*(?:-|–|—|to)\s*[~≈±+\-]?\s*\d+(?:[.,]\d+)*\s*(?:%|x|X|×|[a-zA-Z]{1,4})?)?$/i.test(cleanText);
+
+      const hasKaTeXMath =
+        /\\[a-zA-Z]+/.test(decoded) ||
+        /[\\^_]/.test(decoded) ||
+        /[{}]/.test(decoded) ||
+        /[=<>~≈±]/.test(decoded) ||
+        /^[a-zA-Z]$/.test(cleanText);
+
+      const isPlain =
+        isPlainNumberOrPercent ||
+        (!hasKaTeXMath && /^[a-zA-Z0-9\s.,!?:;'"()\/\-%+]+$/.test(cleanText));
+
+      if (isPlain && cleanText.length > 0) {
+        return (
+          <span
+            className="math-plain-inline"
+            style={{
+              display: "inline",
+              padding: 0,
+              margin: 0,
+              border: "none",
+              background: "transparent",
+            }}
+          >
+            {cleanText}
+          </span>
+        );
+      }
+
+      return <KaTeXInline latex={decoded} />;
+    }
+
+    // 2. Block math: ```math\n<base64>\n```
+    if (match && match[1]?.toLowerCase() === "math") {
+      const b64 = strVal.trim();
+      const decoded = safeBase64Decode(b64);
+      return (
+        <div className="math-step-block">
+          <KaTeXBlock latex={decoded} />
+        </div>
+      );
+    }
+
+    if (match) {
       const language = match?.[1] ? match[1].toLowerCase() : "text";
-      const value = String(children).replace(/\n$/, "");
+      const value = strVal.replace(/\n$/, "");
       if (language === "think") return null;
+      if (language === "text" || language === "plain" || language === "" || language === "asciidoc") {
+        if (isAsciiTable(value)) {
+          return <AsciiTableCard rawContent={value} />;
+        }
+        if (isAsciiDiagram(value)) {
+          return <AsciiDiagramCard content={value} />;
+        }
+      }
       return <CodeBlock language={language} value={value} />;
     }
-    if (!inline && !match) {
-      return <CodeBlock language="text" value={String(children).replace(/\n$/, "")} />;
+
+    // In react-markdown v9, inline prop is undefined. Multi-line code without language is block code.
+    const isBlockCode = inline === false || (inline === undefined && strVal.includes("\n"));
+    if (isBlockCode) {
+      const value = strVal.replace(/\n$/, "");
+      if (isAsciiTable(value)) {
+        return <AsciiTableCard rawContent={value} />;
+      }
+      if (isAsciiDiagram(value)) {
+        return <AsciiDiagramCard content={value} />;
+      }
+      return <CodeBlock language="text" value={value} />;
     }
-    return <code className="md-inline-code">{children}</code>;
+
+    return <code className="md-inline-code" {...props}>{children}</code>;
   },
+  hr: (props: any) => (
+    <hr
+      {...props}
+      style={{
+        border: "none",
+        borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+        margin: "18px 0",
+        ...props?.style,
+      }}
+    />
+  ),
 };
 
 function PlainMarkdownContent({ content }: { content: string }) {
@@ -6310,36 +6863,9 @@ function PlainMarkdownContent({ content }: { content: string }) {
   );
 }
 
-
 // ── Math-aware markdown renderer ─────────────────────────────────────────────
-// Splits content on paragraph boundaries; renders math paragraphs with KaTeX,
-// prose paragraphs with ReactMarkdown. Gives beautiful step-by-step math layout.
 function MathMarkdownContent({ content }: { content: string }) {
-  const blocks = useMemo(() => parseMathBlocks(content), [content]);
-  return (
-    <div className="markdown-body math-content">
-      {blocks.map((block, i) => {
-        if (block.type === "block-math") {
-          return (
-            <div key={i} className="math-step-block">
-              <KaTeXBlock latex={block.value} />
-            </div>
-          );
-        }
-        if (block.type === "inline-math-para") {
-          return (
-            <p key={i} className="math-inline-para">
-              <MathAwareContent content={block.value} />
-            </p>
-          );
-        }
-        // prose block
-        return block.value.trim() ? (
-          <PlainMarkdownContent key={i} content={block.value} />
-        ) : null;
-      })}
-    </div>
-  );
+  return <PlainMarkdownContent content={content} />;
 }
 
 type MathBlock =
@@ -6350,7 +6876,7 @@ type MathBlock =
 function parseMathBlocks(content: string): MathBlock[] {
   const blocks: MathBlock[] = [];
   // Split on $$ ... $$ first (block math)
-  const parts = content.split(/(\$\$[\s\S]*?\$\$)/);
+  const parts = (content || "").split(/(\$\$[\s\S]*?\$\$)/);
   for (const part of parts) {
     if (part.startsWith("$$") && part.endsWith("$$")) {
       blocks.push({ type: "block-math", value: cleanLatex(part.slice(2, -2).trim()) });
@@ -7508,8 +8034,8 @@ function InlineReasoningStream({
     return phases
       .map((p) => ({
         id: p.id,
-        title: p.text.split("\n")[0].slice(0, 96) || "Thinking",
-        detail: p.text.split("\n").slice(1).join("\n").trim().slice(0, 600),
+        title: (p.text || "").split("\n")[0].slice(0, 96) || "Thinking",
+        detail: (p.text || "").split("\n").slice(1).join("\n").trim().slice(0, 600),
         done: Boolean(p.endedAt),
         timestamp: p.startedAt,
       }))
@@ -8240,11 +8766,12 @@ Be detailed, specific, and practical. Prefer 5-9 short paragraphs or a clear bul
       streaming: true,
       artifact: undefined,
     };
-    setEntries((current) => (
-      replaceEntryId && current.some((e) => e.id === replaceEntryId)
+    setEntries((current) => {
+      const updated = replaceEntryId && current.some((e) => e.id === replaceEntryId)
         ? current.map((e) => (e.id === replaceEntryId ? freshEntry : e))
-        : [...current, freshEntry]
-    ));
+        : [...current, freshEntry];
+      return updated.length > 80 ? updated.slice(-80) : updated;
+    });
     try {
       const response = await fetch(API_TERMINAL_STREAM, {
         method: "POST",
@@ -9100,6 +9627,932 @@ Be detailed, specific, and practical. Prefer 5-9 short paragraphs or a clear bul
   );
 }
 
+const extractAllStages = (str: string) => {
+  if (!str) return [];
+  return [...str.matchAll(/(?:<meera_stage>|_stage>|meera_stage>|stage>)([\s\S]*?)(?:<\/meera_stage>|$)/gi)];
+};
+
+const sanitizeReasoningText = (value: string) => {
+  let sanitized = (value || "")
+    .replace(/<\|"?\|?>/g, '"')
+    .replace(/<\/?(?:meera_stage|stage|meera_thinking|thinking|think|tool_result|thought|reasoning|reason)[^>]*>/gi, "")
+    .replace(/\btool_call_search_web\b\s*/gi, "")
+    .replace(/\btool_call_[^\s]+\b\s*/gi, "")
+    .replace(/\btool_call:searching_web\b[\s\S]*?(?:searching_web_result:\s*"?No result"?|$)/gi, "Searched the web for relevant sources.")
+    .replace(/\btool_result:searching_web_result:\s*"?No result"?/gi, "")
+    .replace(/\bsearching_web_why:\s*"?([^"\n]+)"?/gi, "Search query: $1")
+    .replace(/\bsearching_web_result:\s*"?No result"?/gi, "")
+    .replace(/\btool_call:[^\n]+/gi, "")
+    .replace(/\btool_result:[^\n]+/gi, "")
+    .replace(/,+/g, ",")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  sanitized = sanitized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line && !/^["',\s]+$/.test(line))
+    .join("\n");
+  return sanitized;
+};
+
+const stripLeadingToolCallArtifact = (text: string): string => {
+  const m = /^\s*<tool_call:[a-zA-Z0-9_]+\{/.exec(text);
+  if (!m) return text;
+  let depth = 0;
+  let inStr = false;
+  let i = m[0].length - 1;
+  for (; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '"' && text[i - 1] !== '\\') inStr = !inStr;
+    if (inStr) continue;
+    if (c === '{') depth += 1;
+    else if (c === '}') {
+      depth -= 1;
+      if (depth === 0) { i += 1; break; }
+    }
+  }
+  if (depth !== 0) return text;
+  return text.slice(i).replace(/^\s+/, "");
+};
+
+const looksLikeRawTokenSoup = (segment: string) => {
+  const s = segment.trim();
+  if (!s || /\s/.test(s)) return false;
+  return (s.match(/_/g) || []).length >= 2;
+};
+
+interface MessageParsedStructure {
+  dynamicThinkingTitle: string;
+  dynamicStageDetail: string | undefined;
+  extractedReasoning: string;
+  cleanContent: string;
+  cleanThinking: string;
+  hasStageMatches: boolean;
+}
+
+const messageStructureCache = new Map<string, MessageParsedStructure>();
+
+function computeMessageParsedStructure(content: string, rawThinkingText: string): MessageParsedStructure {
+  let dynamicThinkingTitle = "";
+  let dynamicStageDetail: string | undefined;
+  const stageMatches = extractAllStages(content).length > 0 ? extractAllStages(content) : extractAllStages(rawThinkingText);
+  if (stageMatches.length > 0) {
+    const formattedStages = stageMatches.map((match) => {
+      const stageContent = match[1];
+      const parts = stageContent.split(",");
+      let labelStr = "";
+      let stageStr = "";
+      let detailStr = "";
+      const firstPart = parts[0].split(":")[0].trim();
+      if (firstPart === "searching_web" || firstPart.startsWith("tool_call_search_web")) stageStr = "Searching the web";
+      else if (firstPart === "understanding_context") stageStr = "Understanding context";
+      else if (firstPart === "framing_answer") stageStr = "Framing answer";
+      else if (firstPart === "reasoning") stageStr = "Reasoning Summary";
+      else if (firstPart.startsWith("tool_call_execute_terminal")) stageStr = "Executing terminal command";
+      else if (firstPart.startsWith("tool_call_")) stageStr = "Using tool";
+
+      parts.forEach((part) => {
+        const [key, ...valParts] = part.split(":");
+        if (key.trim() === "label") labelStr = valParts.join(":").trim();
+        if (key.trim() === "detail") detailStr = valParts.join(":").trim();
+      });
+
+      const finalLabel = labelStr || stageStr || "Thinking";
+      return `- **${finalLabel}**: ${detailStr}`;
+    });
+
+    const lastStageContent = stageMatches[stageMatches.length - 1][1];
+    const lastParts = lastStageContent.split(",");
+    let lastLabelStr = "";
+    let lastStageStr = "";
+    const lastFirstPart = lastParts[0].split(":")[0].trim();
+    if (lastFirstPart === "searching_web" || lastFirstPart.startsWith("tool_call_search_web")) lastStageStr = "Searching the web";
+    else if (lastFirstPart === "understanding_context") lastStageStr = "Understanding context";
+    else if (lastFirstPart === "framing_answer") lastStageStr = "Framing answer";
+    else if (lastFirstPart === "reasoning") lastStageStr = "Reasoning Summary";
+    else if (lastFirstPart.startsWith("tool_call_execute_terminal")) lastStageStr = "Executing terminal command";
+    else if (lastFirstPart.startsWith("tool_call_")) lastStageStr = "Using tool";
+
+    lastParts.forEach((part) => {
+      const [key, ...valParts] = part.split(":");
+      if (key.trim() === "label") lastLabelStr = valParts.join(":").trim();
+    });
+    dynamicThinkingTitle = lastLabelStr || lastStageStr || dynamicThinkingTitle;
+    dynamicStageDetail = formattedStages.join("\n");
+  }
+
+  let extractedReasoning = "";
+  let cleanContent = stripLeadingToolCallArtifact(
+    (content || "")
+      .replace(/<\|im_(?:end|start)\|>/gi, "")
+      .replace(/<(?:meera_stage|stage)[^>]*>([\s\S]*?)(?:<\/(?:meera_stage|stage)>|$)/gi, "")
+      .replace(/<tool_call\b[^>]*>[\s\S]*?<\/tool_call>/gi, "")
+  )
+    .replace(/<\|tool_call>[\s\S]*?<tool_call\|>/gi, "")
+    .replace(/<\|tool_call>[\s\S]*$/gi, "")
+    .trim();
+
+  cleanContent = cleanContent.replace(/(?:_stage>|meera_stage>|stage>|meera_stage[^>]*>)([\s\S]*?)(?:<\/meera_stage>|$)/gi, "").trim();
+  cleanContent = cleanContent.replace(/(?:^|\n)[^\n<]{0,60}\blabel\s*:[^\n]{0,120}\bdetail\s*:[^\n]{0,200}\bprogress\s*:\s*\d{1,3}[^\n]*?(?:<\/meera_stage>|<\/stage>|$)/gi, "").trim();
+  cleanContent = stripThinkingBlocks(cleanContent).trim();
+
+  const reasoningRegex = /<(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)(?:>|\s*>)([\s\S]*?)(?:<\/(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)>|$)/gi;
+  cleanContent = cleanContent.replace(reasoningRegex, (_, p1) => {
+    const sanitized = sanitizeReasoningText((p1 || "").trim());
+    if (sanitized) extractedReasoning += sanitized + "\n\n";
+    return "";
+  }).trim();
+
+  cleanContent = cleanContent.replace(/(?:<meera_thinking>|_thinking>|meera_thinking>|thinking>)([\s\S]*?)(?:<\/meera_thinking>|$)/gi, (_, p1) => {
+    const sanitized = sanitizeReasoningText((p1 || "").replace(/<\/?(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)[^>]*>/gi, "").trim());
+    if (sanitized) extractedReasoning += sanitized + "\n\n";
+    return "";
+  }).trim();
+
+  let cleanThinking = sanitizeReasoningText(stripThinkingBlocks(rawThinkingText || "").replace(/(?:<meera_stage>|_stage>|meera_stage>|stage>)([\s\S]*?)(?:<\/meera_stage>|$)/gi, "").trim());
+  cleanThinking = cleanThinking
+    .split(/\n+/)
+    .filter((line) => !looksLikeRawTokenSoup(line))
+    .join("\n")
+    .trim();
+
+  return {
+    dynamicThinkingTitle,
+    dynamicStageDetail,
+    extractedReasoning,
+    cleanContent,
+    cleanThinking,
+    hasStageMatches: stageMatches.length > 0,
+  };
+}
+
+function getCachedMessageStructure(content: string, rawThinkingText: string, isLive: boolean): MessageParsedStructure {
+  if (isLive) {
+    return computeMessageParsedStructure(content, rawThinkingText);
+  }
+  const key = `${content.length}:${content.slice(0, 30)}:${content.slice(-30)}|${(rawThinkingText || "").length}:${(rawThinkingText || "").slice(0, 30)}`;
+  const cached = messageStructureCache.get(key);
+  if (cached) return cached;
+  const computed = computeMessageParsedStructure(content, rawThinkingText);
+  if (messageStructureCache.size > 250) {
+    const firstKey = messageStructureCache.keys().next().value;
+    if (firstKey) messageStructureCache.delete(firstKey);
+  }
+  messageStructureCache.set(key, computed);
+  return computed;
+}
+
+interface MemoizedMessageRowProps {
+  message: Message;
+  previousMessage: Message | null;
+  chatActionFeedback: Record<string, boolean>;
+  isSending: boolean;
+  latestMessage: Message | null;
+  liveThinkingText: string;
+  modelLoadStatus: any;
+  currentSession: any;
+  agentInteractionDialog: any;
+  handleUserDataSubmit: (key: string, answer: string, messageId?: string) => void;
+  openAttachmentViewer: (file: any) => void;
+  openImageViewer: (urls: string[], index: number) => void;
+  handleEditMessage: (content: string) => void;
+  handleCopy: (content: string) => void;
+  handleRetryMessage: (id: string) => void;
+  handleContinueMessage: (id: string) => void;
+  triggerChatActionFeedback: (id: string, action: "edit" | "copy" | "retry") => void;
+  openAgentInteraction: (messageId: string, interaction: any, sessionId?: string) => void;
+}
+
+const MemoizedMessageRow = React.memo(({
+  message,
+  previousMessage,
+  chatActionFeedback,
+  isSending,
+  latestMessage,
+  liveThinkingText,
+  modelLoadStatus,
+  currentSession,
+  agentInteractionDialog,
+  handleUserDataSubmit,
+  openAttachmentViewer,
+  openImageViewer,
+  handleEditMessage,
+  handleCopy,
+  handleRetryMessage,
+  handleContinueMessage,
+  triggerChatActionFeedback,
+  openAgentInteraction
+}: MemoizedMessageRowProps) => {
+
+                            const messageTime = message.ts?.trim() ?? "";
+                            const isUser = message.role === "user";
+                            const editFeedbackKey = `${message.id}:edit`;
+                            const copyFeedbackKey = `${message.id}:copy`;
+                            const retryFeedbackKey = `${message.id}:retry`;
+                            const isEditAck = Boolean(chatActionFeedback[editFeedbackKey]);
+                            const isCopyAck = Boolean(chatActionFeedback[copyFeedbackKey]);
+                            const isRetryAck = Boolean(chatActionFeedback[retryFeedbackKey]);
+                            const visualMessage = message as MessageVisualSnapshot;
+                            const assistantImageUrls = !isUser ? sanitizeImageUrls(visualMessage.imageUrls, MAX_REPLY_IMAGES) : [];
+                            const assistantImagesLoading = !isUser && Boolean(visualMessage.imagesLoading);
+                            const assistantMapPreviewUrl = !isUser ? visualMessage.mapPreviewUrl : undefined;
+                            const hasAssistantMapPreview = Boolean(assistantMapPreviewUrl);
+                            const isStreamingAssistantMessage =
+                              !isUser &&
+                              isSending &&
+                              Boolean(latestMessage) &&
+                              latestMessage?.id === message.id;
+                            const showTurnDivider =
+                              message.role === "assistant" &&
+                              previousMessage?.role === "user" &&
+                              !isStreamingAssistantMessage;
+                            const isLive = isStreamingAssistantMessage;
+                            const rawThinkingText = isLive ? liveThinkingText : visualMessage.thinking;
+                            let cleanContent = message.content;
+                            let dynamicThinkingTitle: string | undefined = undefined;
+                            let dynamicStageDetail: string | undefined = undefined;
+                            let cleanThinking = "";
+                            let hasStageMatches = false;
+                            let currentThinkingText = "";
+
+                            if (!isUser) {
+                              const parsedStructure = getCachedMessageStructure(message.content, rawThinkingText || "", isLive);
+                              cleanContent = parsedStructure.cleanContent;
+                              dynamicThinkingTitle = parsedStructure.dynamicThinkingTitle;
+                              dynamicStageDetail = parsedStructure.dynamicStageDetail;
+                              cleanThinking = parsedStructure.cleanThinking;
+                              hasStageMatches = parsedStructure.hasStageMatches;
+                              currentThinkingText = [cleanThinking, sanitizeReasoningText(parsedStructure.extractedReasoning.trim())].filter(Boolean).join("\n\n");
+
+                              // Strip lingering "meera" or "era" (prompt artifacts) ONLY if they are standalone words or followed by a colon
+                              // This prevents accidentally cutting characters off real words like "Erasmus" or "Erasing"
+                              cleanContent = cleanContent.replace(/^(?:meera|era)(?:\s*:)?\s+/i, "");
+
+                              // Strip completed local model MCQ popup tags from UI
+                              const localMcqRegex = /<meera_mcq>[\s\S]*?<\/meera_mcq>/gi;
+                              cleanContent = cleanContent.replace(localMcqRegex, "").trim();
+
+                              // Hide partial tags while streaming (prevents printing and erasing!)
+                              if (isLive) {
+                                const partials = [
+                                  "<", "<m", "<me", "<mee", "<meer", "<meera", "<meera_", 
+                                  "<meera_s", "<meera_st", "<meera_sta", "<meera_stag", "<meera_stage",
+                                  "<meera_m", "<meera_mc", "<meera_mcq",
+                                  "<meera_t", "<meera_th", "<meera_thi", "<meera_thin", "<meera_think", "<meera_thinki", "<meera_thinkin", "<meera_thinking",
+                                  "_", "_s", "_st", "_sta", "_stag", "_stage", "_m", "_mc", "_mcq",
+                                  "_t", "_th", "_thi", "_thin", "_think", "_thinki", "_thinkin", "_thinking",
+                                  "m", "me", "mee", "meer", "meera", "meera_", "meera_s", "meera_st", "meera_sta", "meera_stag", "meera_stage",
+                                  "meera_t", "meera_th", "meera_thi", "meera_thin", "meera_think", "meera_thinki", "meera_thinkin", "meera_thinking",
+                                  "s", "st", "sta", "stag", "stage",
+                                  "t", "th", "thi", "thin", "think", "thinki", "thinkin", "thinking",
+                                  "e", "er", "era"
+                                ];
+                                if (partials.includes(cleanContent.toLowerCase().trim())) {
+                                  cleanContent = "";
+                                }
+                              }
+                            }
+
+                            const hasThinking = !isUser && (Boolean(currentThinkingText) || Boolean(hasStageMatches) || (isLive && modelLoadStatus?.status === "loading"));
+
+                            // Force any lingering running steps to show as completed once the message stream ends
+                            const displayExecutionEvents = visualMessage.executionEvents ? { ...visualMessage.executionEvents } : undefined;
+                            if (displayExecutionEvents && !isLive) {
+                              for (const key in displayExecutionEvents) {
+                                if (displayExecutionEvents[key].status === "running") {
+                                  displayExecutionEvents[key] = { ...displayExecutionEvents[key], status: "completed", progress: 100 };
+                                }
+                              }
+                            }
+
+                            const shouldShowAssistantVisuals =
+                              !isUser &&
+                              (assistantImageUrls.length > 0 || assistantImagesLoading);
+                            const hasBrowserScreenshot = !isUser && typeof visualMessage.browserScreenshot === "string" && visualMessage.browserScreenshot.length > 0;
+                            const assistantModelSummary = "";
+                            // The thinking section now renders *inside* the same bubble as the
+                            // answer (see below), so the bubble is only ever truly empty when
+                            // there's no thinking, no text, no visuals, and no attachments.
+                            const hasAnyExecutionEvents = !isUser && Boolean(displayExecutionEvents && Object.keys(displayExecutionEvents).length > 0);
+                            const bubbleHasNothingToShow =
+                              !isUser &&
+                              !hasThinking &&
+                              !hasAnyExecutionEvents &&
+                              !cleanContent.trim() &&
+                              !shouldShowAssistantVisuals &&
+                              !hasBrowserScreenshot &&
+                              !(visualMessage.attachments?.length);
+                            const chatBodyHasContent =
+                              isUser
+                                ? (Boolean(cleanContent.trim()) || Boolean(visualMessage.attachments?.length))
+                                : (
+                                    Boolean(cleanContent.trim()) ||
+                                    shouldShowAssistantVisuals ||
+                                    hasBrowserScreenshot ||
+                                    hasAssistantMapPreview ||
+                                    hasAnyExecutionEvents ||
+                                    Boolean(visualMessage.attachments?.length)
+                                  );
+
+                            if (!isUser && bubbleHasNothingToShow && !isLive) {
+                              return null;
+                            }
+
+                            const assistantBodyText = cleanContent;
+
+                            return (
+                              <React.Fragment key={message.id}>
+                                <div
+                                  className={`chat-message ${message.role}${hasThinking ? " chat-thinking" : ""}`}
+                                  data-message-id={message.id}
+                                >
+                                  <div className="chat-stack">
+                                    <div className={`chat-bubble ${bubbleHasNothingToShow ? "is-empty chat-bubble-suppressed" : ""} ${message.isError ? "chat-bubble-error bg-red-500/10 border border-red-500/30 p-3 rounded-xl shadow-sm ring-1 ring-red-500/20" : ""}`}>
+                                      <div className={`chat-body ${chatBodyHasContent ? "" : "chat-body-empty"} ${message.isError ? "text-red-500 font-medium" : ""}`}>
+                                        {(() => {
+  // Always render this message's own stored executionEvents, never the
+  // shared global `executionEvents` state. Every write site updates both
+  // simultaneously (see setExecutionEvents + updateMessageVisualSnapshot
+  // calls above), so the per-message copy is always at least as fresh --
+  // and unlike the global copy, it can never hold a *previous* message's
+  // leftover running rows bleeding into a brand new live message before
+  // that message's own first event has arrived.
+  let eventsToRender = displayExecutionEvents ? { ...displayExecutionEvents } : undefined;
+  if (eventsToRender) {
+    for (const key of Object.keys(eventsToRender)) {
+      if (eventsToRender[key].title === "Response generated") {
+        delete eventsToRender[key];
+      }
+    }
+  }
+  const hasEventsToRender = eventsToRender && Object.keys(eventsToRender).length > 0;
+
+  // Once the answer itself contains a terminal block, that block renders its
+  // own compulsory task heading (the command, e.g. "Get-CimInstance
+  // Win32_LogicalDisk...") via CommandRunCard below. Showing the separate
+  // boxed-off "Reasoning" tree on top of that would just repeat the same
+  // task as two stacked panels. So the terminal case collapses to a single
+  // flow: a normal opening line, then the terminal card carrying the task
+  // heading, then the rest of the answer -- the way Claude interleaves
+  // prose with tool calls instead of prefacing them with a reasoning card.
+  const answerHasTerminalBlock = !isUser && /Terminal result\s*\n\s*\n\s*Command:\s*```/i.test(cleanContent);
+
+  const baseTime = typeof (message as any).created_at === "string" ? new Date((message as any).created_at).getTime() : 
+                   typeof (message as any).created_at === "number" ? (message as any).created_at : Date.now();
+
+  const parsedPhases = (typeof currentThinkingText === "string" && currentThinkingText.trim())
+    ? currentThinkingText.split(/\n\n+/).filter(Boolean).map((block, i, arr) => ({
+        id: `think-phase-${i}`,
+        text: block,
+        startedAt: baseTime + i,
+        endedAt: (!isLive || i < arr.length - 1) ? baseTime + i + 1 : undefined,
+      }))
+    : undefined;
+
+  const hasPhases = parsedPhases && parsedPhases.length > 0;
+
+  if (!isUser && !answerHasTerminalBlock && (hasPhases || hasEventsToRender)) {
+    return (
+      <InlineReasoningStream
+        live={isLive}
+        phases={parsedPhases}
+        executionEvents={eventsToRender}
+        hasAnswerContent={Boolean(cleanContent.trim()) || shouldShowAssistantVisuals || hasBrowserScreenshot}
+        title={dynamicThinkingTitle}
+      />
+    );
+  }
+
+  return null;
+})()}
+                                        {visualMessage.attachments?.length ? (
+                                          <div className="chat-attachment-tray" aria-label="Attached files">
+                                            {visualMessage.attachments.map((file) => {
+                                              const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.name);
+                                              const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+                                              const resolvedType = file.type && file.type !== "application/octet-stream" ? file.type : (isPdf ? "application/pdf" : isImage ? "image/png" : "application/octet-stream");
+                                              // @ts-ignore
+                                              const fileUrl = file.content_base64 ? `data:${resolvedType};base64,${file.content_base64}` : (file.blobUrl || null);
+
+                                              if (isImage && fileUrl) {
+                                                return (
+                                                  <div
+                                                    className="chat-attachment-chip has-image-preview"
+                                                    key={`${message.id}-${file.name}`}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-label={`Preview ${file.name}`}
+                                                    onClick={() => {
+                                                      if (file.content_base64) {
+                                                        openAttachmentViewer(file);
+                                                      }
+                                                    }}
+                                                    onKeyDown={(event) => {
+                                                      if (event.key === "Enter" || event.key === " ") {
+                                                        event.preventDefault();
+                                                        openAttachmentViewer(file);
+                                                      }
+                                                    }}
+                                                  >
+                                                    <div className="chat-attachment-image-container">
+                                                      <img
+                                                        src={fileUrl}
+                                                        alt={file.name}
+                                                        className="chat-attachment-image-preview"
+                                                        loading="lazy"
+                                                      />
+                                                    </div>
+                                                    <span className="chat-attachment-copy">
+                                                      <span className="chat-attachment-name">{file.name}</span>
+                                                      <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
+                                                    </span>
+                                                  </div>
+                                                );
+                                              }
+
+                                              if (isPdf && fileUrl) {
+                                                return (
+                                                  <div
+                                                    className="chat-attachment-chip has-image-preview"
+                                                    key={`${message.id}-${file.name}`}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-label={`Preview ${file.name}`}
+                                                    onClick={() => {
+                                                      if (file.content_base64) {
+                                                        openAttachmentViewer(file);
+                                                      }
+                                                    }}
+                                                    onKeyDown={(event) => {
+                                                      if (event.key === "Enter" || event.key === " ") {
+                                                        event.preventDefault();
+                                                        openAttachmentViewer(file);
+                                                      }
+                                                    }}
+                                                  >
+                                                    <div className="chat-attachment-image-container has-iframe-preview">
+                                                      <iframe
+                                                        src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                        title={file.name}
+                                                        scrolling="no"
+                                                      />
+                                                    </div>
+                                                    <span className="chat-attachment-copy">
+                                                      <span className="chat-attachment-name">{file.name}</span>
+                                                      <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
+                                                    </span>
+                                                  </div>
+                                                );
+                                              }
+
+                                              return (
+                                                <div
+                                                  className={`chat-attachment-chip ${file.content_base64 ? "is-previewable" : ""}`}
+                                                  key={`${message.id}-${file.name}`}
+                                                  role={file.content_base64 ? "button" : undefined}
+                                                  tabIndex={file.content_base64 ? 0 : undefined}
+                                                  aria-label={file.content_base64 ? `Preview ${file.name}` : undefined}
+                                                  onClick={() => {
+                                                    if (file.content_base64) {
+                                                      openAttachmentViewer(file);
+                                                    }
+                                                  }}
+                                                  onKeyDown={(event) => {
+                                                    if ((event.key === "Enter" || event.key === " ") && file.content_base64) {
+                                                      event.preventDefault();
+                                                      openAttachmentViewer(file);
+                                                    }
+                                                  }}
+                                                >
+                                                  <span className="material-symbols-outlined chat-attachment-icon" aria-hidden="true">
+                                                    description
+                                                  </span>
+                                                  <span className="chat-attachment-copy">
+                                                    <span className="chat-attachment-name">{file.name}</span>
+                                                    <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
+                                                  </span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : null}
+                                        {hasAssistantMapPreview ? (
+                                          <div className="chat-map-preview">
+                                            <div className="chat-map-preview-label">Map preview</div>
+                                            <div className="chat-map-preview-frame-wrap">
+                                              <iframe
+                                                className="chat-map-preview-frame"
+                                                src={assistantMapPreviewUrl}
+                                                title="Map preview"
+                                                loading="lazy"
+                                                allowFullScreen
+                                              />
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                        {shouldShowAssistantVisuals ? (
+                                          <AssistantVisualStrip
+                                            imageUrls={assistantImageUrls}
+                                            loading={assistantImagesLoading}
+                                            onOpenImage={openImageViewer}
+                                          />
+                                        ) : null}
+                                        {hasBrowserScreenshot ? (
+                                          <div className="chat-browser-screenshot" style={{ marginTop: 12, overflow: "hidden", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}>
+                                            <img
+                                              src={`data:image/png;base64,${visualMessage.browserScreenshot}`}
+                                              alt="Browser automation capture"
+                                              style={{ display: "block", width: "100%", maxHeight: 420, objectFit: "contain" }}
+                                              loading="lazy"
+                                            />
+                                          </div>
+                                        ) : null}
+                                        {!isUser && visualMessage.agentMonitor ? (
+                                          <AgentSwarmMonitor monitor={visualMessage.agentMonitor} />
+                                        ) : null}
+                                        {!isUser && isLive ? (
+                                          <div className="live-assistant-scan-text">
+                                            <MarkdownContent content={assistantBodyText} documents={visualMessage.documents} />
+                                          </div>
+                                        ) : isUser ? (
+                                          <CollapsibleUserMessage
+                                            content={message.content || ""}
+                                            messageId={message.id}
+                                            timestamp={message.ts}
+                                            onEditPrompt={(text) => {
+                                              setInput(text);
+                                              setInputCaret(text.length);
+                                              window.requestAnimationFrame(() => chatInputRef.current?.focus());
+                                            }}
+                                          />
+                                        ) : (
+                                          <MarkdownContent content={assistantBodyText} documents={visualMessage.documents} />
+                                        )}
+                                        {visualMessage.agentInteraction ? (
+                                          (visualMessage.agentInteraction.type === "choice" || visualMessage.agentInteraction.type === "multi_choice" || visualMessage.agentInteraction.key.startsWith("local_mcq_")) && !agentInteractionDialog ? (
+                                            <McqInteractionCard interaction={visualMessage.agentInteraction} answer={currentSession?.taskFacts?.[visualMessage.agentInteraction.key] as string | undefined} />
+                                          ) : (
+                                            <AgentInteractionSummary
+                                              interaction={visualMessage.agentInteraction}
+                                              // @ts-ignore
+                                              onOpen={() => openAgentInteraction(message.id, visualMessage.agentInteraction!, currentSession?.id)}
+                                            />
+                                          )
+                                        ) : visualMessage.userDataRequest ? (
+                                          <div className="user-data-request-box">
+                                            <span className="user-data-request-kicker">Meera needs one detail</span>
+                                            <p className="user-data-request-prompt">{visualMessage.userDataRequest.prompt}</p>
+                                            <div className="user-data-request-actions">
+                                              {visualMessage.userDataRequest.options && visualMessage.userDataRequest.options.length > 0 ? (
+                                                visualMessage.userDataRequest.options.map((opt) => (
+                                                  <button
+                                                    key={opt}
+                                                    type="button"
+                                                    className="user-data-request-option"
+                                                    disabled={isSending}
+                                                    onClick={() => handleUserDataSubmit(visualMessage.userDataRequest!.key, opt, message.id)}
+                                                  >
+                                                    {opt}
+                                                  </button>
+                                                ))
+                                              ) : (
+                                                <form
+                                                  className="user-data-request-form"
+                                                  onSubmit={(event) => {
+                                                    event.preventDefault();
+                                                    const answer = new FormData(event.currentTarget).get("answer");
+                                                    if (typeof answer === "string") {
+                                                      handleUserDataSubmit(visualMessage.userDataRequest!.key, answer, message.id);
+                                                    }
+                                                  }}
+                                                >
+                                                  <input
+                                                    name="answer"
+                                                    type="text"
+                                                    placeholder="Type your answer"
+                                                    autoComplete="off"
+                                                    disabled={isSending}
+                                                  />
+                                                  <button type="submit" disabled={isSending}>Continue</button>
+                                                </form>
+                                              )}
+                                            </div>
+                                            {(!visualMessage.userDataRequest.options || visualMessage.userDataRequest.options.length === 0) ? (
+                                              <p className="user-data-request-help">Your answer stays attached to this task and Meera will continue from the completed steps.</p>
+                                            ) : null}
+                                          </div>
+                                        ) : null}
+                                      {!isUser && assistantModelSummary ? (
+                                        <div className="chat-model-caption" aria-label={`Model used: ${assistantModelSummary}`}>
+                                          <span className="chat-model-caption-label">Model used</span>
+                                          <strong className="chat-model-caption-value">{assistantModelSummary}</strong>
+                                        </div>
+                                      ) : null}
+                                      {!isUser && !(Boolean(message.content.trim()) || shouldShowAssistantVisuals) ? null : (
+                                        <div className="chat-meta-row chat-meta-row-inline">
+                                          <div className="chat-meta-actions">
+                                            {isUser && (
+                                              <button
+                                                className={`chat-meta-btn ${isEditAck ? "is-ack" : ""}`}
+                                                type="button"
+                                                aria-label="Edit message"
+                                                title="Edit"
+                                                onClick={() => {
+                                                  handleEditMessage(message.content);
+                                                  // @ts-ignore
+                                                  triggerChatActionFeedback(message.id, "edit");
+                                                }}
+                                              >
+                                                {isEditAck ? (
+                                                  <span className="material-symbols-outlined" aria-hidden="true">check</span>
+                                                ) : (
+                                                  <UiIcon name="edit.svg" />
+                                                )}
+                                                <span className="meera-btn-label">Edit</span>
+                                              </button>
+                                            )}
+                                            <button
+                                              className={`chat-meta-btn ${isCopyAck ? "is-ack is-copy-ack" : ""}`}
+                                              type="button"
+                                              aria-label="Copy message"
+                                              title="Copy"
+                                              onClick={() => {
+                                                void handleCopy(isUser ? message.content : cleanContent);
+                                                // @ts-ignore
+                                                triggerChatActionFeedback(message.id, "copy");
+                                              }}
+                                            >
+                                              {isCopyAck ? (
+                                                <span className="material-symbols-outlined" aria-hidden="true">check</span>
+                                              ) : (
+                                                <UiIcon name="copy.svg" />
+                                              )}
+                                              <span className="meera-btn-label">Copy</span>
+                                            </button>
+                                            {!isUser && (
+                                              <button
+                                                className={`chat-meta-btn ${isRetryAck ? "is-ack" : ""}`}
+                                                type="button"
+                                                aria-label="Retry message"
+                                                title="Retry"
+                                                onClick={() => {
+                                                  // @ts-ignore
+                                                  handleRetryMessage(message.id);
+                                                  // @ts-ignore
+                                                  triggerChatActionFeedback(message.id, "retry");
+                                                }}
+                                              >
+                                                {isRetryAck ? (
+                                                  <span className="material-symbols-outlined" aria-hidden="true">check</span>
+                                                ) : (
+                                                  <UiIcon name="retry.svg" />
+                                                )}
+                                                <span className="meera-btn-label">Retry</span>
+                                              </button>
+                                            )}
+                                            {!isUser && (message.status === "stopped" || message.content.includes("Response cancelled.")) && (
+                                              <button
+                                                className={`chat-meta-btn`}
+                                                type="button"
+                                                aria-label="Continue message"
+                                                title="Continue"
+                                                onClick={() => {
+                                                  handleContinueMessage(message.id || "");
+                                                }}
+                                              >
+                                                <span className="material-symbols-outlined" aria-hidden="true">play_arrow</span>
+                                                <span className="meera-btn-label">Continue</span>
+                                              </button>
+                                            )}
+                                          </div>
+                                          <span className="chat-meta-time">{messageTime}</span>
+                                        </div>
+                                      )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                {showTurnDivider ? (
+                                  <div className="chat-turn-divider" aria-hidden="true">
+                                    <span />
+                                  </div>
+                                ) : null}
+                              </React.Fragment>
+                            
+  );
+}, (prevProps, nextProps) => {
+  const isTargetMessage =
+    nextProps.latestMessage?.id === nextProps.message.id ||
+    prevProps.latestMessage?.id === prevProps.message.id;
+
+  if (isTargetMessage) {
+    if (
+      prevProps.latestMessage !== nextProps.latestMessage ||
+      prevProps.liveThinkingText !== nextProps.liveThinkingText ||
+      prevProps.isSending !== nextProps.isSending
+    ) {
+      return false;
+    }
+  }
+
+  // Check feedback ONLY for this message's own action keys
+  const msgId = nextProps.message.id;
+  if (
+    prevProps.chatActionFeedback?.[`${msgId}:edit`] !== nextProps.chatActionFeedback?.[`${msgId}:edit`] ||
+    prevProps.chatActionFeedback?.[`${msgId}:copy`] !== nextProps.chatActionFeedback?.[`${msgId}:copy`] ||
+    prevProps.chatActionFeedback?.[`${msgId}:retry`] !== nextProps.chatActionFeedback?.[`${msgId}:retry`]
+  ) {
+    return false;
+  }
+
+  // Check currentSession only for ID change or this message's interaction fact
+  if (prevProps.currentSession?.id !== nextProps.currentSession?.id) {
+    return false;
+  }
+  const interactionKey = nextProps.message.agentInteraction?.key;
+  if (
+    interactionKey &&
+    prevProps.currentSession?.taskFacts?.[interactionKey] !== nextProps.currentSession?.taskFacts?.[interactionKey]
+  ) {
+    return false;
+  }
+
+  return (
+    prevProps.message === nextProps.message &&
+    prevProps.previousMessage === nextProps.previousMessage &&
+    prevProps.modelLoadStatus === nextProps.modelLoadStatus &&
+    prevProps.agentInteractionDialog === nextProps.agentInteractionDialog
+  );
+});
+
+interface ChatOrbitRailProps {
+  railSlots: Array<{
+    slotIndex: number;
+    message: Message | null;
+    headline: string;
+    meta: string;
+    messageId: string | null | undefined;
+  }>;
+  railActiveId: string | null;
+  onSelect: (messageId: string) => void;
+}
+
+const ChatOrbitRail = React.memo(function ChatOrbitRail({
+  railSlots,
+  railActiveId,
+  onSelect,
+}: ChatOrbitRailProps) {
+  const [chatRailHoverIndex, setChatRailHoverIndex] = useState<number | null>(null);
+  const [chatRailHoverPosition, setChatRailHoverPosition] = useState<number | null>(null);
+  const [chatRailHovered, setChatRailHovered] = useState(false);
+  const chatRailRef = useRef<HTMLDivElement | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      const count = railSlots.length;
+      if (count === 0) return;
+      const clientY = event.clientY;
+      const currentTarget = event.currentTarget;
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      rafIdRef.current = requestAnimationFrame(() => {
+        const rect = currentTarget.getBoundingClientRect();
+        const ratio = (clientY - rect.top) / (rect.height || 1);
+        const clamped = Math.min(1, Math.max(0, ratio));
+        const hoverPosition = count === 1 ? 0 : clamped * (count - 1);
+        const nextIndex = Math.min(count - 1, Math.max(0, Math.round(hoverPosition)));
+        setChatRailHoverPosition(hoverPosition);
+        setChatRailHoverIndex(nextIndex);
+      });
+    },
+    [railSlots.length]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      className={`chat-orbit-rail ${chatRailHovered ? "is-hovered" : ""}`}
+      ref={chatRailRef}
+      onMouseEnter={() => setChatRailHovered(true)}
+      onMouseLeave={() => {
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+        }
+        setChatRailHoverIndex(null);
+        setChatRailHoverPosition(null);
+        setChatRailHovered(false);
+      }}
+      onMouseMove={handleMouseMove}
+      aria-label="Conversation navigator"
+    >
+      {railSlots.map((slot, index) => {
+        const { message, headline, meta, messageId } = slot;
+        const isActive = Boolean(messageId && messageId === railActiveId);
+        const isHovered = index === chatRailHoverIndex;
+        const isDisabled = !messageId;
+        const hoverPosition = chatRailHoverPosition ?? chatRailHoverIndex ?? null;
+        const distance = hoverPosition === null ? null : Math.abs(hoverPosition - index);
+        const hoverBoost = distance === null ? 0 : Math.exp(-distance * distance * 0.55);
+        const baseBoost = isActive ? 0.22 : 0;
+        const dockBoost = isDisabled ? 0 : Math.max(baseBoost, hoverBoost);
+        const dockScale = 1 + dockBoost * 0.38;
+        const dockWidth = 12 + dockBoost * 18;
+        const dockHeight = 2 + dockBoost * 1.25;
+        const dockShift = dockBoost * 6.5;
+        const dockLineShift = dockBoost * 3.2;
+        const dockGlow = 10 + dockBoost * 20;
+        const dockGlowStrong = dockBoost * 24;
+        const dockOpacity = isDisabled ? 0.25 : 0.7 + dockBoost * 0.3;
+        const baseColor = message?.role === "user" ? "rgba(18, 196, 152, 0.98)" : "rgba(38, 126, 230, 0.98)";
+        const activeColor = message?.role === "user" ? "rgba(12, 182, 138, 1)" : "rgba(32, 120, 224, 1)";
+        const hoverColor = message?.role === "user" ? "rgba(26, 216, 170, 1)" : "rgba(70, 160, 255, 1)";
+        const dockStyle = {
+          "--dock-scale": dockScale.toFixed(3),
+          "--dock-width": `${dockWidth.toFixed(1)}px`,
+          "--dock-height": `${dockHeight.toFixed(1)}px`,
+          "--dock-shift": `${dockShift.toFixed(1)}px`,
+          "--dock-line-shift": `${dockLineShift.toFixed(1)}px`,
+          "--dock-glow": `${dockGlow.toFixed(1)}px`,
+          "--dock-glow-strong": `${dockGlowStrong.toFixed(1)}px`,
+          "--dock-opacity": dockOpacity.toFixed(2),
+          "--dock-color": baseColor,
+        } as React.CSSProperties;
+        if (isActive) {
+          (dockStyle as Record<string, string>)["--dock-color"] = activeColor;
+        }
+        if (isHovered) {
+          (dockStyle as Record<string, string>)["--dock-color"] = hoverColor;
+        }
+        if (isDisabled) {
+          (dockStyle as Record<string, string>)["--dock-color"] = "rgba(255, 255, 255, 0.35)";
+        }
+        return (
+          <div key={`rail-${index}`} className="chat-orbit-slot">
+            <button
+              className={`chat-orbit-mark ${isActive ? "is-active" : ""} ${isHovered ? "is-hover" : ""} ${isDisabled ? "is-disabled" : ""}`}
+              type="button"
+              style={dockStyle}
+              onMouseEnter={() => {
+                setChatRailHoverIndex(index);
+                setChatRailHoverPosition(index);
+              }}
+              onFocus={() => {
+                setChatRailHoverIndex(index);
+                setChatRailHoverPosition(index);
+              }}
+              onClick={() => {
+                if (messageId) {
+                  onSelect(messageId);
+                }
+              }}
+              aria-label={messageId ? `Jump to message: ${headline}` : "No message"}
+              disabled={isDisabled}
+            >
+              <span className="chat-orbit-line" aria-hidden="true" />
+            </button>
+            {isHovered && messageId && (
+              <div className="chat-orbit-preview" aria-hidden="true">
+                <span className="chat-orbit-title">{headline}</span>
+                <span className="chat-orbit-meta">{meta}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
+const TopbarClock = React.memo(function TopbarClock() {
+  const [time, setTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setTime(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const main = useMemo(() => time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), [time]);
+  const seconds = useMemo(() => time.toLocaleTimeString([], { second: "2-digit" }), [time]);
+
+  return (
+    <div className="topbar-time" aria-label="Current time">
+      <span className="topbar-time-main">{main}</span>
+      <span className="topbar-time-seconds">{seconds}</span>
+    </div>
+  );
+});
+
+
 function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth?: () => void }) {
   const windowControls = (window as { meera?: { windowControls?: { minimize: () => void; maximize: () => void; close: () => void } } }).meera
     ?.windowControls;
@@ -9107,6 +10560,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const isMac = useMemo(() => /mac/i.test(navigator.platform), []);
   // New Auth System
   const { user: authUserNew, isAuthenticated: authProviderAuthenticated, loading: authLoading } = useAuth();
+  const { triggerTransition } = useLayoutTransition();
   
   // Open auth modal handler
   const handleOpenAuth = () => {
@@ -9130,17 +10584,28 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   useEffect(() => {
     let cancelled = false;
     const initFirebaseConfig = async () => {
-      const savedConfig = await loadFirebaseConfig();
-      if (cancelled) {
-        return;
+      try {
+        const savedConfig = await loadFirebaseConfig();
+        if (cancelled) {
+          return;
+        }
+        if (savedConfig) {
+          setFirebaseConfig(savedConfig);
+        } else {
+          const envConfig = normalizeFirebaseConfig(FIREBASE_ENV_CONFIG);
+          setFirebaseConfig(envConfig);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setFirebaseSetupError(err?.message || "Failed to load Firebase configuration");
+          const envConfig = normalizeFirebaseConfig(FIREBASE_ENV_CONFIG);
+          setFirebaseConfig(envConfig);
+        }
+      } finally {
+        if (!cancelled) {
+          setFirebaseConfigReady(true);
+        }
       }
-      if (savedConfig) {
-        setFirebaseConfig(savedConfig);
-      } else {
-        const envConfig = normalizeFirebaseConfig(FIREBASE_ENV_CONFIG);
-        setFirebaseConfig(envConfig);
-      }
-      setFirebaseConfigReady(true);
     };
     void initFirebaseConfig();
     return () => {
@@ -9261,15 +10726,24 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       console.error("Failed to generate Blob URL for attachment:", e);
     }
 
-    setAttachmentViewerState({
-      name: attachment.name,
-      type: mimeType,
-      size: attachment.size,
-      contentBase64: attachment.content_base64,
-      blobUrl: blobUrl || `data:${mimeType};base64,${attachment.content_base64}`,
-      preview: null,
-      previewLoading: true,
-      previewError: null,
+    setAttachmentViewerState((current) => {
+      if (current && current.blobUrl && current.blobUrl.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(current.blobUrl);
+        } catch {
+          // ignore revocation errors
+        }
+      }
+      return {
+        name: attachment.name,
+        type: mimeType,
+        size: attachment.size,
+        contentBase64: attachment.content_base64 || "",
+        blobUrl: blobUrl || `data:${mimeType};base64,${attachment.content_base64}`,
+        preview: null,
+        previewLoading: true,
+        previewError: null,
+      };
     });
     resetAttachmentViewerControls();
     void (async () => {
@@ -9327,6 +10801,144 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     });
     resetAttachmentViewerControls();
   }, [resetAttachmentViewerControls]);
+
+  const openDocumentFromUrl = useCallback(async (url: string, name?: string, format?: string) => {
+    const fullUrl = url.startsWith("http") ? url : `${API_BASE}${url}`;
+    const filename = name || url.split("/").pop()?.split("?")[0] || "document";
+    const ext = (format || filename.split(".").pop() || "").toLowerCase();
+
+    // 1. HTML documents open directly in MeeraBrowserShell
+    if (ext === "html" || ext === "htm") {
+      void openInMeeraBrowserShell(fullUrl);
+      return;
+    }
+
+    const mimeType = (
+      ext === "pdf" ? "application/pdf" :
+      ext === "docx" || ext === "doc" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" :
+      ext === "md" || ext === "markdown" ? "text/markdown" :
+      ext === "txt" ? "text/plain" :
+      "application/octet-stream"
+    );
+
+    // Initial state: show modal with loading indicator
+    setAttachmentViewerState((current) => {
+      if (current && current.blobUrl && current.blobUrl.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(current.blobUrl);
+        } catch {
+          // ignore revocation errors
+        }
+      }
+      return {
+        name: filename,
+        type: mimeType,
+        size: 0,
+        contentBase64: "",
+        blobUrl: "",
+        preview: null,
+        previewLoading: true,
+        previewError: null,
+      };
+    });
+    resetAttachmentViewerControls();
+
+    let blobUrl = "";
+    try {
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to load document (${response.status})`);
+      }
+      const blob = await response.blob();
+      blobUrl = URL.createObjectURL(blob);
+
+      // Convert blob to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.includes(",") ? res.split(",")[1] : res);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      setAttachmentViewerState({
+        name: filename,
+        type: blob.type || mimeType,
+        size: blob.size,
+        contentBase64: base64,
+        blobUrl: blobUrl,
+        preview: null,
+        previewLoading: ext !== "pdf" && ext !== "md" && ext !== "txt",
+        previewError: null,
+      });
+
+      // If document needs structured preview (like DOCX), fetch preview metadata
+      if (ext === "docx" || ext === "doc" || ext === "pptx" || ext === "xlsx") {
+        try {
+          const previewRes = await fetch(`${API_BASE}/api/files/preview`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: filename,
+              type: blob.type || mimeType,
+              size: blob.size,
+              content_base64: base64,
+            }),
+          });
+          if (previewRes.ok) {
+            const preview = (await previewRes.json()) as AttachmentPreviewData;
+            setAttachmentViewerState((current) => {
+              if (!current || current.name !== filename) return current;
+              return { ...current, preview, previewLoading: false, previewError: null };
+            });
+          } else {
+            setAttachmentViewerState((current) => {
+              if (!current || current.name !== filename) return current;
+              return { ...current, previewLoading: false };
+            });
+          }
+        } catch {
+          setAttachmentViewerState((current) => {
+            if (!current || current.name !== filename) return current;
+            return { ...current, previewLoading: false };
+          });
+        }
+      }
+    } catch (err) {
+      if (blobUrl && blobUrl.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          // ignore revocation errors
+        }
+      }
+      setAttachmentViewerState((current) => {
+        if (!current || current.name !== filename) return current;
+        return {
+          ...current,
+          previewLoading: false,
+          previewError: err instanceof Error ? err.message : "Unable to load document preview.",
+        };
+      });
+    }
+  }, [resetAttachmentViewerControls]);
+
+  useEffect(() => {
+    (window as any).__meeraOpenDocument = openDocumentFromUrl;
+    const handleEvent = (e: any) => {
+      const { url, filename, format } = e.detail || {};
+      if (url) {
+        void openDocumentFromUrl(url, filename, format);
+      }
+    };
+    window.addEventListener("meera:open-document", handleEvent);
+    return () => {
+      delete (window as any).__meeraOpenDocument;
+      window.removeEventListener("meera:open-document", handleEvent);
+    };
+  }, [openDocumentFromUrl]);
 
   const changeViewerImage = useCallback((offset: number) => {
     setImageViewerState((current) => {
@@ -9446,6 +11058,11 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   useEffect(() => {
     return () => {
       Object.values(chatActionTimers.current).forEach((timer) => window.clearTimeout(timer));
+      if (chatLoadingTimer.current) window.clearTimeout(chatLoadingTimer.current);
+      if (hfTokenSuccessTimer.current) window.clearTimeout(hfTokenSuccessTimer.current);
+      if (appToastTimer.current) window.clearTimeout(appToastTimer.current);
+      if (authDelayRef.current) window.clearTimeout(authDelayRef.current);
+      if (activeAbortRef.current) activeAbortRef.current.abort();
     };
   }, []);
 
@@ -9851,7 +11468,16 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const [modelLoadError, setModelLoadError] = useState("");
   const [modelLoadFailures, setModelLoadFailures] = useState<Record<string, number>>({});
   const lastModelLoadErrorRef = useRef<string | null>(null);
-  const [theme, setTheme] = useState<ThemeMode>(() => (localStorage.getItem(STORAGE_THEME) as ThemeMode | null) ?? "dark");
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem(STORAGE_THEME);
+    if (!saved || saved === "dark") {
+      try {
+        localStorage.setItem(STORAGE_THEME, "light");
+      } catch {}
+      return "light";
+    }
+    return saved as ThemeMode;
+  });
   const [capabilities, setCapabilities] = useState<CapabilityResponse>({});
   const [inputHistory, setInputHistory] = useState<string[]>(() => parseJsonSafe<string[]>(localStorage.getItem(STORAGE_HISTORY) ?? "") ?? []);
   const [terminalHistory, setTerminalHistory] = useState<string[]>(() => parseJsonSafe<string[]>(localStorage.getItem(STORAGE_TERMINAL_HISTORY) ?? "") ?? []);
@@ -9873,12 +11499,11 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const voiceRepliesEnabledRef = useRef(false);
   const [desktopApps, setDesktopApps] = useState<DesktopApp[]>([]);
   const [desktopEvents, setDesktopEvents] = useState<DesktopAppEvent[]>([]);
-  const [desktopRefreshedAt, setDesktopRefreshedAt] = useState(0);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingSessionName, setEditingSessionName] = useState("");
-  const [clockNow, setClockNow] = useState(() => new Date());
   const [projects, setProjects] = useState<ProjectItem[]>(() => loadProjectState(null).projects);
   const [activeProjectId, setActiveProjectId] = useState<string>(() => loadProjectState(null).activeProjectId);
+  const [activePersonalityId, setActivePersonalityId] = useState<string | null>(null);
   const [projectsError, setProjectsError] = useState("");
   const [projectsModalOpen, setProjectsModalOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("");
@@ -10023,9 +11648,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const [chatQuickPanelOpen, setChatQuickPanelOpen] = useState(false);
   const [chatShareTargetsOpen, setChatShareTargetsOpen] = useState(false);
   const [chatShareBusyTargetId, setChatShareBusyTargetId] = useState<string | null>(null);
-  const [chatRailHoverIndex, setChatRailHoverIndex] = useState<number | null>(null);
-  const [chatRailHoverPosition, setChatRailHoverPosition] = useState<number | null>(null);
-  const [chatRailHovered, setChatRailHovered] = useState(false);
   const [shortcuts, setShortcuts] = useState<Record<ShortcutActionId, string>>(() => {
     const stored = parseJsonSafe<Record<string, string>>(localStorage.getItem(STORAGE_SHORTCUTS) ?? "");
     return { ...DEFAULT_SHORTCUTS, ...(stored ?? {}) } as Record<ShortcutActionId, string>;
@@ -10045,7 +11667,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const chatGhostRef = useRef<HTMLDivElement | null>(null);
   const chatAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const chatQuickPanelRef = useRef<HTMLDivElement | null>(null);
-  const chatRailRef = useRef<HTMLDivElement | null>(null);
   const settingsSearchRef = useRef<HTMLInputElement | null>(null);
   const settingsContentRef = useRef<HTMLDivElement | null>(null);
   const settingsNavListRef = useRef<HTMLDivElement | null>(null);
@@ -10157,11 +11778,12 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     [chatInputFocused, input, inputCaret],
   );
   const inlineGhostSuffix = inlineWordCompletion?.suffix ?? "";
-  const detectedComposerIntent = useMemo(() => detectComposerIntent(input), [input]);
+  const [mathMode, setMathMode] = useState<MathModeSetting>("auto");
+  const detectedComposerIntent = useMemo(() => detectComposerIntent(input, mathMode), [input, mathMode]);
   const activeComposerIntent = composerIntent === "auto" ? detectedComposerIntent : composerIntent;
   const normalizedTransientThinking = useMemo(
     () =>
-      transientThinkingText
+      (transientThinkingText || "")
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => {
@@ -10279,7 +11901,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     
     if (nextState !== isFeedNearBottomRef.current) {
       isFeedNearBottomRef.current = nextState;
-      setIsFeedNearBottom(nextState);
     }
   };
 
@@ -10297,7 +11918,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
     // Force instant scroll — push all prior history above the viewport.
     // Place the new message right below the header bar.
-    const desiredTopOffset = 95;
+    const desiredTopOffset = 104;
     const feedRect = feed.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
     const nextTop = Math.max(0, targetRect.top - feedRect.top + feed.scrollTop - desiredTopOffset);
@@ -10499,7 +12120,8 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     const seenFolders = new Set<string>();
     
     modelStatus.forEach((entry) => {
-      if (entry.folder) {
+      const isCloud = entry.model_type === "cloud" || (entry.folder && entry.folder.startsWith("cloud/"));
+      if (entry.folder && !isCloud) {
         if (seenFolders.has(entry.folder)) return;
         seenFolders.add(entry.folder);
       }
@@ -10507,7 +12129,8 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     });
     
     localModelStatus.forEach((entry) => {
-      if (entry.folder) {
+      const isCloud = entry.model_type === "cloud" || (entry.folder && entry.folder.startsWith("cloud/"));
+      if (entry.folder && !isCloud) {
         if (seenFolders.has(entry.folder)) return;
         seenFolders.add(entry.folder);
       }
@@ -10701,7 +12324,8 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
   useEffect(() => {
     const selectedEntry = getModelEntry(selectedModel);
-    if (selectedEntry?.present && selectedEntry.chat_capable !== false) {
+    const isCloudModel = selectedEntry?.model_type === "cloud" || selectedEntry?.folder?.startsWith("cloud/");
+    if ((selectedEntry?.present || isCloudModel) && selectedEntry?.chat_capable !== false) {
       return;
     }
     if (!firstInstalledChatModel || firstInstalledChatModel.id === selectedModel) {
@@ -10948,7 +12572,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     typeof window !== "undefined" && typeof window.meera?.startBackend === "function";
   const runtimeInfo = capabilities.runtime;
   const gpuBlockedMessage =
-    runtimeInfo?.gpu_only && runtimeInfo?.cuda_available === false
+    runtimeInfo?.gpu_only && runtimeInfo?.cuda_available === false && !isMac
       ? runtimeInfo.reason?.trim() || "GPU-only mode is enabled, but CUDA is not available."
       : "";
 
@@ -11645,6 +13269,27 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     return activePreset.src;
   }, [currentAppearance.customWallpaper, activePreset.src]);
   const wallpaperStyle = useMemo(() => ({ backgroundImage: `url("${activeWallpaper}")` }), [activeWallpaper]);
+  // ── Dynamic Anonymous Name & Internet-Driven Inspiration ───────────
+  const anonymousDisplayName = useMemo(() => {
+    return getDynamicAnonymousName();
+  }, []);
+
+  const [internetThought, setInternetThought] = useState<{ text: string; author: string } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchInternetDailyThought()
+      .then((data) => {
+        if (isMounted && data?.text) {
+          setInternetThought({ text: data.text, author: data.author });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const userName = useMemo(() => {
     const providerName = authUserNew?.displayName?.trim() || authUserNew?.email?.trim();
     if (providerName) {
@@ -11652,18 +13297,18 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
     const storedUser = localStorage.getItem("MEERA_USER");
     if (!storedUser) {
-      return "Vidit";
+      return anonymousDisplayName;
     }
     try {
       const parsed = JSON.parse(storedUser);
       if (parsed && typeof parsed === "object") {
-        return String(parsed.displayName || parsed.email || "Vidit");
+        return String(parsed.displayName || parsed.email || anonymousDisplayName);
       }
     } catch {
       // Legacy storage sometimes contains just the display name.
     }
-    return storedUser.includes("{") ? "Vidit" : storedUser;
-  }, [authUserNew]);
+    return storedUser.includes("{") ? anonymousDisplayName : storedUser;
+  }, [authUserNew, anonymousDisplayName]);
   const hasCustomWallpaper = Boolean(currentAppearance.customWallpaper);
   // @ts-ignore
   const wallpaperOverlayOpacity = OVERLAY_PRESETS[currentAppearance.overlay].opacity;
@@ -11676,23 +13321,109 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   );
   const wallpaperReady = authReady && appearanceHydrated && appearanceHydratedUid === (authUser?.uid ?? null);
   const dashboardGreeting = useMemo(() => {
-    const hour = clockNow.getHours();
-    if (hour < 12) {
-      return "Good morning";
+    const now = new Date();
+    const hour = now.getHours();
+    const month = now.getMonth();
+    const dayOfWeek = now.getDay();
+    const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
+
+    const morningGreetings = [
+      "Good morning", "Rise and shine", "Top of the morning",
+      "Morning sunshine", "A bright morning to you",
+    ];
+    const afternoonGreetings = [
+      "Good afternoon", "Hope your day's going great",
+      "Afternoon vibes", "Hey there, sunshine",
+    ];
+    const eveningGreetings = [
+      "Good evening", "Hope you had a great day",
+      "Evening, starlight", "Winding down nicely",
+    ];
+    const nightGreetings = [
+      "Burning the midnight oil", "Night owl mode",
+      "Late night hustle", "Hello, night thinker",
+    ];
+    const weekendGreetings = [
+      "Happy weekend", "Weekend vibes",
+      "Enjoy your weekend", "Relaxed weekend mode",
+    ];
+
+    const season = month <= 1 || month === 11 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+    const seasonalGreetings: Record<string, string[]> = {
+      winter: ["Stay warm and cozy", "Winter wonderland vibes"],
+      spring: ["Spring is in the air", "Fresh spring energy"],
+      summer: ["Summer vibes", "Sunny days ahead"],
+      autumn: ["Autumn leaves falling", "Cozy fall vibes"],
+    };
+
+    if ((dayOfWeek === 0 || dayOfWeek === 6) && dayOfYear % 5 === 0) {
+      return weekendGreetings[dayOfYear % weekendGreetings.length];
     }
-    if (hour < 18) {
-      return "Good afternoon";
+
+    if (dayOfYear % 7 === 0) {
+      const pool = seasonalGreetings[season] || seasonalGreetings.winter;
+      return pool[dayOfYear % pool.length];
     }
-    return "Good evening";
-  }, [clockNow]);
-  const localTime = useMemo(
-    () => clockNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    [clockNow],
-  );
-  const localSeconds = useMemo(
-    () => clockNow.toLocaleTimeString([], { second: "2-digit" }),
-    [clockNow],
-  );
+
+    let pool: string[];
+    if (hour >= 0 && hour < 5) {
+      pool = nightGreetings;
+    } else if (hour < 12) {
+      pool = morningGreetings;
+    } else if (hour < 18) {
+      pool = afternoonGreetings;
+    } else {
+      pool = eveningGreetings;
+    }
+
+    return pool[dayOfYear % pool.length];
+  }, []);
+
+  const dailyInspirationLine = useMemo(() => {
+    const inspirations = [
+      "Every expert was once a beginner.",
+      "The only limit is your imagination.",
+      "Small steps lead to big changes.",
+      "Today is your day to shine.",
+      "Think different. Build different.",
+      "Your potential is limitless.",
+      "Make today count.",
+      "Dream big, start small, act now.",
+      "The future belongs to the curious.",
+      "Be the change you wish to see.",
+      "Progress, not perfection.",
+      "Innovation starts with a question.",
+      "You're capable of amazing things.",
+      "Stay hungry, stay foolish.",
+      "Great things take time.",
+      "Embrace the journey.",
+      "Your ideas matter.",
+      "Keep pushing boundaries.",
+      "Simplicity is the ultimate sophistication.",
+      "Today's effort is tomorrow's result.",
+      "Curiosity is your superpower.",
+      "Build something wonderful.",
+      "One prompt at a time.",
+      "Let creativity lead the way.",
+      "Dare to explore.",
+      "The best is yet to come.",
+      "Focus on what matters.",
+      "Turn ideas into reality.",
+      "Learn. Build. Repeat.",
+      "You've got this.",
+      "Every day is a fresh start.",
+    ];
+    const now = new Date();
+    const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
+    return inspirations[dayOfYear % inspirations.length];
+  }, []);
+
+  const activeInspirationText = useMemo(() => {
+    if (internetThought?.text) {
+      return `"${internetThought.text}" — ${internetThought.author}`;
+    }
+    return dailyInspirationLine;
+  }, [internetThought, dailyInspirationLine]);
 
   const promptIdeas = useMemo(() => {
     const ideas = capabilities.prompt_ideas;
@@ -11756,7 +13487,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     ripple.addEventListener("animationend", () => ripple.remove());
   };
 
-  const openSettingsPanel = (sectionId?: SettingsSectionId) => {
+  const openSettingsPanel = async (sectionId?: SettingsSectionId) => {
     if (!isAuthenticated) {
       if (!authOpen) {
         openAuthPanel();
@@ -11765,9 +13496,17 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       setSettingsOpen(false);
       return;
     }
-    setSidebarOpen(false);
-    setSettingsSection(sectionId ?? "about");
-    setSettingsOpen(true);
+    await triggerTransition(
+      async () => {
+        setSidebarOpen(false);
+        setSettingsSection(sectionId ?? "about");
+        setSettingsOpen(true);
+      },
+      {
+        title: "Accessing Neural Settings...",
+        subtitle: "Configuring system preferences"
+      }
+    );
   };
 
   const focusSettingsSearch = () => {
@@ -12687,10 +14426,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   };
 
   const renderSettingsQueryHighlights = (text: string) => {
+    if (!text || typeof text !== "string") {
+      return text ?? "";
+    }
     if (!settingsSearchRegex || settingsSearchTokens.length === 0) {
       return text;
     }
-    const parts = text.split(settingsSearchRegex);
+    const parts = (text || "").split(settingsSearchRegex);
     return parts.map((part, index) => {
       const normalized = part.toLowerCase();
       if (settingsSearchTokens.includes(normalized)) {
@@ -12848,8 +14590,9 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
   const sidebar = (
     <motion.aside
-      className="copilot-sidebar meera-sidebar"
+      className={`copilot-sidebar meera-sidebar ${sidebarOpen ? "is-open" : "is-closed"}`}
       aria-label="Primary sidebar"
+      aria-hidden={!sidebarOpen}
       initial={false}
       animate={sidebarOpen ? "open" : "closed"}
       variants={{
@@ -12864,6 +14607,9 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             scale: { duration: 0.28, ease: [0.16, 1, 0.3, 1], times: [0, 0.6, 1] },
             opacity: { duration: 0.2, ease: "linear" },
           },
+          transitionEnd: {
+            visibility: "visible",
+          },
         },
         closed: {
           x: -28,
@@ -12876,12 +14622,16 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             scale: { duration: 0.2, ease: [0.4, 0, 0.6, 1] },
             opacity: { duration: 0.14, ease: "linear" },
           },
+          transitionEnd: {
+            visibility: "hidden",
+          },
         },
       }}
       style={{
         originX: 0,
         willChange: "transform, opacity",
-        pointerEvents: sidebarOpen ? "auto" : "none",
+        pointerEvents: (sidebarOpen ? "auto" : "none") as any,
+        visibility: (sidebarOpen ? "visible" : "hidden") as any,
       }}
     >
       <div className="meera-sidebar-inner">
@@ -13137,9 +14887,15 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       onClick={() => setSidebarOpen(false)}
       initial={false}
       animate={sidebarOpen ? "open" : "closed"}
-      variants={{ open: { opacity: 1 }, closed: { opacity: 0 } }}
+      variants={{
+        open: { opacity: 1, transitionEnd: { visibility: "visible" } },
+        closed: { opacity: 0, transitionEnd: { visibility: "hidden" } }
+      }}
       transition={{ duration: 0.2, ease: "linear" }}
-      style={{ pointerEvents: sidebarOpen ? "auto" : "none" }}
+      style={{
+        pointerEvents: (sidebarOpen ? "auto" : "none") as any,
+        visibility: (sidebarOpen ? "visible" : "hidden") as any,
+      }}
     />
   );
 
@@ -13209,7 +14965,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     if (targetTop > feed.scrollTop) {
       feed.scrollTo({ top: targetTop, behavior: "auto" });
     }
-  }, [visibleMessages, autoScroll, isSending, isFeedNearBottom, pendingFreshQueryScrollId, lockFreshQueryToTop]);
+  }, [visibleMessages, autoScroll, isSending, pendingFreshQueryScrollId, lockFreshQueryToTop]);
 
   useEffect(() => {
     if (!lockFreshQueryToTop && !pendingFreshQueryScrollId) {
@@ -13222,31 +14978,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     return () => window.clearTimeout(timer);
   }, [lockFreshQueryToTop, pendingFreshQueryScrollId]);
 
-  useEffect(() => {
-    const target = view === "home" ? homeScrollRef.current : feedRef.current;
-    const root = appRootRef.current;
-    if (!target || !root) {
-      return;
-    }
-    let timer: number | null = null;
-    const onScroll = () => {
-      root.classList.add("is-scrolling");
-      if (timer) {
-        window.clearTimeout(timer);
-      }
-      timer = window.setTimeout(() => {
-        root.classList.remove("is-scrolling");
-        timer = null;
-      }, 160);
-    };
-    target.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      target.removeEventListener("scroll", onScroll);
-      if (timer) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [view, feedRef]);
+  // Native scroll performance: no destructive is-scrolling DOM class toggling during scroll
 
   useEffect(() => {
     if (!activeSessionId && orderedSessions[0]) {
@@ -13295,11 +15027,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     void applyInstallerConfig();
   }, []);
 
-  useEffect(() => {
-    if (settingsOpen && !isAuthenticated) {
-      setSettingsOpen(false);
-    }
-  }, [settingsOpen, isAuthenticated]);
 
 
 
@@ -13320,17 +15047,28 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         const nextRuntime = data?.runtime;
         const nextMessage = data?.message?.trim() ?? nextRuntime?.reason?.trim() ?? "";
         if (nextRuntime) {
-          setCapabilities((current) => ({ ...current, runtime: nextRuntime }));
+          setCapabilities((current) => {
+            if (
+              current.runtime?.active_model === nextRuntime.active_model &&
+              current.runtime?.reason === nextRuntime.reason &&
+              current.runtime?.cuda_available === nextRuntime.cuda_available &&
+              current.runtime?.device === nextRuntime.device
+            ) {
+              return current;
+            }
+            return { ...current, runtime: nextRuntime };
+          });
         }
-        setBackendStartError(nextMessage);
+        setBackendStartError((prev) => (prev === nextMessage ? prev : nextMessage));
         setStatus((current) => {
           if (current === "thinking" || current === "executing") {
             return current;
           }
-          return res.ok && data?.status === "healthy" ? "ready" : current === "offline" ? "offline" : "ready";
+          const nextStatus = res.ok && data?.status === "healthy" ? "ready" : current === "offline" ? "offline" : "ready";
+          return current === nextStatus ? current : nextStatus;
         });
       } catch {
-        setBackendStartError("");
+        setBackendStartError((prev) => (prev === "" ? prev : ""));
         setStatus((current) => (current === "thinking" || current === "executing" ? current : current === "offline" ? "offline" : "ready"));
       }
     };
@@ -13424,9 +15162,20 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         if (!mounted || !payload) {
           return;
         }
-        setDesktopApps(Array.isArray(payload.apps) ? payload.apps : []);
-        setDesktopEvents(Array.isArray(payload.events) ? payload.events : []);
-        setDesktopRefreshedAt(typeof payload.refreshedAt === "number" ? payload.refreshedAt : Date.now());
+        const nextApps = Array.isArray(payload.apps) ? payload.apps : [];
+        const nextEvents = Array.isArray(payload.events) ? payload.events : [];
+        setDesktopApps((curr) => {
+          if (curr.length === nextApps.length && curr.every((a, i) => a.key === nextApps[i]?.key && a.name === nextApps[i]?.name)) {
+            return curr;
+          }
+          return nextApps;
+        });
+        setDesktopEvents((curr) => {
+          if (curr.length === nextEvents.length) {
+            return curr;
+          }
+          return nextEvents;
+        });
       } catch {
         if (!mounted) {
           return;
@@ -13442,11 +15191,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       mounted = false;
       window.clearInterval(interval);
     };
-  }, []);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setClockNow(new Date()), 1000);
-    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -13504,6 +15248,12 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     const interval = window.setInterval(refreshModelLoadStatus, 4000);
     return () => window.clearInterval(interval);
   }, [modelLoadOpen]);
+
+  useEffect(() => {
+    if (settingsOpen && !isAuthenticated) {
+      setSettingsOpen(false);
+    }
+  }, [settingsOpen, isAuthenticated]);
 
   useEffect(() => {
     if (!auth) {
@@ -14103,6 +15853,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   useEffect(() => {
     localStorage.setItem(STORAGE_THEME, theme);
     document.documentElement.dataset.theme = theme;
+    if (theme === "light") {
+      document.documentElement.classList.add("light", "theme-light");
+      document.documentElement.classList.remove("dark", "theme-dark");
+    } else {
+      document.documentElement.classList.add("dark", "theme-dark");
+      document.documentElement.classList.remove("light", "theme-light");
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -14304,31 +16061,47 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     setEditingSessionName("");
   };
 
-  const switchSession = (sessionId: string) => {
+  const switchSession = async (sessionId: string) => {
     const targetSession = sessions.find((session) => session.id === sessionId);
-    setActiveSessionId(sessionId);
-    if (targetSession) {
-      setActiveProjectId(targetSession.projectId ?? "");
-    }
-    enterWorkspace(true);
-    setError("");
-    setHistoryIndex(null);
-    setEditingSessionId(null);
-    setEditingSessionName("");
+    await triggerTransition(
+      async () => {
+        setActiveSessionId(sessionId);
+        if (targetSession) {
+          setActiveProjectId(targetSession.projectId ?? "");
+        }
+        enterWorkspace(true);
+        setError("");
+        setHistoryIndex(null);
+        setEditingSessionId(null);
+        setEditingSessionName("");
+      },
+      {
+        title: "Accessing Session...",
+        subtitle: targetSession?.name || "Loading memory logs..."
+      }
+    );
   };
 
-  const createSession = (sourceAppearance?: AppearanceSettings) => {
+  const createSession = async (sourceAppearance?: AppearanceSettings) => {
     const nextSession = createSessionRecord(sourceAppearance, activeProjectId || null);
 
-    setSessions((prev) => [nextSession, ...prev]);
-    setActiveSessionId(nextSession.id);
-    enterWorkspace(true);
-    setError("");
-    setInput("");
-    setInputCaret(0);
-    setHistoryIndex(null);
-    setEditingSessionId(null);
-    setEditingSessionName("");
+    await triggerTransition(
+      async () => {
+        setSessions((prev) => [nextSession, ...prev]);
+        setActiveSessionId(nextSession.id);
+        enterWorkspace(true);
+        setError("");
+        setInput("");
+        setInputCaret(0);
+        setHistoryIndex(null);
+        setEditingSessionId(null);
+        setEditingSessionName("");
+      },
+      {
+        title: "Initializing Workspace...",
+        subtitle: "Allocating neural memory buffers"
+      }
+    );
   };
 
   const pushMessage = (
@@ -14446,6 +16219,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     id: string,
     visualSnapshot: MessageVisualSnapshot,
     sessionId?: string,
+    _skipAnimation?: boolean,
   ): void => {
     const targetSessionId = sessionId ?? currentSession?.id;
     if (!targetSessionId) {
@@ -14525,6 +16299,14 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         }
         if (hasAgentInteractionUpdate) {
           merged.agentInteraction = visualSnapshot.agentInteraction;
+          nonImageChanged = true;
+        }
+        if (visualSnapshot.documents !== undefined) {
+          merged.documents = visualSnapshot.documents;
+          nonImageChanged = true;
+        }
+        if (visualSnapshot.agentMonitor !== undefined) {
+          merged.agentMonitor = visualSnapshot.agentMonitor;
           nonImageChanged = true;
         }
 
@@ -14891,13 +16673,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
   };
 
-  const openAgentInteraction = (messageId: string, interaction: AgentInteraction, sessionId?: string) => {
+  const openAgentInteraction = useCallback((messageId: string, interaction: AgentInteraction, sessionId?: string) => {
     setAgentInteractionDialog({
       messageId,
       sessionId: sessionId ?? currentSession?.id ?? "",
       interaction,
     });
-  };
+  }, [currentSession?.id]);
 
   const handleAgentInteractionSubmit = async (response: AgentInteractionResponse) => {
     const dialog = agentInteractionDialog;
@@ -14973,7 +16755,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
 
     const customFacts = userContextPrefs.includeCustomFacts
-      ? userCustomFacts
+      ? (userCustomFacts || "")
           .split("\n")
           .map((line) => line.replace(/^[-*]\s*/, "").trim())
           .filter(Boolean)
@@ -15019,26 +16801,36 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     intentId?: ComposerIntentId,
     attachments?: ChatAttachmentPayload[],
     sessionId?: string,
-  ) => ({
-    message,
-    model: modelId,
-    quant_bits: 4,
-    max_tokens: 4096,
-    messages: payloadMessages,
-    wikipedia_grounding: wikipediaGrounding,
-    use_rag: wikipediaGrounding,
-    enable_image_search: wikipediaGrounding,
-    enable_screen_tools: true,
-    allow_screen_control: screenControlEnabled,
-    user_context: userContext,
-    user_integrations: userIntegrations,
-    ...(emailImapConfig && userIntegrations.includes("email_imap") ? { email_config: { imap_server: emailImapConfig.imap_server, email_user: emailImapConfig.email_user, email_pass: emailImapConfig.email_pass, smtp_server: emailImapConfig.smtp_server, smtp_port: emailImapConfig.smtp_port, sender_name: emailImapConfig.sender_name } } : {}),
-    stream,
-    ...(sessionId ? { conversation_id: sessionId } : {}),
-    ...(intentId && intentId !== "auto" ? { intent: intentId } : {}),
-    ...(attachments && attachments.length > 0 ? { attachments } : {}),
-    skip_terminal_autoexec: true,
-  });
+  ) => {
+    // Detect if the model is a cloud model by checking resolvedModels
+    const modelEntry = resolvedModels.find((m) => m.id === modelId);
+    const isCloud = modelEntry?.model_type === "cloud" || modelEntry?.folder?.startsWith("cloud/");
+    const cloudProvider = isCloud && modelEntry?.folder ? (modelEntry.folder.split("/")[1] || modelEntry.folder.replace("cloud/", "")) : undefined;
+    
+    return {
+      message,
+      model: modelId,
+      quant_bits: 4,
+      max_tokens: 4096,
+      messages: payloadMessages,
+      wikipedia_grounding: wikipediaGrounding,
+      use_rag: wikipediaGrounding,
+      enable_image_search: wikipediaGrounding,
+      enable_screen_tools: true,
+      allow_screen_control: screenControlEnabled,
+      user_context: userContext,
+      user_integrations: userIntegrations,
+      ...(emailImapConfig && userIntegrations.includes("email_imap") ? { email_config: { imap_server: emailImapConfig.imap_server, email_user: emailImapConfig.email_user, email_pass: emailImapConfig.email_pass, smtp_server: emailImapConfig.smtp_server, smtp_port: emailImapConfig.smtp_port, sender_name: emailImapConfig.sender_name } } : {}),
+      stream,
+      ...(sessionId ? { conversation_id: sessionId } : {}),
+      ...(activePersonalityId ? { personality_id: activePersonalityId } : {}),
+      ...(activeProjectId ? { project_id: activeProjectId } : {}),
+      ...(intentId && intentId !== "auto" ? { intent: intentId } : {}),
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
+      ...(isCloud ? { provider: cloudProvider, inference_mode: "cloud" } : {}),
+      skip_terminal_autoexec: true,
+    };
+  };
 
   async function sendNonStream(
     message: string,
@@ -15065,6 +16857,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       throw new Error(`Request failed (${res.status})`);
     }
 
+    setModelLoadTargetId(null);
     const data = (await res.json()) as {
       reply?: string;
       error?: string;
@@ -15162,6 +16955,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     setTransientThinkingProgress(0);
     setTransientThinkingPhases([]);
     setTransientThinkingLifecycle("idle");
+    setModelLoadTargetId(null);
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -15174,6 +16968,8 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     let answerStarted = false;
     let pendingImageUrls: string[] | null = null;
     let pendingExecutionEvents: Record<string, ExecutionEvent> | null = null;
+    let pendingDocuments: any = null;
+    let pendingAgentMonitor: SwarmMonitorState | undefined = undefined;
     let firstToolBoundarySeen = false;
     let toolPrelude = "";
     let startupNoticeTimer: number | null = null;
@@ -15187,7 +16983,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     let phaseSeq = 0;
 
     const normalizeThinkingText = (text: string) =>
-      text
+      (text || "")
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => {
@@ -15280,7 +17076,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         out = out.replace(/meera_thinking>[\s\S]*$/gi, "");
         // ── Third safety net: a token boundary can eat the tag prefix
         //    entirely (leaving just a thinking tag remnant).
-        out = out
+        out = (out || "")
           .split("\n")
           .filter((line) => {
             const s = line.trim();
@@ -15295,7 +17091,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       const untagged = stripProtocolTags(text);
       const boundary = findPromptLeakBoundary(untagged);
       const source = boundary >= 0 ? untagged.slice(0, boundary) : untagged;
-      const cleaned = source
+      const cleaned = (source || "")
         .split("\n")
         .filter((line) => {
           const normalized = line.toLowerCase();
@@ -15460,7 +17256,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           if (eventType === "browser_screenshot") {
             const screenshot = typeof parsed.screenshot_base64 === "string" ? parsed.screenshot_base64.trim() : "";
             if (screenshot) {
-              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, browserScreenshot: screenshot } : m)));
               updateMessageVisualSnapshot(assistantId, { browserScreenshot: screenshot }, sessionId);
             }
             continue;
@@ -15636,6 +17431,179 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             }
             continue;
           }
+          if (eventType === "document_ready") {
+            const docData = parsed as any;
+            if (docData && docData.documents) {
+              pendingDocuments = docData;
+              updateMessageVisualSnapshot(
+                assistantId,
+                { documents: docData },
+                sessionId,
+              );
+            }
+            continue;
+          }
+          if (eventType === "subagent_start") {
+            const payload = parsed as any;
+            const agentId = (payload.agent_id as string) || (payload.role as string) || `agent-${(pendingAgentMonitor?.agents?.length ?? 0)}`;
+            const agentRole = (payload.role as string) || "Research Specialist";
+            const agentName = (payload.name as string) || agentRole;
+            const agentTask = (payload.task as string) || "Analyzing research directive and gathering intelligence...";
+            const searchQueries = Array.isArray(payload.search_queries) ? (payload.search_queries as string[]) : [];
+            const agentStartTs = typeof payload.ts === "number" ? payload.ts * 1000 : Date.now();
+
+            const initialStep: AgentStepTrace = {
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+              type: "info",
+              message: `Mandate assigned: ${agentRole}`,
+              detail: agentTask,
+            };
+
+            const newAgent: SwarmAgentState = {
+              id: agentId,
+              name: agentName,
+              role: agentRole,
+              task: agentTask,
+              status: "running",
+              progress: 15,
+              startTime: agentStartTs,
+              searchQueries,
+              sources: [],
+              steps: [initialStep],
+            };
+
+            const currentAgents: SwarmAgentState[] = pendingAgentMonitor ? [...pendingAgentMonitor.agents] : [];
+            const existingIdx = currentAgents.findIndex((a: SwarmAgentState) => a.id === agentId || a.role === agentRole);
+            if (existingIdx >= 0) {
+              currentAgents[existingIdx] = { ...currentAgents[existingIdx], ...newAgent };
+            } else {
+              currentAgents.push(newAgent);
+            }
+
+            const totalProgress = currentAgents.reduce((sum: number, a: SwarmAgentState) => sum + a.progress, 0) / (currentAgents.length || 1);
+            pendingAgentMonitor = {
+              status: "running",
+              title: "Autonomous Multi-Agent Swarm",
+              agents: currentAgents,
+              totalProgress: Math.round(totalProgress),
+            };
+            updateMessageVisualSnapshot(assistantId, { agentMonitor: pendingAgentMonitor }, sessionId, true);
+            continue;
+          }
+          if (eventType === "subagent_step") {
+            const payload = parsed as any;
+            const agentId = (payload.agent_id as string) || (payload.role as string);
+            if (pendingAgentMonitor && agentId) {
+              const currentAgents: SwarmAgentState[] = [...pendingAgentMonitor.agents];
+              const idx = currentAgents.findIndex((a: SwarmAgentState) => a.id === agentId || a.role === (payload.role as string));
+              if (idx >= 0) {
+                const ag = currentAgents[idx];
+                const stepType = payload.type || "info";
+                const stepMsg = (payload.message as string) || (stepType === "search" ? `Dispatched query: "${payload.query}"` : "Executing task step");
+                const newStep: AgentStepTrace = {
+                  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                  type: stepType,
+                  message: stepMsg,
+                  detail: payload.detail as string | undefined,
+                  query: payload.query as string | undefined,
+                  url: payload.url as string | undefined,
+                };
+
+                const nextQueries = payload.query && !ag.searchQueries?.includes(payload.query as string)
+                  ? [...(ag.searchQueries || []), payload.query as string]
+                  : ag.searchQueries;
+
+                const nextSources = payload.url && !ag.sources?.some((s: { url: string }) => s.url === payload.url)
+                  ? [...(ag.sources || []), { title: (payload.title as string) || (payload.url as string), url: payload.url as string }]
+                  : ag.sources;
+
+                const rawProgress = typeof payload.progress === "number" ? payload.progress : ag.progress + 15;
+                const nextProgress = Math.min(95, Math.max(ag.progress, rawProgress));
+                const nextStatus = stepType === "search" ? "searching" : stepType === "synthesis" ? "synthesizing" : "running";
+
+                currentAgents[idx] = {
+                  ...ag,
+                  status: nextStatus,
+                  progress: nextProgress,
+                  searchQueries: nextQueries,
+                  sources: nextSources,
+                  steps: [...(ag.steps || []), newStep],
+                  task: stepMsg,
+                };
+
+                const totalProgress = currentAgents.reduce((sum: number, a: SwarmAgentState) => sum + a.progress, 0) / (currentAgents.length || 1);
+                pendingAgentMonitor = {
+                  ...pendingAgentMonitor,
+                  agents: currentAgents,
+                  totalProgress: Math.round(totalProgress),
+                };
+                updateMessageVisualSnapshot(assistantId, { agentMonitor: pendingAgentMonitor }, sessionId, true);
+              }
+            }
+            continue;
+          }
+          if (eventType === "subagent_done") {
+            const payload = parsed as any;
+            const agentId = (payload.agent_id as string) || (payload.role as string);
+            if (pendingAgentMonitor && agentId) {
+              const currentAgents: SwarmAgentState[] = [...pendingAgentMonitor.agents];
+              const idx = currentAgents.findIndex((a: SwarmAgentState) => a.id === agentId || a.role === (payload.role as string));
+              if (idx >= 0) {
+                const ag = currentAgents[idx];
+                const now = Date.now();
+                const elapsed = typeof payload.elapsed_seconds === "number"
+                  ? payload.elapsed_seconds
+                  : ag.startTime ? (now - ag.startTime) / 1000 : undefined;
+
+                const charCount = typeof payload.character_count === "number" ? payload.character_count : undefined;
+                const citeCount = typeof payload.citation_count === "number" ? payload.citation_count : undefined;
+
+                const doneStep: AgentStepTrace = {
+                  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                  type: "done",
+                  message: `Completed mandate (${charCount ?? 0} chars, ${citeCount ?? 0} citations)`,
+                };
+
+                const sourcesFromUrls = Array.isArray(payload.urls)
+                  ? (payload.urls as string[]).map((u: string) => ({ title: u, url: u }))
+                  : [];
+                const mergedSources = [...(ag.sources || [])];
+                for (const s of sourcesFromUrls) {
+                  if (!mergedSources.some((m) => m.url === s.url)) {
+                    mergedSources.push(s);
+                  }
+                }
+
+                currentAgents[idx] = {
+                  ...ag,
+                  status: payload.status === "failed" ? "failed" : "completed",
+                  progress: 100,
+                  endTime: now,
+                  elapsedSeconds: elapsed,
+                  characterCount: charCount,
+                  citationCount: citeCount,
+                  chapterDraft: (payload.chapter_draft as string) || ag.chapterDraft,
+                  sources: mergedSources,
+                  steps: [...(ag.steps || []), doneStep],
+                  task: "Mandate successfully completed",
+                };
+
+                const allDone = currentAgents.every((a: SwarmAgentState) => a.status === "completed" || a.status === "failed");
+                const totalProgress = allDone
+                  ? 100
+                  : currentAgents.reduce((sum: number, a: SwarmAgentState) => sum + a.progress, 0) / (currentAgents.length || 1);
+
+                pendingAgentMonitor = {
+                  ...pendingAgentMonitor,
+                  status: allDone ? "completed" : "running",
+                  agents: currentAgents,
+                  totalProgress: Math.round(totalProgress),
+                };
+                updateMessageVisualSnapshot(assistantId, { agentMonitor: pendingAgentMonitor }, sessionId, true);
+              }
+            }
+            continue;
+          }
           if (eventType === "thinking_start") {
             // ── New thinking phase begins ─────────────────────────
             // Close any previous open phase before starting a new one.
@@ -15782,7 +17750,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           }
           if (eventType === "clear_tokens") {
             textAcc = "";
-            queueAssistantRender(textAcc);
+            // Keep previous visual frame intact until replacement tokens arrive to prevent UI flicker
             continue;
           }
           if (eventType === "done") {
@@ -15832,6 +17800,25 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             if (pendingExecutionEvents) {
               visualSnapshot.executionEvents = pendingExecutionEvents;
             }
+            if (pendingDocuments) {
+              visualSnapshot.documents = pendingDocuments;
+            }
+            if (pendingAgentMonitor) {
+              const allDone = pendingAgentMonitor.agents.every((a) => a.status === "completed" || a.status === "failed");
+              if (!allDone) {
+                pendingAgentMonitor = {
+                  ...pendingAgentMonitor,
+                  status: "completed",
+                  totalProgress: 100,
+                  agents: pendingAgentMonitor.agents.map((a) =>
+                    a.status === "running" || a.status === "searching" || a.status === "synthesizing"
+                      ? { ...a, status: "completed" as const, progress: 100 }
+                      : a
+                  ),
+                };
+              }
+              visualSnapshot.agentMonitor = pendingAgentMonitor;
+            }
             updateMessageVisualSnapshot(assistantId, visualSnapshot, sessionId);
             resolvedSnapshot = buildBackendMessageModelSnapshot(parsed, resolvedSnapshot);
             syncTaskStateFromBackend(sessionId, parsed.task_state);
@@ -15859,7 +17846,10 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         startupNoticeTimer = null;
       }
       updateMessageModelSnapshot(assistantId, resolvedSnapshot, sessionId);
-      updateMessageVisualSnapshot(assistantId, { imagesLoading: false }, sessionId);
+      updateMessageVisualSnapshot(assistantId, {
+        imagesLoading: false,
+        ...(pendingAgentMonitor ? { agentMonitor: pendingAgentMonitor } : {}),
+      }, sessionId);
       updateMessageThinkingProgress(assistantId, 100, sessionId);
       let resolved = sanitizeStreamText(finalReply || textAcc || "");
 
@@ -15945,7 +17935,10 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       flushAssistantRender(cleanedText, { touchSession: true, syncTitle: true });
       speakAssistantReply(cleanedText);
     }
-    updateMessageVisualSnapshot(assistantId, { imagesLoading: false }, sessionId);
+    updateMessageVisualSnapshot(assistantId, {
+      imagesLoading: false,
+      ...(pendingAgentMonitor ? { agentMonitor: pendingAgentMonitor } : {}),
+    }, sessionId);
     updateMessageThinkingProgress(assistantId, 100, sessionId);
     try {
       void reader.cancel();
@@ -15976,13 +17969,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     const hideUserMessage = Boolean(options?.hideUserMessage);
     const selectedAttachments = pendingAttachments;
     const hasAttachments = selectedAttachments.length > 0;
-    const preparedText = prepareSmartPrompt(trimmedRawText).trim();
+    const preparedText = prepareSmartPrompt(trimmedRawText, mathMode).trim();
     const requestText = preparedText || (hasAttachments ? CHAT_ATTACHMENT_ANALYSIS_PROMPT : "");
     const displayBaseText = stripMathSolveEnvelope(preparedText || requestText);
     const displayText = options?.displayOverride ?? (preparedText ? displayBaseText : hasAttachments ? "Attached files" : "");
     const attachmentPayloads: ChatAttachmentPayload[] = selectedAttachments.map(({ id, blobUrl, ...payload }) => payload);
     const attachmentVisuals = selectedAttachments.map(({ id, blobUrl, ...payload }) => payload);
-    const detectedIntentForMessage = detectComposerIntent(requestText);
+    const detectedIntentForMessage = detectComposerIntent(requestText, mathMode);
     const resolvedIntentForMessage = composerIntent === "auto" ? detectedIntentForMessage : composerIntent;
     const requestForcesCloud = isCloudRoutedIntent(resolvedIntentForMessage);
     // Local mode now overrides cloud intent routing.
@@ -16343,6 +18336,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       window.clearTimeout(session.stopTimer);
     }
     try {
+      session.processor.onaudioprocess = null;
       session.processor.disconnect();
       session.silentGain.disconnect();
       session.source.disconnect();
@@ -16413,15 +18407,24 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       return false;
     }
 
+    if (voiceRecordingRef.current) {
+      const existing = voiceRecordingRef.current;
+      voiceRecordingRef.current = null;
+      stopVoiceSession(existing);
+    }
+
+    let stream: MediaStream | null = null;
+    let audioContext: AudioContext | null = null;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           autoGainControl: true,
           echoCancellation: true,
           noiseSuppression: true,
         },
       });
-      const audioContext = new AudioContextCtor();
+      audioContext = new AudioContextCtor();
       const source = audioContext.createMediaStreamSource(stream);
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       const silentGain = audioContext.createGain();
@@ -16462,6 +18465,20 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       showAppToast("info", "Listening... click the mic again to send.");
       return true;
     } catch (err) {
+      if (stream) {
+        try {
+          (stream as MediaStream).getTracks().forEach((track) => track.stop());
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+      if (audioContext) {
+        try {
+          void (audioContext as AudioContext).close();
+        } catch {
+          // ignore cleanup errors
+        }
+      }
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
         showAppToast("error", "Microphone permission was blocked. Allow mic access and try again.");
@@ -17179,7 +19196,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     setAuthOtpSent(false);
   };
 
-  const handleCopy = async (value: string) => {
+  const handleCopy = useCallback(async (value: string) => {
     if (!value.trim()) {
       return;
     }
@@ -17188,7 +19205,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     } catch {
       // Ignore clipboard failures.
     }
-  };
+  }, []);
 
   const openExternalLink = async (targetUrl: string) => {
     const resolvedUrl = normalizeBrowserAgentUrl(targetUrl || "");
@@ -17626,7 +19643,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     return cleaned || DEFAULT_SESSION_NAME;
   };
 
-  const triggerChatActionFeedback = (messageId: string, action: "edit" | "copy" | "retry") => {
+  const triggerChatActionFeedback = useCallback((messageId: string, action: "edit" | "copy" | "retry") => {
     const key = `${messageId}:${action}`;
     setChatActionFeedback((prev) => ({ ...prev, [key]: true }));
     const existing = chatActionTimers.current[key];
@@ -17644,7 +19661,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       });
       delete chatActionTimers.current[key];
     }, 900);
-  };
+  }, []);
 
   const handleCopyChat = async () => {
     const transcript = buildChatTranscript(currentSession);
@@ -17750,7 +19767,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           }
         } else {
           await handleCopy(transcript);
-          showAppToast("info", "Copied chat. Open your app and paste with Ctrl+V.");
+          showAppToast("info", `Copied chat. Open your app and paste with ${isMac ? "Cmd" : "Ctrl"}+V.`);
         }
       }
       playSound("action");
@@ -17884,7 +19901,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
 
     try {
-      const loginUrl = `http://localhost:8000/api/oauth/${appId}/login`;
+      const loginUrl = `${API_BASE_URL}/oauth/${appId}/login`;
       if (window.meera?.openExternalUrl) {
         window.meera.openExternalUrl(loginUrl);
       } else {
@@ -17902,7 +19919,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             return;
           }
           
-          const res = await fetch(`http://localhost:8000/api/oauth/${appId}/status`);
+          const res = await fetch(`${API_BASE_URL}/oauth/${appId}/status`);
           if (res.ok) {
             const data = await res.json();
             if (data.status === "success" && data.connected) {
@@ -17976,7 +19993,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   };
 
   function getRailHeadline(content: string): string {
-    const firstLine = content.split("\n").find((line) => cleanTitleText(line)) ?? content;
+    const firstLine = (content || "").split("\n").find((line) => cleanTitleText(line)) ?? (content || "");
     const cleaned = cleanTitleText(firstLine);
     if (!cleaned) {
       return "Conversation";
@@ -17998,10 +20015,10 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     playSound("action");
   };
 
-  const handleEditMessage = (value: string) => {
+  const handleEditMessage = useCallback((value: string) => {
     setInput(value);
     setInputCaret(value.length);
-  };
+  }, []);
 
   const handleCopyTime = (value?: string) => {
     if (!value) {
@@ -18024,7 +20041,12 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     return -1;
   };
 
-  const handleRetryMessage = (assistantId: string) => {
+  const handleContinueMessage = useCallback((assistantId: string) => {
+    void sendMessage("Continue exactly from where you left off");
+    playSound("action");
+  }, [sendMessage, playSound]);
+
+  const handleRetryMessage = useCallback((assistantId: string) => {
     const targetSessionId = currentSession?.id;
     if (!targetSessionId) {
       return;
@@ -18046,7 +20068,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }));
     void sendMessage(prompt);
     playSound("action");
-  };
+  }, [currentSession?.id, messages, updateSessionById, sendMessage, playSound]);
 
   const handleHistoryNav = (direction: "up" | "down") => {
     if (inputHistory.length === 0) {
@@ -18098,6 +20120,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   // Keep ghost overlay position and scroll locked to the textarea
   // so autocomplete suffix stays aligned on every line.
   useLayoutEffect(() => {
+    if (!inlineGhostSuffix) return;
     const textarea = chatInputRef.current;
     const ghost = chatGhostRef.current;
     if (!textarea || !ghost) return;
@@ -18143,7 +20166,11 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     if (!pastedText) {
       return;
     }
-    const prepared = prepareSmartPrompt(pastedText);
+    // Never auto-wrap user pasted text into [MATH_MODE] - preserve user text as pasted
+    let prepared = pastedText;
+    if (looksLikeTable(pastedText)) {
+      prepared = convertToMarkdownTable(pastedText);
+    }
     if (prepared === pastedText) {
       return;
     }
@@ -18603,7 +20630,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     playSound("action");
   };
 
-  const handleUserDataSubmit = (key: string, value: string, sourceMessageId?: string) => {
+  const handleUserDataSubmit = useCallback((key: string, value: string, sourceMessageId?: string) => {
     const answer = value.trim();
     if (!answer || isSending) {
       return;
@@ -18627,7 +20654,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     recordTaskFact(targetSession?.id ?? "", key, answer);
     showAppToast("info", "Continuing the task with your answer.");
     void sendMessage(answer, { sessionOverride, hideUserMessage: true });
-  };
+  }, [isSending, updateMessageVisualSnapshot, currentSession, recordTaskFact, showAppToast, sendMessage]);
 
   useEffect(() => {
     const handler = (e: CustomEvent) => {
@@ -19302,7 +21329,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   return (
     <div
       ref={appRootRef}
-      className={`app-root view-${displayView} ${sidebarOpen ? "sidebar-open" : ""} ${settingsOpen ? "settings-open" : ""} ${browserAgentOpen ? "browser-agent-open" : ""} ${terminalOpen ? "terminal-open" : ""} ${bootReveal ? "boot-reveal" : ""}`}
+      className={`app-root theme-${theme} view-${displayView} ${sidebarOpen ? "sidebar-open" : ""} ${settingsOpen ? "settings-open" : ""} ${browserAgentOpen ? "browser-agent-open" : ""} ${terminalOpen ? "terminal-open" : ""} ${bootReveal ? "boot-reveal" : ""}`}
       style={appRootStyle}
     >
       <style>{MEERA_SIDEBAR_CSS}</style>
@@ -19868,6 +21895,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                 }
 
                 if (shouldShowTextPreview) {
+                  if (mimeType === "text/markdown" || attachmentViewerState.name.toLowerCase().endsWith(".md")) {
+                    return (
+                      <div className="attachment-viewer-markdown-wrap" style={{ padding: "24px 32px", overflowY: "auto", height: "100%", width: "100%", boxSizing: "border-box" }}>
+                        <PlainMarkdownContent content={attachmentPreviewText || ""} />
+                      </div>
+                    );
+                  }
                   return <pre className="attachment-viewer-preview-text">{attachmentPreviewText}</pre>;
                 }
 
@@ -20671,7 +22705,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
               <span style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
               </span>
-              <span style={{ fontSize: "38px", fontWeight: 400, fontFamily: '"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive', letterSpacing: "0.01em", color: "#000", transform: "translateY(2px)" }}>MeeraAI</span>
+              <span style={{ fontSize: "38px", fontWeight: 400, fontFamily: '"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive', letterSpacing: "0.01em", color: "#0f172a", transform: "translateY(2px)" }}>MeeraAI</span>
             </div>
 
             <div className="copilot-topbar-right titlebar-controls">
@@ -20763,36 +22797,42 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                   )}
                 </div>
               )}
+              {(view === "home" || view === "workspace") && <TopbarClock />}
               {(view === "home" || view === "workspace") && (
-                <div className="topbar-time" aria-label="Current time">
-                  <span className="topbar-time-main">{localTime}</span>
-                  <span className="topbar-time-seconds">{localSeconds}</span>
-                </div>
+                <PersonalitySelector
+                  apiBase={API_BASE}
+                  activeId={activePersonalityId}
+                  onActiveChange={setActivePersonalityId}
+                />
               )}
-              <button
-                className="titlebar-btn minimize"
-                type="button"
-                aria-label="Minimize window"
-                onClick={() => windowControls?.minimize()}
-              >
-                <UiIcon name="minimize.svg" />
-              </button>
-              <button
-                className="titlebar-btn maximize"
-                type="button"
-                aria-label="Maximize window"
-                onClick={() => windowControls?.maximize()}
-              >
-                <UiIcon name="maximize.svg" />
-              </button>
-              <button
-                className="titlebar-btn close"
-                type="button"
-                aria-label="Close window"
-                onClick={() => windowControls?.close()}
-              >
-                <UiIcon name="close.svg" />
-              </button>
+              {!isMac && (
+                <>
+                  <button
+                    className="titlebar-btn minimize"
+                    type="button"
+                    aria-label="Minimize window"
+                    onClick={() => windowControls?.minimize()}
+                  >
+                    <UiIcon name="minimize.svg" />
+                  </button>
+                  <button
+                    className="titlebar-btn maximize"
+                    type="button"
+                    aria-label="Maximize window"
+                    onClick={() => windowControls?.maximize()}
+                  >
+                    <UiIcon name="maximize.svg" />
+                  </button>
+                  <button
+                    className="titlebar-btn close"
+                    type="button"
+                    aria-label="Close window"
+                    onClick={() => windowControls?.close()}
+                  >
+                    <UiIcon name="close.svg" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </motion.header>
@@ -20803,19 +22843,17 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             <motion.main
               key="home"
               className="main copilot-home"
-              initial={{ opacity: 0, scale: 0.985, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.985, filter: "blur(8px)" }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              style={{ willChange: "opacity, transform, filter" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <div className={`copilot-surface ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}> 
-                {renderSidebarBackdrop()}
-                {sidebar}
                 <section ref={homeScrollRef} className="copilot-home-content">
                   <div className="home-center-stack">
                     <div className="copilot-home-hero">
-                      <div className="copilot-home-greeting">{dashboardGreeting}, {userName}</div>
+                      <div className="copilot-home-greeting">{dashboardGreeting}, {userName} ✨</div>
+                      <div className="copilot-home-inspiration" style={{ fontSize: '0.85em', opacity: 0.75, marginTop: 6, fontStyle: 'italic', letterSpacing: '0.3px', maxWidth: 700, margin: '6px auto 0', lineHeight: 1.4 }}>{activeInspirationText}</div>
                       <h1>What can I help you with today?</h1>
                     </div>
 
@@ -21046,119 +23084,20 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             <motion.main
               key="workspace"
               className={`main copilot-workspace ${showSplitView ? "split-view-active" : ""}`}
-              initial={{ opacity: 0, scale: 0.985, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.985, filter: "blur(8px)" }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              style={{ willChange: "opacity, transform, filter" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <div className={`copilot-surface ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}> 
-                {renderSidebarBackdrop()}
-                {sidebar}
                 <section className="copilot-workspace-content">
                   <div className="copilot-workspace-body">
                     {visibleMessages.length >= 8 && railSlots.length > 0 && (
-                      <div
-                        className={`chat-orbit-rail ${chatRailHovered ? "is-hovered" : ""}`}
-                        ref={chatRailRef}
-                        onMouseEnter={() => setChatRailHovered(true)}
-                        onMouseLeave={() => {
-                          setChatRailHoverIndex(null);
-                          setChatRailHoverPosition(null);
-                          setChatRailHovered(false);
-                        }}
-                        onMouseMove={(event) => {
-                          const count = railSlots.length;
-                          if (count === 0) {
-                            return;
-                          }
-                          const rect = event.currentTarget.getBoundingClientRect();
-                          const ratio = (event.clientY - rect.top) / rect.height;
-                          const clamped = Math.min(1, Math.max(0, ratio));
-                          const hoverPosition = count === 1 ? 0 : clamped * (count - 1);
-                          const nextIndex = Math.min(count - 1, Math.max(0, Math.round(hoverPosition)));
-                          setChatRailHoverPosition(hoverPosition);
-                          if (nextIndex !== chatRailHoverIndex) {
-                            setChatRailHoverIndex(nextIndex);
-                          }
-                        }}
-                        aria-label="Conversation navigator"
-                      >
-                        {railSlots.map((slot, index) => {
-                          const { message, headline, meta, messageId } = slot;
-                          const isActive = Boolean(messageId && messageId === railActiveId);
-                          const isHovered = index === chatRailHoverIndex;
-                          const isDisabled = !messageId;
-                          const hoverPosition = chatRailHoverPosition ?? chatRailHoverIndex ?? null;
-                          const distance = hoverPosition === null ? null : Math.abs(hoverPosition - index);
-                          const hoverBoost = distance === null ? 0 : Math.exp(-distance * distance * 0.55);
-                          const baseBoost = isActive ? 0.22 : 0;
-                          const dockBoost = isDisabled ? 0 : Math.max(baseBoost, hoverBoost);
-                          const dockScale = 1 + dockBoost * 0.38;
-                          const dockWidth = 12 + dockBoost * 18;
-                          const dockHeight = 2 + dockBoost * 1.25;
-                          const dockShift = dockBoost * 6.5;
-                          const dockLineShift = dockBoost * 3.2;
-                          const dockGlow = 10 + dockBoost * 20;
-                          const dockGlowStrong = dockBoost * 24;
-                          const dockOpacity = isDisabled ? 0.25 : 0.7 + dockBoost * 0.3;
-                          const baseColor = message?.role === "user" ? "rgba(18, 196, 152, 0.98)" : "rgba(38, 126, 230, 0.98)";
-                          const activeColor = message?.role === "user" ? "rgba(12, 182, 138, 1)" : "rgba(32, 120, 224, 1)";
-                          const hoverColor = message?.role === "user" ? "rgba(26, 216, 170, 1)" : "rgba(70, 160, 255, 1)";
-                          const dockStyle = {
-                            "--dock-scale": dockScale.toFixed(3),
-                            "--dock-width": `${dockWidth.toFixed(1)}px`,
-                            "--dock-height": `${dockHeight.toFixed(1)}px`,
-                            "--dock-shift": `${dockShift.toFixed(1)}px`,
-                            "--dock-line-shift": `${dockLineShift.toFixed(1)}px`,
-                            "--dock-glow": `${dockGlow.toFixed(1)}px`,
-                            "--dock-glow-strong": `${dockGlowStrong.toFixed(1)}px`,
-                            "--dock-opacity": dockOpacity.toFixed(2),
-                            "--dock-color": baseColor,
-                          } as React.CSSProperties;
-                          if (isActive) {
-                            (dockStyle as Record<string, string>)["--dock-color"] = activeColor;
-                          }
-                          if (isHovered) {
-                            (dockStyle as Record<string, string>)["--dock-color"] = hoverColor;
-                          }
-                          if (isDisabled) {
-                            (dockStyle as Record<string, string>)["--dock-color"] = "rgba(255, 255, 255, 0.35)";
-                          }
-                          return (
-                            <div key={`rail-${index}`} className="chat-orbit-slot">
-                              <button
-                                className={`chat-orbit-mark ${isActive ? "is-active" : ""} ${isHovered ? "is-hover" : ""} ${isDisabled ? "is-disabled" : ""}`}
-                                type="button"
-                                style={dockStyle}
-                                onMouseEnter={() => {
-                                  setChatRailHoverIndex(index);
-                                  setChatRailHoverPosition(index);
-                                }}
-                                onFocus={() => {
-                                  setChatRailHoverIndex(index);
-                                  setChatRailHoverPosition(index);
-                                }}
-                                onClick={() => {
-                                  if (messageId) {
-                                    handleRailSelect(messageId);
-                                  }
-                                }}
-                                aria-label={messageId ? `Jump to message: ${headline}` : "No message"}
-                                disabled={isDisabled}
-                              >
-                                <span className="chat-orbit-line" aria-hidden="true" />
-                              </button>
-                              {isHovered && messageId && (
-                                <div className="chat-orbit-preview" aria-hidden="true">
-                                  <span className="chat-orbit-title">{headline}</span>
-                                  <span className="chat-orbit-meta">{meta}</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <ChatOrbitRail
+                        railSlots={railSlots}
+                        railActiveId={railActiveId}
+                        onSelect={handleRailSelect}
+                      />
                     )}
                     <div className="chat-shell">
                       <div
@@ -21293,669 +23232,30 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
 
                         {hasVisibleMessages ? (
-                          visibleMessages.map((message, index) => {
-                            const messageTime = message.ts?.trim() ?? "";
-                            const isUser = message.role === "user";
-                            const previousMessage = index > 0 ? visibleMessages[index - 1] : null;
-                            const editFeedbackKey = `${message.id}:edit`;
-                            const copyFeedbackKey = `${message.id}:copy`;
-                            const retryFeedbackKey = `${message.id}:retry`;
-                            const isEditAck = Boolean(chatActionFeedback[editFeedbackKey]);
-                            const isCopyAck = Boolean(chatActionFeedback[copyFeedbackKey]);
-                            const isRetryAck = Boolean(chatActionFeedback[retryFeedbackKey]);
-                            const visualMessage = message as MessageVisualSnapshot;
-                            const assistantImageUrls = !isUser ? sanitizeImageUrls(visualMessage.imageUrls, MAX_REPLY_IMAGES) : [];
-                            const assistantImagesLoading = !isUser && Boolean(visualMessage.imagesLoading);
-                            const assistantMapPreviewUrl = !isUser ? visualMessage.mapPreviewUrl : undefined;
-                            const hasAssistantMapPreview = Boolean(assistantMapPreviewUrl);
-                            const isStreamingAssistantMessage =
-                              !isUser &&
-                              isSending &&
-                              Boolean(latestMessage) &&
-                              latestMessage?.id === message.id;
-                            const showTurnDivider =
-                              message.role === "assistant" &&
-                              previousMessage?.role === "user" &&
-                              !isStreamingAssistantMessage;
-                            const isLive = isStreamingAssistantMessage;
-                            const rawThinkingText = isLive ? liveThinkingText : visualMessage.thinking;
-                            
-                            let dynamicThinkingTitle = "";
-                            let dynamicStageDetail: string | undefined;
-                            const extractAllStages = (str: string) => {
-                              if (!str) return [];
-                              return [...str.matchAll(/(?:<meera_stage>|_stage>|meera_stage>|stage>)([\s\S]*?)(?:<\/meera_stage>|$)/gi)];
-                            };
-                            
-                            // @ts-ignore
-                            const stageMatches = extractAllStages(message.content).length > 0 ? extractAllStages(message.content) : extractAllStages(rawThinkingText);
-                            if (stageMatches.length > 0) {
-                              const formattedStages = stageMatches.map(match => {
-                                const stageContent = match[1];
-                                const parts = stageContent.split(",");
-                                let labelStr = "";
-                                let stageStr = "";
-                                let detailStr = "";
-                                const firstPart = parts[0].split(":")[0].trim();
-                                if (firstPart === "searching_web" || firstPart.startsWith("tool_call_search_web")) stageStr = "Searching the web";
-                                else if (firstPart === "understanding_context") stageStr = "Understanding context";
-                                else if (firstPart === "framing_answer") stageStr = "Framing answer";
-                                else if (firstPart === "reasoning") stageStr = "Reasoning Summary";
-                                else if (firstPart.startsWith("tool_call_execute_terminal")) stageStr = "Executing terminal command";
-                                else if (firstPart.startsWith("tool_call_")) stageStr = "Using tool";
-                                
-                                parts.forEach(part => {
-                                  const [key, ...valParts] = part.split(":");
-                                  if (key.trim() === "label") labelStr = valParts.join(":").trim();
-                                  if (key.trim() === "detail") detailStr = valParts.join(":").trim();
-                                });
-                                
-                                const finalLabel = labelStr || stageStr || "Thinking";
-                                return `- **${finalLabel}**: ${detailStr}`;
-                              });
-                              
-                              const lastStageContent = stageMatches[stageMatches.length - 1][1];
-                              const lastParts = lastStageContent.split(",");
-                              let lastLabelStr = "";
-                              let lastStageStr = "";
-                              const lastFirstPart = lastParts[0].split(":")[0].trim();
-                              if (lastFirstPart === "searching_web" || lastFirstPart.startsWith("tool_call_search_web")) lastStageStr = "Searching the web";
-                              else if (lastFirstPart === "understanding_context") lastStageStr = "Understanding context";
-                              else if (lastFirstPart === "framing_answer") lastStageStr = "Framing answer";
-                              else if (lastFirstPart === "reasoning") lastStageStr = "Reasoning Summary";
-                              else if (lastFirstPart.startsWith("tool_call_execute_terminal")) lastStageStr = "Executing terminal command";
-                              else if (lastFirstPart.startsWith("tool_call_")) lastStageStr = "Using tool";
-                              
-                              lastParts.forEach(part => {
-                                const [key, ...valParts] = part.split(":");
-                                if (key.trim() === "label") lastLabelStr = valParts.join(":").trim();
-                              });
-                              dynamicThinkingTitle = lastLabelStr || lastStageStr || dynamicThinkingTitle;
-                              
-                              // Pass the full formatted list of stages so none are overwritten
-                              dynamicStageDetail = formattedStages.join("\n");
-                            }
-                            
-                            let extractedReasoning = "";
-                            const sanitizeReasoningText = (value: string) => {
-                              let sanitized = (value || "")
-                                .replace(/<\|"?\|?>/g, '"')
-                                .replace(/<\/?(?:meera_stage|stage|meera_thinking|thinking|think|tool_result|thought|reasoning|reason)[^>]*>/gi, "")
-                                .replace(/\btool_call_search_web\b\s*/gi, "")
-                                .replace(/\btool_call_[^\s]+\b\s*/gi, "")
-                                .replace(/\btool_call:searching_web\b[\s\S]*?(?:searching_web_result:\s*"?No result"?|$)/gi, "Searched the web for relevant sources.")
-                                .replace(/\btool_result:searching_web_result:\s*"?No result"?/gi, "")
-                                .replace(/\bsearching_web_why:\s*"?([^"\n]+)"?/gi, "Search query: $1")
-                                .replace(/\bsearching_web_result:\s*"?No result"?/gi, "")
-                                .replace(/\btool_call:[^\n]+/gi, "")
-                                .replace(/\btool_result:[^\n]+/gi, "")
-                                .replace(/,+/g, ",")
-                                .replace(/[ \t]+/g, " ")
-                                .replace(/\n{3,}/g, "\n\n")
-                                .trim();
-                              sanitized = sanitized
-                                .split(/\n+/)
-                                .map((line) => line.trim())
-                                .filter((line) => line && !/^["',\s]+$/.test(line))
-                                .join("\n");
-                              return sanitized;
-                            };
-                            
-                            // Local models sometimes emit their OWN made-up tool-call
-                            // syntax like `<tool_call:search_web{query:<|"|>...<|"|>}`
-                            // instead of a real tool call, immediately followed by a
-                            // complete, correct visible answer in the same message.
-                            // The naive regex this used to be (`<tool_call\b[^>]*>[\s\S]*$`)
-                            // treats the FIRST '>' anywhere after `<tool_call` as the tag's
-                            // end -- but this malformed syntax often contains a stray '>'
-                            // of its own (e.g. inside `<|"|>`) well before the tag's real
-                            // closing brace, so the regex matched there instead and deleted
-                            // everything from that point to the end of the string, silently
-                            // wiping out the entire real answer that followed. This helper
-                            // instead finds the tag's actual balanced closing '}' (tracking
-                            // brace depth and quoted strings) and strips only up through
-                            // that point, so the real answer text is always preserved.
-                            const stripLeadingToolCallArtifact = (text: string): string => {
-                              const m = /^\s*<tool_call:[a-zA-Z0-9_]+\{/.exec(text);
-                              if (!m) return text;
-                              let depth = 0;
-                              let inStr = false;
-                              let i = m[0].length - 1;
-                              for (; i < text.length; i += 1) {
-                                const c = text[i];
-                                if (c === '"' && text[i - 1] !== '\\') inStr = !inStr;
-                                if (inStr) continue;
-                                if (c === '{') depth += 1;
-                                else if (c === '}') {
-                                  depth -= 1;
-                                  if (depth === 0) { i += 1; break; }
-                                }
-                              }
-                              // No balanced close found -- leave the text untouched rather
-                              // than guessing where to cut; better to show the raw prefix
-                              // than to risk deleting a real answer again.
-                              if (depth !== 0) return text;
-                              return text.slice(i).replace(/^\s+/, "");
-                            };
-                            // 1. Silent removal of meera_stage control tags and special im_end/im_start tokens from main content
-                            let cleanContent = stripLeadingToolCallArtifact(
-                              message.content
-                                .replace(/<\|im_(?:end|start)\|>/gi, "")
-                                .replace(/<(?:meera_stage|stage)[^>]*>([\s\S]*?)(?:<\/(?:meera_stage|stage)>|$)/gi, "")
-                                .replace(/<tool_call\b[^>]*>[\s\S]*?<\/tool_call>/gi, "")
-                            )
-                              .replace(/<\|tool_call>[\s\S]*?<tool_call\|>/gi, "")
-                              .replace(/<\|tool_call>[\s\S]*$/gi, "")
-                              .trim();
-                            // Fallback for malformed stage tags
-                            cleanContent = cleanContent.replace(/(?:_stage>|meera_stage>|stage>|meera_stage[^>]*>)([\s\S]*?)(?:<\/meera_stage>|$)/gi, "").trim();
-                            // Fallback for completely blown open tags exposing raw key/value pairs
-                            cleanContent = cleanContent.replace(/(?:^|\n)[^\n<]{0,60}\blabel\s*:[^\n]{0,120}\bdetail\s*:[^\n]{0,200}\bprogress\s*:\s*\d{1,3}[^\n]*?(?:<\/meera_stage>|<\/stage>|$)/gi, "").trim();
-                            cleanContent = stripThinkingBlocks(cleanContent).trim();
-
-
-                            // 2. Extraction of actual reasoning/thoughts/tool results
-                            const reasoningRegex = /<(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)(?:>|\s*>)([\s\S]*?)(?:<\/(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)>|$)/gi;
-                            cleanContent = cleanContent.replace(reasoningRegex, (match, p1) => {
-                              const sanitized = sanitizeReasoningText(p1.trim());
-                              if (sanitized) extractedReasoning += sanitized + "\n\n";
-                              return "";
-                            }).trim();
-
-                            // Fallback for malformed reasoning tags
-                            cleanContent = cleanContent.replace(/(?:<meera_thinking>|_thinking>|meera_thinking>|thinking>)([\s\S]*?)(?:<\/meera_thinking>|$)/gi, (match, p1) => {
-                              const sanitized = sanitizeReasoningText(p1.replace(/<\/?(?:meera_thinking|thinking|think|tool_result|thought|reasoning|reason)[^>]*>/gi, "").trim());
-                              if (sanitized) extractedReasoning += sanitized + "\n\n";
-                              return "";
-                            }).trim();
-
-                            // Clean any stray control tags out of the raw thinking text
-                            let cleanThinking = sanitizeReasoningText(stripThinkingBlocks(rawThinkingText || "").replace(/(?:<meera_stage>|_stage>|meera_stage>|stage>)([\s\S]*?)(?:<\/meera_stage>|$)/gi, "").trim());
-
-                            // Defense-in-depth: weaker local models sometimes ignore the "write a real
-                            // sentence" instruction and instead dump raw internal tokens/identifiers
-                            // (e.g. "tool_call_search_gmail_oauth_request_user_datareasoning_round")
-                            // straight into <meera_thinking>. That's never valid user-facing text, so
-                            // treat any thinking-panel line that has no spaces but does have multiple
-                            // underscore-joined segments as leaked internal tokens and drop it rather
-                            // than render it verbatim.
-                            const looksLikeRawTokenSoup = (segment: string) => {
-                              const s = segment.trim();
-                              if (!s || /\s/.test(s)) return false;
-                              return (s.match(/_/g) || []).length >= 2;
-                            };
-                            cleanThinking = cleanThinking
-                              .split(/\n+/)
-                              .filter((line) => !looksLikeRawTokenSoup(line))
-                              .join("\n")
-                              .trim();
-
-                            const reasoningPhrases = [
-                              /^\s*\*?\s*i will now search/i,
-                              /^\s*\*?\s*i found several/i,
-                              /^\s*\*?\s*i will now synthesize/i,
-                              /^\s*\*?\s*searching the web/i,
-                              /^\s*\*?\s*synthesizing/i
-                            ];
-                            
-                            let extractedFromContent = "";
-                            // Insert double newlines before headers or recipe icons to ensure they aren't grouped into reasoning paragraphs
-                            const preparedContent = cleanContent
-                              .replace(/\n\s*(#+)/g, "\n\n$1")
-                              .replace(/\n\s*(🎂)/g, "\n\n$1");
-                            const paragraphs = preparedContent.split(/\n\n+/);
-                            const remainingParagraphs = paragraphs.filter((para: string) => {
-                              const trimmed = para.trim();
-                              const isReasoning = reasoningPhrases.some(regex => regex.test(trimmed));
-                              if (isReasoning) {
-                                extractedFromContent += trimmed + "\n\n";
-                                return false;
-                              }
-                              return true;
-                            });
-                            cleanContent = remainingParagraphs.join("\n\n");
-
-                            const currentThinkingText = [cleanThinking, sanitizeReasoningText(extractedReasoning.trim()), extractedFromContent.trim()].filter(Boolean).join("\n\n");
-                            
-                            // Strip lingering "meera" or "era" (prompt artifacts) ONLY if they are standalone words or followed by a colon
-                            // This prevents accidentally cutting characters off real words like "Erasmus" or "Erasing"
-                            cleanContent = cleanContent.replace(/^(?:meera|era)(?:\s*:)?\s+/i, "");
-                            
-                            // Strip completed local model MCQ popup tags from UI
-                            const localMcqRegex = /<meera_mcq>[\s\S]*?<\/meera_mcq>/gi;
-                            cleanContent = cleanContent.replace(localMcqRegex, "").trim();
-
-                            // Hide partial tags while streaming (prevents printing and erasing!)
-                            if (isLive) {
-                              const partials = [
-                                "<", "<m", "<me", "<mee", "<meer", "<meera", "<meera_", 
-                                "<meera_s", "<meera_st", "<meera_sta", "<meera_stag", "<meera_stage",
-                                "<meera_m", "<meera_mc", "<meera_mcq",
-                                "<meera_t", "<meera_th", "<meera_thi", "<meera_thin", "<meera_think", "<meera_thinki", "<meera_thinkin", "<meera_thinking",
-                                "_", "_s", "_st", "_sta", "_stag", "_stage", "_m", "_mc", "_mcq",
-                                "_t", "_th", "_thi", "_thin", "_think", "_thinki", "_thinkin", "_thinking",
-                                "m", "me", "mee", "meer", "meera", "meera_", "meera_s", "meera_st", "meera_sta", "meera_stag", "meera_stage",
-                                "meera_t", "meera_th", "meera_thi", "meera_thin", "meera_think", "meera_thinki", "meera_thinkin", "meera_thinking",
-                                "s", "st", "sta", "stag", "stage",
-                                "t", "th", "thi", "thin", "think", "thinki", "thinkin", "thinking",
-                                "e", "er", "era"
-                              ];
-                              if (partials.includes(cleanContent.toLowerCase().trim())) {
-                                cleanContent = "";
-                              }
-                            }
-                            
-                            const hasThinking = Boolean(currentThinkingText) || (stageMatches && stageMatches.length > 0) || (isLive && modelLoadStatus?.status === "loading");
-
-                            // Force any lingering running steps to show as completed once the message stream ends
-                            const displayExecutionEvents = visualMessage.executionEvents ? { ...visualMessage.executionEvents } : undefined;
-                            if (displayExecutionEvents && !isLive) {
-                              for (const key in displayExecutionEvents) {
-                                if (displayExecutionEvents[key].status === "running") {
-                                  displayExecutionEvents[key] = { ...displayExecutionEvents[key], status: "completed", progress: 100 };
-                                }
-                              }
-                            }
-
-                            const shouldShowAssistantVisuals =
-                              !isUser &&
-                              (assistantImageUrls.length > 0 || assistantImagesLoading);
-                            const hasBrowserScreenshot = !isUser && typeof visualMessage.browserScreenshot === "string" && visualMessage.browserScreenshot.length > 0;
-                            const assistantModelSummary = "";
-                            // The thinking section now renders *inside* the same bubble as the
-                            // answer (see below), so the bubble is only ever truly empty when
-                            // there's no thinking, no text, no visuals, and no attachments.
-                            const hasAnyExecutionEvents = displayExecutionEvents && Object.keys(displayExecutionEvents).length > 0;
-                            const bubbleHasNothingToShow =
-                              !hasThinking &&
-                              !hasAnyExecutionEvents &&
-                              !cleanContent.trim() &&
-                              !shouldShowAssistantVisuals &&
-                              !hasBrowserScreenshot &&
-                              !(visualMessage.attachments?.length);
-                            const chatBodyHasContent =
-                              Boolean(cleanContent.trim()) ||
-                              shouldShowAssistantVisuals ||
-                              hasBrowserScreenshot ||
-                              hasAssistantMapPreview ||
-                              hasAnyExecutionEvents ||
-                              Boolean(visualMessage.attachments?.length);
-
-                            if (!isUser && bubbleHasNothingToShow && !isLive) {
-                              return null;
-                            }
-
-                            // Only place text above a tool timeline when it truly arrived
-                            // before that tool call. The old code split the first sentence
-                            // out of the completed answer, which made a post-search answer
-                            // look like an opening statement.
-                            const toolPrelude = typeof visualMessage.toolPrelude === "string"
-                              ? visualMessage.toolPrelude.trim()
-                              : "";
-                            const hasAuthenticToolPrelude = Boolean(toolPrelude) && cleanContent.startsWith(toolPrelude);
-                            // Keep tool prompts invisible in the transcript so the
-                            // user only sees the actual answer, not the model's
-                            // internal task phrasing.
-                            const assistantPreludeText = "";
-                            const assistantBodyText = hasAuthenticToolPrelude
-                              ? cleanContent.slice(toolPrelude.length).trimStart()
-                              : cleanContent;
-
-                            return (
-                              <React.Fragment key={message.id}>
-                                <div
-                                  className={`chat-message ${message.role}${hasThinking ? " chat-thinking" : ""}`}
-                                  data-message-id={message.id}
-                                >
-                                  <div className="chat-stack">
-                                    <div className={`chat-bubble ${bubbleHasNothingToShow ? "is-empty chat-bubble-suppressed" : ""}`} style={{ background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none" }}>
-                                      <div className={`chat-body ${chatBodyHasContent ? "" : "chat-body-empty"}`}>
-                                        {(() => {
-  // Always render this message's own stored executionEvents, never the
-  // shared global `executionEvents` state. Every write site updates both
-  // simultaneously (see setExecutionEvents + updateMessageVisualSnapshot
-  // calls above), so the per-message copy is always at least as fresh --
-  // and unlike the global copy, it can never hold a *previous* message's
-  // leftover running rows bleeding into a brand new live message before
-  // that message's own first event has arrived.
-  let eventsToRender = displayExecutionEvents ? { ...displayExecutionEvents } : undefined;
-  if (eventsToRender) {
-    for (const key of Object.keys(eventsToRender)) {
-      if (eventsToRender[key].title === "Response generated") {
-        delete eventsToRender[key];
-      }
-    }
-  }
-  const hasEventsToRender = eventsToRender && Object.keys(eventsToRender).length > 0;
-
-  // Once the answer itself contains a terminal block, that block renders its
-  // own compulsory task heading (the command, e.g. "Get-CimInstance
-  // Win32_LogicalDisk...") via CommandRunCard below. Showing the separate
-  // boxed-off "Reasoning" tree on top of that would just repeat the same
-  // task as two stacked panels. So the terminal case collapses to a single
-  // flow: a normal opening line, then the terminal card carrying the task
-  // heading, then the rest of the answer -- the way Claude interleaves
-  // prose with tool calls instead of prefacing them with a reasoning card.
-  const answerHasTerminalBlock = !isUser && /Terminal result\s*\n\s*\n\s*Command:\s*```/i.test(cleanContent);
-
-  const baseTime = typeof (message as any).created_at === "string" ? new Date((message as any).created_at).getTime() : 
-                   typeof (message as any).created_at === "number" ? (message as any).created_at : Date.now();
-
-  const parsedPhases = currentThinkingText
-    ? currentThinkingText.split(/\n\n+/).filter(Boolean).map((block, i, arr) => ({
-        id: `think-phase-${i}`,
-        text: block,
-        startedAt: baseTime + i,
-        endedAt: (!isLive || i < arr.length - 1) ? baseTime + i + 1 : undefined,
-      }))
-    : undefined;
-
-  const hasPhases = parsedPhases && parsedPhases.length > 0;
-
-  if (!answerHasTerminalBlock && (hasPhases || hasEventsToRender)) {
-    return (
-      <InlineReasoningStream
-        live={isLive}
-        phases={parsedPhases}
-        executionEvents={eventsToRender}
-        hasAnswerContent={Boolean(cleanContent.trim()) || shouldShowAssistantVisuals || hasBrowserScreenshot}
-        title={dynamicThinkingTitle}
-      />
-    );
-  }
-
-  return null;
-
-  return null;
-})()}
-                                        {visualMessage.attachments?.length ? (
-                                          <div className="chat-attachment-tray" aria-label="Attached files">
-                                            {visualMessage.attachments.map((file) => {
-                                              const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.name);
-                                              const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-                                              const resolvedType = file.type && file.type !== "application/octet-stream" ? file.type : (isPdf ? "application/pdf" : isImage ? "image/png" : "application/octet-stream");
-                                              // @ts-ignore
-                                              const fileUrl = file.content_base64 ? `data:${resolvedType};base64,${file.content_base64}` : (file.blobUrl || null);
-
-                                              if (isImage && fileUrl) {
-                                                return (
-                                                  <div
-                                                    className="chat-attachment-chip has-image-preview"
-                                                    key={`${message.id}-${file.name}`}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    aria-label={`Preview ${file.name}`}
-                                                    onClick={() => {
-                                                      if (file.content_base64) {
-                                                        openAttachmentViewer(file);
-                                                      }
-                                                    }}
-                                                    onKeyDown={(event) => {
-                                                      if (event.key === "Enter" || event.key === " ") {
-                                                        event.preventDefault();
-                                                        openAttachmentViewer(file);
-                                                      }
-                                                    }}
-                                                  >
-                                                    <div className="chat-attachment-image-container">
-                                                      <img
-                                                        src={fileUrl}
-                                                        alt={file.name}
-                                                        className="chat-attachment-image-preview"
-                                                        loading="lazy"
-                                                      />
-                                                    </div>
-                                                    <span className="chat-attachment-copy">
-                                                      <span className="chat-attachment-name">{file.name}</span>
-                                                      <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
-                                                    </span>
-                                                  </div>
-                                                );
-                                              }
-
-                                              if (isPdf && fileUrl) {
-                                                return (
-                                                  <div
-                                                    className="chat-attachment-chip has-image-preview"
-                                                    key={`${message.id}-${file.name}`}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    aria-label={`Preview ${file.name}`}
-                                                    onClick={() => {
-                                                      if (file.content_base64) {
-                                                        openAttachmentViewer(file);
-                                                      }
-                                                    }}
-                                                    onKeyDown={(event) => {
-                                                      if (event.key === "Enter" || event.key === " ") {
-                                                        event.preventDefault();
-                                                        openAttachmentViewer(file);
-                                                      }
-                                                    }}
-                                                  >
-                                                    <div className="chat-attachment-image-container has-iframe-preview">
-                                                      <iframe
-                                                        src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                        title={file.name}
-                                                        scrolling="no"
-                                                      />
-                                                    </div>
-                                                    <span className="chat-attachment-copy">
-                                                      <span className="chat-attachment-name">{file.name}</span>
-                                                      <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
-                                                    </span>
-                                                  </div>
-                                                );
-                                              }
-
-                                              return (
-                                                <div
-                                                  className={`chat-attachment-chip ${file.content_base64 ? "is-previewable" : ""}`}
-                                                  key={`${message.id}-${file.name}`}
-                                                  role={file.content_base64 ? "button" : undefined}
-                                                  tabIndex={file.content_base64 ? 0 : undefined}
-                                                  aria-label={file.content_base64 ? `Preview ${file.name}` : undefined}
-                                                  onClick={() => {
-                                                    if (file.content_base64) {
-                                                      openAttachmentViewer(file);
-                                                    }
-                                                  }}
-                                                  onKeyDown={(event) => {
-                                                    if ((event.key === "Enter" || event.key === " ") && file.content_base64) {
-                                                      event.preventDefault();
-                                                      openAttachmentViewer(file);
-                                                    }
-                                                  }}
-                                                >
-                                                  <span className="material-symbols-outlined chat-attachment-icon" aria-hidden="true">
-                                                    description
-                                                  </span>
-                                                  <span className="chat-attachment-copy">
-                                                    <span className="chat-attachment-name">{file.name}</span>
-                                                    <span className="chat-attachment-size">{formatAttachmentSize(file.size)}</span>
-                                                  </span>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        ) : null}
-                                        {hasAssistantMapPreview ? (
-                                          <div className="chat-map-preview">
-                                            <div className="chat-map-preview-label">Map preview</div>
-                                            <div className="chat-map-preview-frame-wrap">
-                                              <iframe
-                                                className="chat-map-preview-frame"
-                                                src={assistantMapPreviewUrl}
-                                                title="Map preview"
-                                                loading="lazy"
-                                                allowFullScreen
-                                              />
-                                            </div>
-                                          </div>
-                                        ) : null}
-                                        {shouldShowAssistantVisuals ? (
-                                          <AssistantVisualStrip
-                                            imageUrls={assistantImageUrls}
-                                            loading={assistantImagesLoading}
-                                            onOpenImage={openImageViewer}
-                                          />
-                                        ) : null}
-                                        {hasBrowserScreenshot ? (
-                                          <div className="chat-browser-screenshot" style={{ marginTop: 12, overflow: "hidden", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.04)" }}>
-                                            <img
-                                              src={`data:image/png;base64,${visualMessage.browserScreenshot}`}
-                                              alt="Browser automation capture"
-                                              style={{ display: "block", width: "100%", maxHeight: 420, objectFit: "contain" }}
-                                              loading="lazy"
-                                            />
-                                          </div>
-                                        ) : null}
-                                        {!isUser && isLive ? (
-                                          <div className="live-assistant-scan-text">
-                                            <MarkdownContent content={assistantBodyText} />
-                                          </div>
-                                        ) : (
-                                          <MarkdownContent content={isUser ? message.content : assistantBodyText} />
-                                        )}
-                                        {visualMessage.agentInteraction ? (
-                                          (visualMessage.agentInteraction.type === "choice" || visualMessage.agentInteraction.type === "multi_choice" || visualMessage.agentInteraction.key.startsWith("local_mcq_")) && !agentInteractionDialog ? (
-                                            <McqInteractionCard interaction={visualMessage.agentInteraction} answer={currentSession?.taskFacts?.[visualMessage.agentInteraction.key] as string | undefined} />
-                                          ) : (
-                                            <AgentInteractionSummary
-                                              interaction={visualMessage.agentInteraction}
-                                              // @ts-ignore
-                                              onOpen={() => openAgentInteraction(message.id, visualMessage.agentInteraction!, currentSession?.id)}
-                                            />
-                                          )
-                                        ) : visualMessage.userDataRequest ? (
-                                          <div className="user-data-request-box">
-                                            <span className="user-data-request-kicker">Meera needs one detail</span>
-                                            <p className="user-data-request-prompt">{visualMessage.userDataRequest.prompt}</p>
-                                            <div className="user-data-request-actions">
-                                              {visualMessage.userDataRequest.options && visualMessage.userDataRequest.options.length > 0 ? (
-                                                visualMessage.userDataRequest.options.map((opt) => (
-                                                  <button
-                                                    key={opt}
-                                                    type="button"
-                                                    className="user-data-request-option"
-                                                    disabled={isSending}
-                                                    onClick={() => handleUserDataSubmit(visualMessage.userDataRequest!.key, opt, message.id)}
-                                                  >
-                                                    {opt}
-                                                  </button>
-                                                ))
-                                              ) : (
-                                                <form
-                                                  className="user-data-request-form"
-                                                  onSubmit={(event) => {
-                                                    event.preventDefault();
-                                                    const answer = new FormData(event.currentTarget).get("answer");
-                                                    if (typeof answer === "string") {
-                                                      handleUserDataSubmit(visualMessage.userDataRequest!.key, answer, message.id);
-                                                    }
-                                                  }}
-                                                >
-                                                  <input
-                                                    name="answer"
-                                                    type="text"
-                                                    placeholder="Type your answer"
-                                                    autoComplete="off"
-                                                    disabled={isSending}
-                                                  />
-                                                  <button type="submit" disabled={isSending}>Continue</button>
-                                                </form>
-                                              )}
-                                            </div>
-                                            {(!visualMessage.userDataRequest.options || visualMessage.userDataRequest.options.length === 0) ? (
-                                              <p className="user-data-request-help">Your answer stays attached to this task and Meera will continue from the completed steps.</p>
-                                            ) : null}
-                                          </div>
-                                        ) : null}
-                                      {!isUser && assistantModelSummary ? (
-                                        <div className="chat-model-caption" aria-label={`Model used: ${assistantModelSummary}`}>
-                                          <span className="chat-model-caption-label">Model used</span>
-                                          <strong className="chat-model-caption-value">{assistantModelSummary}</strong>
-                                        </div>
-                                      ) : null}
-                                      {!isUser && !(Boolean(message.content.trim()) || shouldShowAssistantVisuals) ? null : (
-                                        <div className="chat-meta-row chat-meta-row-inline">
-                                          <div className="chat-meta-actions">
-                                            {isUser && (
-                                              <button
-                                                className={`chat-meta-btn ${isEditAck ? "is-ack" : ""}`}
-                                                type="button"
-                                                aria-label="Edit message"
-                                                title="Edit"
-                                                onClick={() => {
-                                                  handleEditMessage(message.content);
-                                                  // @ts-ignore
-                                                  triggerChatActionFeedback(message.id, "edit");
-                                                }}
-                                              >
-                                                {isEditAck ? (
-                                                  <span className="material-symbols-outlined" aria-hidden="true">check</span>
-                                                ) : (
-                                                  <UiIcon name="edit.svg" />
-                                                )}
-                                                <span className="meera-btn-label">Edit</span>
-                                              </button>
-                                            )}
-                                            <button
-                                              className={`chat-meta-btn ${isCopyAck ? "is-ack is-copy-ack" : ""}`}
-                                              type="button"
-                                              aria-label="Copy message"
-                                              title="Copy"
-                                              onClick={() => {
-                                                void handleCopy(isUser ? message.content : cleanContent);
-                                                // @ts-ignore
-                                                triggerChatActionFeedback(message.id, "copy");
-                                              }}
-                                            >
-                                              {isCopyAck ? (
-                                                <span className="material-symbols-outlined" aria-hidden="true">check</span>
-                                              ) : (
-                                                <UiIcon name="copy.svg" />
-                                              )}
-                                              <span className="meera-btn-label">Copy</span>
-                                            </button>
-                                            {!isUser && (
-                                              <button
-                                                className={`chat-meta-btn ${isRetryAck ? "is-ack" : ""}`}
-                                                type="button"
-                                                aria-label="Retry message"
-                                                title="Retry"
-                                                onClick={() => {
-                                                  // @ts-ignore
-                                                  handleRetryMessage(message.id);
-                                                  // @ts-ignore
-                                                  triggerChatActionFeedback(message.id, "retry");
-                                                }}
-                                              >
-                                                {isRetryAck ? (
-                                                  <span className="material-symbols-outlined" aria-hidden="true">check</span>
-                                                ) : (
-                                                  <UiIcon name="retry.svg" />
-                                                )}
-                                                <span className="meera-btn-label">Retry</span>
-                                              </button>
-                                            )}
-                                          </div>
-                                          <span className="chat-meta-time">{messageTime}</span>
-                                        </div>
-                                      )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                {showTurnDivider ? (
-                                  <div className="chat-turn-divider" aria-hidden="true">
-                                    <span />
-                                  </div>
-                                ) : null}
-                              </React.Fragment>
-                            );
-                          })
-                        ) : !hasAnyMessages ? (
+                          visibleMessages.map((message, index) => (
+                            <MemoizedMessageRow
+                              key={message.id}
+                              message={message}
+                              previousMessage={index > 0 ? visibleMessages[index - 1] : null}
+                              chatActionFeedback={chatActionFeedback}
+                              isSending={isSending}
+                              latestMessage={latestMessage}
+                              liveThinkingText={liveThinkingText}
+                              modelLoadStatus={modelLoadStatus}
+                              currentSession={currentSession}
+                              agentInteractionDialog={agentInteractionDialog}
+                              handleUserDataSubmit={handleUserDataSubmit}
+                              openAttachmentViewer={openAttachmentViewer}
+                              openImageViewer={openImageViewer}
+                              handleEditMessage={handleEditMessage}
+                              handleCopy={handleCopy}
+                              handleRetryMessage={handleRetryMessage}
+                              handleContinueMessage={handleContinueMessage}
+                              triggerChatActionFeedback={triggerChatActionFeedback}
+                              openAgentInteraction={openAgentInteraction}
+                            />
+                          ))
+                        ) : !hasVisibleMessages ? (
                           <div className="chat-empty chat-empty-pro">
                             <span className="chat-empty-icon" aria-hidden="true">
                               <PiChatsCircleDuotone />
@@ -22154,68 +23454,32 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                             </div>
                           ) : null}
                           <div className="chat-composer-main">
-                            <div className="chat-input-wrap">
-                              <button
-                                className="chat-icon-btn chat-input-btn-left"
-                                type="button"
-                                aria-label="Attach files"
-                                title="Attach files"
-                                onClick={openAttachmentPicker}
-                                disabled={isSending || attachmentsBusy}
-                              >
-                                <UiIcon name="plus.svg" />
-                              </button>
-                              {inlineGhostSuffix ? (
-                                <div ref={chatGhostRef} className="chat-input-ghost" aria-hidden="true">
-                                  <span className="chat-input-ghost-typed">{input.slice(0, inputCaret)}</span>
-                                  <span className="chat-input-ghost-suffix">{inlineGhostSuffix}</span>
-                                </div>
-                              ) : null}
-                              <textarea
-                                ref={chatInputRef}
-                                rows={1}
-                                value={input}
-                                onChange={handleSmartInputChange}
-                                onPaste={handleSmartInputPaste}
-                                onSelect={handleChatInputSelect}
-                                onFocus={() => setChatInputFocused(true)}
-                                onBlur={() => setChatInputFocused(false)}
-                                onKeyDown={handleSmartComposerKeyDown}
-                                placeholder="Ask Meera anything"
-                                className="chat-input"
-                              />
-                              <div className="chat-input-btn-group">
-                                <button
-                                  className={`chat-icon-btn ${isRecording ? "active" : ""}`}
-                                  type="button"
-                                  aria-label={isRecording ? "Stop voice input" : "Talk to Meera"}
-                                  title={voiceRepliesEnabled ? "Voice replies enabled" : "Talk to Meera"}
-                                  onClick={startVoiceInput}
-                                >
-                                  {isRecording ? <UiIcon name="mic-off.svg" /> : <UiIcon name="mic.svg" />}
-                                </button>
-                              </div>
-                            </div>
-                            <div className="chat-actions">
-                              {isSending ? (
-                                <button className="chat-action-btn stop" type="button" onClick={stopActiveRequest}>
-                                  <UiIcon name="stop.svg" />
-                                  <span>Stop</span>
-                                </button>
-                              ) : (
-                                <button
-                                  className="chat-action-btn send"
-                                  type="button"
-                                  onClick={() => {
-                                    void sendMessage(input);
-                                    playSound("action");
-                                  }}
-                                >
-                                  <UiIcon name="send.svg" />
-                                  <span>Send</span>
-                                </button>
-                              )}
-                            </div>
+                            <SmartComposerBar
+                              input={input}
+                              setInput={setInput}
+                              inputCaret={inputCaret}
+                              setInputCaret={setInputCaret}
+                              isSending={isSending}
+                              stopActiveRequest={stopActiveRequest}
+                              sendMessage={sendMessage}
+                              isRecording={isRecording}
+                              startVoiceInput={startVoiceInput}
+                              voiceRepliesEnabled={voiceRepliesEnabled}
+                              openAttachmentPicker={openAttachmentPicker}
+                              attachmentsBusy={attachmentsBusy}
+                              chatInputRef={chatInputRef}
+                              chatGhostRef={chatGhostRef}
+                              inlineGhostSuffix={inlineGhostSuffix}
+                              onSmartInputChange={handleSmartInputChange}
+                              onSmartInputPaste={handleSmartInputPaste}
+                              onChatInputSelect={handleChatInputSelect}
+                              onChatInputFocus={() => setChatInputFocused(true)}
+                              onChatInputBlur={() => setChatInputFocused(false)}
+                              onSmartComposerKeyDown={handleSmartComposerKeyDown}
+                              mathMode={mathMode}
+                              setMathMode={setMathMode}
+                              activeSessionId={activeSessionId}
+                            />
                           </div>
                           <div className="chat-composer-controlbar">
                             <div className="chat-intent-layout">
@@ -22418,6 +23682,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                   </div>
 
                   <div className="agent-panel-content">
+                    <AgentTaskPanel apiBase={API_BASE} />
                     <AgentActionLog actions={agentActions} currentAction={currentAgentAction} />
                   </div>
                 </div>
@@ -22425,6 +23690,9 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
               </motion.main>
           )}
           </AnimatePresence>
+
+          {renderSidebarBackdrop()}
+          {sidebar}
       </div>
       )}
         <AnimatePresence>
@@ -22569,7 +23837,16 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                                 data-settings-id={section.id}
                                 className={`settings-nav-item ${resolvedSettingsSection === section.id ? "active" : ""}`}
                                 type="button"
-                                onClick={() => setSettingsSection(section.id)}
+                                onClick={async () => {
+                                  if (resolvedSettingsSection === section.id) return;
+                                  await triggerTransition(
+                                    async () => setSettingsSection(section.id),
+                                    {
+                                      title: "Switching Settings...",
+                                      subtitle: `Accessing ${section.label}`
+                                    }
+                                  );
+                                }}
                               >
                                 <span className="settings-nav-icon" aria-hidden="true">
                                   <img
@@ -22686,8 +23963,15 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                               engineRunning={engineRunning}
                               backendStarting={backendStarting}
                               canStartBackend={canStartBackend}
-                              onSelectModel={(modelId) => setSelectedModel(modelId as ModelOptionId)}
                               onStartBackend={startBackend}
+                              onSelectModel={(modelId) => {
+                                setSelectedModel(modelId as ModelOptionId);
+                                setSelectedCloudTierModel(modelId as ModelOptionId);
+                                const modelEntry = resolvedModels.find((m) => m.id === modelId);
+                                if (modelEntry?.model_type === "cloud" || modelEntry?.folder?.startsWith("cloud/")) {
+                                  void setInferenceModeExplicit("cloud");
+                                }
+                              }}
                               onLoadModel={async (modelId, runtimeSettings, ggufFilename) => {
                                 setSelectedModel(modelId as ModelOptionId);
                                 await startModelLoad(modelId as ModelOptionId, undefined, runtimeSettings, ggufFilename);
@@ -23852,9 +25136,9 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 const openInMeeraBrowserShell = async (href?: string) => {
   if (typeof window === "undefined") return;
   
-  if (window.meera?.openBrowserTab) {
+  if ((window.meera as any)?.openBrowserTab) {
     try {
-      const res = await window.meera.openBrowserTab(href);
+      const res = await (window.meera as any).openBrowserTab(href);
       if (res && !res.isNew && href && typeof BroadcastChannel !== "undefined") {
         const channel = new BroadcastChannel("meera-browser-link");
         channel.postMessage({ type: "meera-browser:open-tab", payload: { url: href } });

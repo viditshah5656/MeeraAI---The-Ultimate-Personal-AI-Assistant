@@ -19,25 +19,25 @@ export class EnhancedContentExtractor {
         }
         this.browserPool = new BrowserPool();
         this.fallbackThreshold = parseInt(process.env.BROWSER_FALLBACK_THRESHOLD || '3', 10);
-        console.log(`[EnhancedContentExtractor] Configuration: timeout=${this.defaultTimeout}, maxContentLength=${this.maxContentLength}, fallbackThreshold=${this.fallbackThreshold}`);
+        console.error(`[EnhancedContentExtractor] Configuration: timeout=${this.defaultTimeout}, maxContentLength=${this.maxContentLength}, fallbackThreshold=${this.fallbackThreshold}`);
     }
     async extractContent(options) {
         const { url } = options;
-        console.log(`[EnhancedContentExtractor] Starting extraction for: ${url}`);
+        console.error(`[EnhancedContentExtractor] Starting extraction for: ${url}`);
         // First, try with regular HTTP client (faster)
         try {
             const content = await this.extractWithAxios(options);
-            console.log(`[EnhancedContentExtractor] Successfully extracted with axios: ${content.length} chars`);
+            console.error(`[EnhancedContentExtractor] Successfully extracted with axios: ${content.length} chars`);
             return content;
         }
         catch (error) {
-            console.log(`[EnhancedContentExtractor] Axios failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error(`[EnhancedContentExtractor] Axios failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
             // Check if this looks like a case where browser would help
             if (this.shouldUseBrowser(error, url)) {
-                console.log(`[EnhancedContentExtractor] Falling back to headless browser for: ${url}`);
+                console.error(`[EnhancedContentExtractor] Falling back to headless browser for: ${url}`);
                 try {
                     const content = await this.extractWithBrowser(options);
-                    console.log(`[EnhancedContentExtractor] Successfully extracted with browser: ${content.length} chars`);
+                    console.error(`[EnhancedContentExtractor] Successfully extracted with browser: ${content.length} chars`);
                     return content;
                 }
                 catch (browserError) {
@@ -61,7 +61,7 @@ export class EnhancedContentExtractor {
         let content = this.parseContent(response.data);
         // Truncate content if it exceeds the limit (instead of axios throwing an error)
         if (maxContentLength && content.length > maxContentLength) {
-            console.log(`[EnhancedContentExtractor] Content truncated from ${content.length} to ${maxContentLength} characters for ${url}`);
+            console.error(`[EnhancedContentExtractor] Content truncated from ${content.length} to ${maxContentLength} characters for ${url}`);
             content = content.substring(0, maxContentLength);
         }
         // Check if we got a meaningful response
@@ -133,7 +133,7 @@ export class EnhancedContentExtractor {
                 }
             });
             // Navigate with realistic options and better error handling
-            console.log(`[BrowserExtractor] Navigating to ${url}`);
+            console.error(`[BrowserExtractor] Navigating to ${url}`);
             try {
                 await page.goto(url, {
                     waitUntil: 'domcontentloaded', // Don't wait for all resources
@@ -144,7 +144,7 @@ export class EnhancedContentExtractor {
                 // Handle specific protocol errors
                 const errorMessage = gotoError instanceof Error ? gotoError.message : String(gotoError);
                 if (errorMessage.includes('ERR_HTTP2_PROTOCOL_ERROR') || errorMessage.includes('HTTP2')) {
-                    console.log(`[BrowserExtractor] HTTP/2 error detected, trying with HTTP/1.1`);
+                    console.error(`[BrowserExtractor] HTTP/2 error detected, trying with HTTP/1.1`);
                     // Create a new context with HTTP/1.1 preference
                     await context.close();
                     const http1Context = await browser.newContext({
@@ -193,7 +193,7 @@ export class EnhancedContentExtractor {
                 });
             }
             catch {
-                console.log(`[BrowserExtractor] No main content selector found, proceeding anyway`);
+                console.error(`[BrowserExtractor] No main content selector found, proceeding anyway`);
             }
             // Extract content using the same logic as axios version
             const html = await page.content();
@@ -227,7 +227,7 @@ export class EnhancedContentExtractor {
         }
         catch {
             // Ignore simulation errors
-            console.log(`[BrowserExtractor] Behavior simulation failed, continuing`);
+            console.error(`[BrowserExtractor] Behavior simulation failed, continuing`);
         }
     }
     shouldUseBrowser(error, url) {
@@ -337,11 +337,11 @@ export class EnhancedContentExtractor {
         return timezones[Math.floor(Math.random() * timezones.length)];
     }
     async extractContentForResults(results, targetCount = results.length) {
-        console.log(`[EnhancedContentExtractor] Processing up to ${results.length} results to get ${targetCount} non-PDF results`);
+        console.error(`[EnhancedContentExtractor] Processing up to ${results.length} results to get ${targetCount} non-PDF results`);
         // Filter out PDF files first
         const nonPdfResults = results.filter(result => !isPdfUrl(result.url));
         const resultsToProcess = nonPdfResults.slice(0, Math.min(targetCount * 2, 10)); // Process extra to account for failures
-        console.log(`[EnhancedContentExtractor] Processing ${resultsToProcess.length} non-PDF results concurrently`);
+        console.error(`[EnhancedContentExtractor] Processing ${resultsToProcess.length} non-PDF results concurrently`);
         // Process results concurrently with timeout
         const extractionPromises = resultsToProcess.map(async (result) => {
             try {
@@ -355,7 +355,7 @@ export class EnhancedContentExtractor {
                 });
                 const content = await Promise.race([extractionPromise, timeoutPromise]);
                 const cleanedContent = cleanText(content, this.maxContentLength);
-                console.log(`[EnhancedContentExtractor] Successfully extracted: ${result.url}`);
+                console.error(`[EnhancedContentExtractor] Successfully extracted: ${result.url}`);
                 return {
                     ...result,
                     fullContent: cleanedContent,
@@ -366,7 +366,7 @@ export class EnhancedContentExtractor {
                 };
             }
             catch (error) {
-                console.log(`[EnhancedContentExtractor] Failed to extract: ${result.url} - ${error instanceof Error ? error.message : 'Unknown error'}`);
+                console.error(`[EnhancedContentExtractor] Failed to extract: ${result.url} - ${error instanceof Error ? error.message : 'Unknown error'}`);
                 return {
                     ...result,
                     fullContent: '',
@@ -388,7 +388,7 @@ export class EnhancedContentExtractor {
             ...successfulResults.slice(0, targetCount),
             ...failedResults.slice(0, Math.max(0, targetCount - successfulResults.length))
         ].slice(0, targetCount);
-        console.log(`[EnhancedContentExtractor] Completed processing ${resultsToProcess.length} results, extracted ${successfulResults.length} successful/${failedResults.length} failed`);
+        console.error(`[EnhancedContentExtractor] Completed processing ${resultsToProcess.length} results, extracted ${successfulResults.length} successful/${failedResults.length} failed`);
         return enhancedResults;
     }
     parseContent(html) {
@@ -438,14 +438,14 @@ export class EnhancedContentExtractor {
             if ($content.length > 0) {
                 mainContent = $content.text().trim();
                 if (mainContent.length > 100) { // Ensure we have substantial content
-                    console.log(`[EnhancedContentExtractor] Found content with selector: ${selector} (${mainContent.length} chars)`);
+                    console.error(`[EnhancedContentExtractor] Found content with selector: ${selector} (${mainContent.length} chars)`);
                     break;
                 }
             }
         }
         // If no main content found, try body content
         if (!mainContent || mainContent.length < 100) {
-            console.log(`[EnhancedContentExtractor] No main content found, using body content`);
+            console.error(`[EnhancedContentExtractor] No main content found, using body content`);
             mainContent = $('body').text().trim();
         }
         // Clean up the text

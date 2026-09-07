@@ -1,0 +1,351 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MEERA AI — QUANTUM NEURAL GLASSMORPHIC LOADER & TRANSITION STYLES
+   Designed for silky 60fps GPU acceleration on low-spec & high-spec machines.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Fullscreen & Section Overlay Containers ───────────────────────────── */
+.meera-glass-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  pointer-events: all;
+  opacity: 0;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+:root[data-theme="dark"] .meera-glass-overlay,
+.theme-dark .meera-glass-overlay {
+  background: transparent;
+}
+
+.meera-glass-overlay.is-active {
+  opacity: 1;
+}
+
+.meera-glass-overlay.is-section {
+  position: absolute;
+  border-radius: inherit;
+  z-index: 9999;
+}
+
+/* ── Center Stage Glass Apparatus ───────────────────────────────────────── */
+.meera-loader-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  position: relative;
+  transform: scale(0.92) translate3d(0, 6px, 0);
+  opacity: 0;
+  transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.24s ease;
+  will-change: transform, opacity;
+}
+
+.meera-glass-overlay.is-active .meera-loader-stage {
+  transform: scale(1) translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+/* ── Ambient Radial Chromatic Aura ──────────────────────────────────────── */
+.meera-chromatic-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  transform: translate(-50%, -60%);
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(0, 242, 254, 0.35),
+    rgba(79, 70, 229, 0.4),
+    rgba(236, 72, 153, 0.35),
+    rgba(245, 158, 11, 0.3),
+    rgba(16, 185, 129, 0.35),
+    rgba(0, 242, 254, 0.35)
+  );
+  filter: blur(48px);
+  opacity: 0.75;
+  animation: meeraAuraSpin 8s linear infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@keyframes meeraAuraSpin {
+  0% { transform: translate(-50%, -60%) rotate(0deg) scale(0.95); }
+  50% { transform: translate(-50%, -60%) rotate(180deg) scale(1.1); }
+  100% { transform: translate(-50%, -60%) rotate(360deg) scale(0.95); }
+}
+
+/* ── The Quantum Orbital Core ───────────────────────────────────────────── */
+.meera-quantum-orb {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Outer Glass Track Ring */
+.meera-orbital-ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.1)) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.25), inset 0 0 12px rgba(255, 255, 255, 0.4);
+  animation: meeraOrbitalSpinOuter 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
+
+@keyframes meeraOrbitalSpinOuter {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Middle Iridescent Ring with Light Beads */
+.meera-orbital-ring-mid {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: conic-gradient(
+    from 180deg,
+    #00f2fe,
+    #4facfe 20%,
+    #7000ff 40%,
+    #f72585 60%,
+    #4361ee 80%,
+    #00f2fe 100%
+  ) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: meeraOrbitalSpinInner 2.4s linear infinite reverse;
+  filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.6));
+  will-change: transform;
+}
+
+@keyframes meeraOrbitalSpinInner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Inner Pulsing Crystalline Core */
+.meera-crystal-core {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(240, 245, 255, 0.35));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 8px 24px -2px rgba(37, 99, 235, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 6px rgba(124, 58, 237, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: meeraCorePulse 2s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+@keyframes meeraCorePulse {
+  0%, 100% {
+    transform: scale(0.96);
+    box-shadow: 0 8px 24px -2px rgba(37, 99, 235, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(236, 72, 153, 0.45), 0 0 20px rgba(0, 242, 254, 0.4), inset 0 2px 6px rgba(255, 255, 255, 1);
+  }
+}
+
+/* Central Emblem Spark */
+.meera-core-spark {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  animation: meeraSparkGlow 2s ease-in-out infinite;
+}
+
+:root[data-theme="dark"] .meera-core-spark,
+.theme-dark .meera-core-spark {
+  color: #60a5fa;
+}
+
+@keyframes meeraSparkGlow {
+  0%, 100% {
+    transform: scale(0.9);
+    filter: drop-shadow(0 0 4px rgba(37, 99, 235, 0.4));
+  }
+  50% {
+    transform: scale(1.15) rotate(15deg);
+    filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 18px rgba(0, 242, 254, 0.8));
+  }
+}
+
+/* ── High-Glass HUD Capsule ─────────────────────────────────────────────── */
+.meera-loader-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 14px;
+  min-width: 210px;
+  max-width: 340px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 16px 36px -4px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+  transition: all 0.2s ease;
+}
+
+:root[data-theme="dark"] .meera-loader-hud,
+.theme-dark .meera-loader-hud {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 16px 36px -4px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+}
+
+.meera-loader-title {
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #0f172a 0%, #2563eb 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:root[data-theme="dark"] .meera-loader-title,
+.theme-dark .meera-loader-title {
+  background: linear-gradient(135deg, #0f172a 0%, #2563eb 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.meera-loader-subtitle {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme="dark"] .meera-loader-subtitle,
+.theme-dark .meera-loader-subtitle {
+  color: #64748b;
+}
+
+/* ── Shimmering Quantum Progress Track ──────────────────────────────────── */
+.meera-quantum-track {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  position: relative;
+  margin-top: 4px;
+}
+
+:root[data-theme="dark"] .meera-quantum-track,
+.theme-dark .meera-quantum-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.meera-quantum-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #00f2fe, #4facfe, #9d4edd, #f72585);
+  box-shadow: 0 0 8px rgba(79, 70, 229, 0.8);
+  animation: meeraBarSlide 1.4s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes meeraBarSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(280%); }
+}
+
+/* ── Inline / Card Variant ─────────────────────────────────────────────── */
+.meera-glass-inline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme="dark"] .meera-glass-inline,
+.theme-dark .meera-glass-inline {
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.meera-glass-inline .meera-quantum-orb {
+  width: 38px;
+  height: 38px;
+}
+
+.meera-glass-inline .meera-crystal-core {
+  inset: 8px;
+}
+
+.meera-glass-inline .meera-core-spark {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Button Variant (Micro-Loader) ─────────────────────────────────────── */
+.meera-btn-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.meera-micro-orb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #38bdf8;
+  border-right-color: #ec4899;
+  animation: meeraOrbitalSpinOuter 0.75s linear infinite;
+  flex-shrink: 0;
+}

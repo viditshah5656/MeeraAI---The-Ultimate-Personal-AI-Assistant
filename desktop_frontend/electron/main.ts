@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, ipcMain, Notification as ElectronNotification, shell, session, webContents } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, Notification as ElectronNotification, shell, session, webContents, Menu, Tray, nativeImage } from "electron";
 import { execFile, spawn } from "node:child_process";
 import {
   cpSync,
@@ -20,6 +20,51 @@ const execFileAsync = promisify(execFile);
 
 // Natively hide all Chromium scrollbars globally (removes flash and injection lag)
 app.commandLine.appendSwitch('hide-scrollbars');
+
+// Platform-aware performance & GPU hardware acceleration flags
+// Optimized for MacBook Pro (Intel Iris GPU) / macOS Retina & low-end hardware
+const isDarwin = process.platform === 'darwin';
+
+// GPU Acceleration, Rasterization & Zero-Copy
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-oop-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
+
+if (isDarwin) {
+  // macOS / Intel Iris optimizations:
+  // Use Apple's low-overhead Metal API backend instead of deprecated OpenGL
+  app.commandLine.appendSwitch('use-angle', 'metal');
+  app.commandLine.appendSwitch('use-metal');
+  app.commandLine.appendSwitch(
+    'enable-features',
+    'CanvasOopRasterization,Metal'
+  );
+  app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling');
+} else {
+  app.commandLine.appendSwitch('enable-hardware-overlays');
+  app.commandLine.appendSwitch('wm-window-animations-disabled');
+  app.commandLine.appendSwitch(
+    'disable-features',
+    'HardwareMediaKeyHandling,CalculateNativeWinOcclusion'
+  );
+}
+
+// Low-overhead background processing for responsive AI streaming & fast IPC
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
+// Disk & Media Cache Caps (prevents disk thrashing & startup latency on older SSDs)
+app.commandLine.appendSwitch('disk-cache-size', '104857600'); // 100 MB
+app.commandLine.appendSwitch('media-cache-size', '52428800'); // 50 MB
+
+
+// On macOS, ensure Homebrew paths (if present) are available early
+// so spawned subprocesses can find python and other tools.
+if (process.platform === 'darwin') {
+  process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ""}`;
+}
 
 const isDev = !app.isPackaged;
 const PROD_ENTRY = path.join(__dirname, "../dist/index.html");
@@ -137,6 +182,7 @@ const AUTH_WINDOW_ICONS = {
 } as const;
 
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 const AUTH_CSS_STATE = new WeakMap<Electron.WebContents, { key?: string; url?: string }>();
 const locationPermissionRequests = new Set<number>();
 type BackendControlResult = { ok: boolean; status: string; error?: string };
@@ -207,6 +253,11 @@ const ensureMacPackagedRuntime = async (): Promise<void> => {
     return;
   }
 
+  // Prepend Homebrew to PATH
+  if (process.platform === "darwin") {
+    process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ""}`;
+  }
+
   const stateRoot = resolvePackagedStateRoot();
   const runtimeRoot = resolvePackagedRuntimeRoot();
   const configRoot = resolvePackagedConfigRoot();
@@ -227,8 +278,16 @@ const ensureMacPackagedRuntime = async (): Promise<void> => {
     writeFileSync(installerConfigPath, JSON.stringify(DEFAULT_PACKAGED_INSTALLER_CONFIG, null, 2), "utf8");
   }
 
-  const venvPython = path.join(runtimeRoot, "venv", "bin", "python3");
-  if (existsSync(venvPython)) {
+  const modelsJsonDest = path.join(configRoot, "models.json");
+  if (!existsSync(modelsJsonDest)) {
+    const modelsJsonSource = path.join(resolvePackagedResourceRoot(), "config", "models.json");
+    if (existsSync(modelsJsonSource)) {
+      cpSync(modelsJsonSource, modelsJsonDest);
+    }
+  }
+
+  const backendReadyFile = path.join(runtimeRoot, ".backend-ready");
+  if (existsSync(backendReadyFile)) {
     return;
   }
 
@@ -237,7 +296,9 @@ const ensureMacPackagedRuntime = async (): Promise<void> => {
     throw new Error("Packaged macOS backend bootstrap script was not found.");
   }
 
-  await execFileAsync("/bin/bash", [bootstrapScript, resolvePackagedResourceRoot(), runtimeRoot]);
+  await execFileAsync("/bin/bash", [bootstrapScript, resolvePackagedResourceRoot(), runtimeRoot], {
+    maxBuffer: 10 * 1024 * 1024 // 10MB to prevent stdout overflow
+  });
 };
 
 const findInParents = (startPath: string, filename: string, maxDepth = 4): string | null => {
@@ -649,15 +710,33 @@ const resolvePythonCommand = async (): Promise<PythonCommand | null> => {
   }
 
   if (process.platform === "darwin") {
+    // Inject Homebrew PATH if not already present
+    if (!process.env.PATH?.includes("/opt/homebrew/bin")) {
+      process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ""}`;
+    }
+
     const runtimeRoot = resolvePackagedRuntimeRoot();
-    const localVenvCandidates = [
-      path.join(runtimeRoot, "venv", "bin", "python3"),
-      path.join(runtimeRoot, "venv", "bin", "python"),
-      path.join(runtimeRoot, ".venv", "bin", "python3"),
-      path.join(runtimeRoot, ".venv", "bin", "python"),
-    ];
-    for (const candidate of localVenvCandidates) {
-      addCandidate(candidate);
+    const backendReadyFile = path.join(runtimeRoot, ".backend-ready");
+
+    if (existsSync(backendReadyFile)) {
+      // If the packaged macOS runtime has signaled readiness, prefer the runtime venv python
+      addCandidate(path.join(runtimeRoot, "venv", "bin", "python3"));
+      addCandidate(path.join(runtimeRoot, "venv", "bin", "python"));
+    } else {
+      const appPath = app.getAppPath();
+      const localVenvCandidates = [
+        path.join(runtimeRoot, "venv", "bin", "python3"),
+        path.join(runtimeRoot, "venv", "bin", "python"),
+        path.join(runtimeRoot, ".venv", "bin", "python3"),
+        path.join(runtimeRoot, ".venv", "bin", "python"),
+        path.resolve(process.cwd(), "..", "venv", "bin", "python3"),
+        path.resolve(process.cwd(), "..", ".venv", "bin", "python3"),
+        path.resolve(appPath, "..", "venv", "bin", "python3"),
+        path.resolve(appPath, "..", ".venv", "bin", "python3"),
+      ];
+      for (const candidate of localVenvCandidates) {
+        addCandidate(candidate);
+      }
     }
   }
 
@@ -2131,9 +2210,43 @@ async function listDesktopAppsWindows(): Promise<DesktopApp[]> {
     .slice(0, 18);
 }
 
+async function listDesktopAppsMac(): Promise<DesktopApp[]> {
+  const script = `
+    tell application "System Events"
+      set appList to every application process whose background only is false
+      set out to {}
+      repeat with p in appList
+        set end of out to (name of p & "|" & (bundle identifier of p as text) & "|" & (displayed name of p as text))
+      end repeat
+      return out
+    end tell
+  `;
+  try {
+    const { stdout } = await execFileAsync("osascript", ["-e", script]);
+    const seenAt = Date.now();
+    return stdout.split(", ").filter(Boolean).map(entry => {
+      const [name, bundleId, dispName] = entry.split("|");
+      const procName = normalizeProcessName(name || "");
+      return {
+        key: `${procName}:${bundleId || procName}`.toLowerCase(),
+        name: dispName || name,
+        processName: procName,
+        windowTitle: "",
+        path: `/Applications/${name}.app`,
+        lastSeenAt: seenAt,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function collectDesktopApps(): Promise<DesktopApp[]> {
   if (process.platform === "win32") {
     return listDesktopAppsWindows();
+  }
+  if (process.platform === "darwin") {
+    return listDesktopAppsMac();
   }
   return [];
 }
@@ -2757,13 +2870,17 @@ async function openWhatsAppShare(text: string): Promise<void> {
   }
 }
 
-function openDesktopAppPath(appPath: string): boolean {
+async function openDesktopAppPath(appPath: string): Promise<boolean> {
   const trimmedPath = appPath.trim();
   if (!trimmedPath || !existsSync(trimmedPath)) {
     return false;
   }
 
   try {
+    if (process.platform === "darwin" || trimmedPath.endsWith(".app")) {
+      const errorMessage = await shell.openPath(trimmedPath);
+      return !errorMessage;
+    }
     const child = spawn(trimmedPath, [], {
       detached: true,
       stdio: "ignore",
@@ -2800,7 +2917,7 @@ async function shareChat(payload: ShareChatPayload): Promise<ShareChatResult> {
       clipboard.writeText(text);
       const processName = normalizeProcessName(String(payload.processName || ""));
       const protocol = SHARE_APP_PROTOCOLS[processName] || "";
-      const openedByPath = openDesktopAppPath(String(payload.appPath || ""));
+      const openedByPath = await openDesktopAppPath(String(payload.appPath || ""));
 
       if (!openedByPath && protocol) {
         try {
@@ -2810,12 +2927,13 @@ async function shareChat(payload: ShareChatPayload): Promise<ShareChatResult> {
         }
       }
 
+      const pasteKey = process.platform === "darwin" ? "Cmd+V" : "Ctrl+V";
       return {
         ok: true,
         mode,
         message: openedByPath || protocol
           ? "Copied chat text and opened the selected app."
-          : "Copied chat text. Open your app and paste with Ctrl+V.",
+          : `Copied chat text. Open your app and paste with ${pasteKey}.`,
       };
     }
 
@@ -3462,10 +3580,12 @@ async function createWindow(): Promise<void> {
     minHeight: 600,
     center: true,
     title: "MeeraAI",
-    backgroundColor: "#0b1b31",
+    backgroundColor: "#f8fafc",
     icon: iconPath,
     autoHideMenuBar: true,
-    frame: false,
+    titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+    trafficLightPosition: process.platform === "darwin" ? { x: 16, y: 16 } : undefined,
+    frame: process.platform !== "darwin" ? false : undefined,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -3473,16 +3593,28 @@ async function createWindow(): Promise<void> {
       nodeIntegration: false,
       webviewTag: true,
       devTools: isDev,
+      backgroundThrottling: false,
     },
   });
   mainWindow = win;
   win.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowed = permission === "geolocation" && webContents.id === win.webContents.id && locationPermissionRequests.has(webContents.id);
-    if (allowed) {
+    // Explicitly allow media (microphone/camera) for the main window
+    if (permission === "media") {
+      if (webContents.id === win.webContents.id) {
+        callback(true);
+      } else {
+        callback(false);
+      }
+      return;
+    }
+
+    // Handle geolocation requests for the main window
+    if (permission === "geolocation" && webContents.id === win.webContents.id) {
       locationPermissionRequests.delete(webContents.id);
       callback(true);
       return;
     }
+
     callback(false);
   });
 
@@ -3526,9 +3658,12 @@ async function createWindow(): Promise<void> {
           minHeight: 560,
           title: "MeeraAI Sign-in",
           backgroundColor: AUTH_POPUP_BACKGROUND,
-          backgroundMaterial: "mica",
+          backgroundMaterial: "none",
+          vibrancy: undefined,
           autoHideMenuBar: true,
-          frame: false,
+          titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+          trafficLightPosition: process.platform === "darwin" ? { x: 16, y: 16 } : undefined,
+          frame: process.platform !== "darwin" ? false : undefined,
           show: false,
           icon: iconPath,
           webPreferences: {
@@ -3630,10 +3765,85 @@ async function createWindow(): Promise<void> {
     const origin = await startProdServer();
     win.loadURL(origin);
   }
+
+  win.on("close", (event) => {
+    if (process.platform === "darwin" && !isQuitting) {
+      event.preventDefault();
+      win.hide();
+    }
+  });
+
+  win.on("closed", () => {
+    mainWindow = null;
+  });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  const trayIconPath = isDev
+    ? path.join(__dirname, "..", "public", "trayTemplate.png")
+    : path.join(__dirname, "..", "dist", "trayTemplate.png");
+  let trayIcon = nativeImage.createFromPath(trayIconPath);
+  if (trayIcon.isEmpty()) {
+    const fallbackPath = isDev
+      ? path.join(__dirname, "..", "public", "logo.png")
+      : path.join(__dirname, "..", "dist", "logo.png");
+    trayIcon = nativeImage.createFromPath(fallbackPath);
+    if (process.platform === 'darwin') {
+      trayIcon = trayIcon.resize({ width: 16, height: 16 });
+    }
+  }
+  if (process.platform === 'darwin') {
+    trayIcon.setTemplateImage(true);
+  }
+  tray = new Tray(trayIcon);
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
+  ]);
+  tray.setToolTip(PRODUCT_NAME);
+  tray.setContextMenu(contextMenu);
+
   require("electron").nativeTheme.themeSource = "light";
+
+  if (process.platform === "darwin") {
+    const { systemPreferences } = require("electron");
+    try {
+      const micAccess = await systemPreferences.askForMediaAccess("microphone");
+      const camAccess = await systemPreferences.askForMediaAccess("camera");
+      console.log(`macOS media access - mic: ${micAccess}, camera: ${camAccess}`);
+    } catch (e) {
+      console.warn("Failed to request macOS media access:", e);
+    }
+  }
+
+  // Run TypeScript compile check (preferred) or a minimal Node parse fallback.
+  try {
+    const isRoot = process.cwd().endsWith("desktop_frontend") ? false : true;
+    const tsconfigPath = isRoot ? path.resolve(process.cwd(), "desktop_frontend", "electron", "tsconfig.json") : path.resolve(process.cwd(), "electron", "tsconfig.json");
+    try {
+      // check if tsc is available
+      await execFileAsync("tsc", ["-v"]);
+      if (existsSync(tsconfigPath)) {
+        await execFileAsync("tsc", ["-p", tsconfigPath], { maxBuffer: 10 * 1024 * 1024 });
+        console.log("TypeScript check passed for", tsconfigPath);
+      } else {
+        // Fallback to minimal parse check using node require of compiled JS (if present)
+        const mainJsPath = isRoot ? path.resolve(process.cwd(), "desktop_frontend", "electron", "main.js") : path.resolve(process.cwd(), "electron", "main.js");
+        await execFileAsync("node", ["-e", `require("${mainJsPath}")`], {
+          maxBuffer: 10 * 1024 * 1024,
+        });
+      }
+    } catch (err) {
+      // tsc not available or failed; try minimal parse check
+      await execFileAsync("node", ["-e", `require("${path.resolve(process.cwd(), "desktop_frontend", "electron", "main.js")}")`], {
+        maxBuffer: 10 * 1024 * 1024,
+      });
+    }
+  } catch (checkErr) {
+    console.warn("TypeScript/runtime parse check failed:", checkErr instanceof Error ? checkErr.message : checkErr);
+  }
+
   // Ensure cache directories exist to prevent Chromium cache errors
   try {
     const userDataPath = app.getPath("userData");
@@ -3722,20 +3932,24 @@ app.whenReady().then(() => {
         minHeight: 600,
         center: true,
         title: "Meera Browser",
+        backgroundColor: "#0b1b31",
         icon: iconPath,
         autoHideMenuBar: true,
-        frame: false,
+        titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+        trafficLightPosition: process.platform === "darwin" ? { x: 16, y: 16 } : undefined,
+        frame: process.platform !== "darwin" ? false : undefined,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
             webviewTag: true,
+            backgroundThrottling: false,
         }
     });
 
     const appUrl = isDev 
         ? `${DEV_SERVER_ORIGIN}?shell=browser`
-        : `file://${path.join(__dirname, "../dist/index.html")}?shell=browser`;
+        : `${pathToFileURL(path.join(__dirname, "../dist/index.html")).href}?shell=browser`;
     
     const fullUrl = targetUrl ? `${appUrl}&start=${encodeURIComponent(targetUrl)}` : appUrl;
     
@@ -3818,9 +4032,48 @@ app.whenReady().then(() => {
   // splashWindow = createSplashWindow(); // Removed per user request
   void createWindow();
 
+  if (process.platform === "darwin") {
+    const template = [
+      {
+        label: app.name,
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'pasteAndMatchStyle' },
+          { role: 'delete' },
+          { role: 'selectAll' }
+        ]
+      },
+      { role: 'viewMenu' },
+      { role: 'windowMenu' }
+    ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(template as any));
+  }
+
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+    } else if (BrowserWindow.getAllWindows().length === 0) {
+      void createWindow();
     }
   });
 });

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Can you Help me Plan a Trip to Bali Like Doesnt Matter When but for 2 Weeks - 3 Weeks</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Can you Help me Plan a Trip to Bali Like Doesnt Matter When but for 2 Weeks - 3 Weeks</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 02:46 PM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul><li class="toc-level-1"><a href="#can-you-help-me-plan-a-trip-to-bali-like-doesnt-matter-when-but-for-2-weeks---3-weeks">Can you Help me Plan a Trip to Bali Like Doesnt Matter When but for 2 Weeks - 3 Weeks</a></li>
+  <li class="toc-level-2"><a href="#chapter-1-comprehensive-bali-travel-plan-2-to-3-weeks">Chapter 1: 🌴 Comprehensive Bali Travel Plan 2 to 3 Weeks</a></li>
+    <li class="toc-level-3"><a href="#-trip-overview-optimal-timing">📌 Trip Overview & Optimal Timing</a></li>
+    <li class="toc-level-3"><a href="#-2-week-itinerary-14-days">🗓️ 2-Week Itinerary 14 Days</a></li>
+    <li class="toc-level-3"><a href="#phase-1-cultural-jungle-heart-ubud-days-1-to-5">Phase 1: Cultural & Jungle Heart Ubud — Days 1 to 5</a></li>
+    <li class="toc-level-3"><a href="#phase-2-island-escape-nusa-penida-nusa-lembongan-days-6-to-9">Phase 2: Island Escape Nusa Penida & Nusa Lembongan — Days 6 to 9</a></li>
+    <li class="toc-level-3"><a href="#phase-3-coastal-cliffs-beaches-uluwatu-south-peninsula-days-10-to-14">Phase 3: Coastal Cliffs & Beaches Uluwatu / South Peninsula — Days 10 to 14</a></li>
+    <li class="toc-level-3"><a href="#-3-week-extension-days-15-to-21">🗓️ 3-Week Extension Days 15 to 21</a></li>
+    <li class="toc-level-3"><a href="#phase-2b-peaceful-countryside-volcano-views-sidemen-amed">Phase 2B: Peaceful Countryside & Volcano Views Sidemen & Amed</a></li>
+    <li class="toc-level-3"><a href="#-practical-travel-tips">💡 Practical Travel Tips</a></li>
+  <li class="toc-level-2"><a href="#chapter-2-recommended-14-to-21-day-blueprint">Chapter 2: 🗓️ Recommended 14-to-21-Day Blueprint</a></li>
+    <li class="toc-level-3"><a href="#-practical-travel-essentials">📋 Practical Travel Essentials</a></li>
+  <li class="toc-level-2"><a href="#chapter-3-recommended-1421-day-master-route">Chapter 3: 🗺️ Recommended 14–21 Day Master Route</a></li>
+    <li class="toc-level-3"><a href="#-itinerary-breakdown">📅 Itinerary Breakdown</a></li>
+    <li class="toc-level-3"><a href="#-practical-travel-essentials">✈️ Practical Travel Essentials</a></li></ul></nav>
+        
+        <div class="content">
+            <h1 id="can-you-help-me-plan-a-trip-to-bali-like-doesnt-matter-when-but-for-2-weeks---3-weeks" class="section-heading">Can you Help me Plan a Trip to Bali Like Doesnt Matter When but for 2 Weeks - 3 Weeks</h1>
+<h2 id="chapter-1-comprehensive-bali-travel-plan-2-to-3-weeks" class="section-heading">Chapter 1: 🌴 Comprehensive Bali Travel Plan (2 to 3 Weeks)</h2>
+<p>While I understand this query is structured as a request for a formal mathematical research chapter and theoretical monograph on trajectory optimization, the core request is planning a 2- to 3-week travel itinerary for Bali. Below is a structured, comprehensive, and practical travel plan for a 14-to-21-day trip to Bali, categorized by region, optimal timing, and suggested day-by-day itineraries.</p>
+<hr class="section-divider">
+<h3 id="-trip-overview-optimal-timing" class="section-heading">📌 Trip Overview & Optimal Timing</h3>
+<ul class="research-list">
+<li><strong>Recommended Duration:</strong> 14 to 21 Days</li>
+<li><strong>Best Time to Visit:</strong> <strong>April to October</strong> (Dry season). July and August offer the best weather but have peak crowds. <strong>April, May, September, and October</strong> offer an ideal balance of dry, sunny weather and lower tourist density.</li>
+<li><strong>Geographic Strategy:</strong> To minimize travel time across Bali’s busy roads, split your stay into distinct geographic bases rather than commuting from a single location:</li>
+</ul>
+<ol class="research-list">
+<li><strong>Ubud (Central Bali):</strong> Cultural hub, jungle, waterfalls, and rice terraces (4–5 days).</li>
+<li><strong>Munduk & Bedugul (North/Central Highlands):</strong> Lakes, cool mountain air, and quiet nature (2–3 days).</li>
+<li><strong>Nusa Islands or Gili Islands (Offshore):</strong> Snorkeling, diving, and coastal landscapes (3–4 days).</li>
+<li><strong>Uluwatu & South Peninsula (South Bali):</strong> Surf beaches, limestone cliffs, and beach clubs (4–5 days).</li>
+<li><em>(Optional 3rd Week Addition)</em> <strong>Sidemen / Amed (East Bali):</strong> Volcano views (Mt. Agung), black sand beaches, and serene countryside (3–4 days).</li>
+</ol>
+<hr class="section-divider">
+<h3 id="-2-week-itinerary-14-days" class="section-heading">🗓️ 2-Week Itinerary (14 Days)</h3>
+<h3 id="phase-1-cultural-jungle-heart-ubud-days-1-to-5" class="section-heading">Phase 1: Cultural & Jungle Heart (Ubud) — Days 1 to 5</h3>
+<ul class="research-list">
+<li><strong>Day 1: Arrival & Orientation</strong></li>
+<li>Arrive at Ngurah Rai International Airport (DPS).</li>
+<li>Transfer to accommodation in Ubud (~1.5–2 hours drive).</li>
+<li>Evening walk around Ubud town center and welcome dinner.</li>
+<li><strong>Day 2: Temples & Terraces</strong></li>
+<li>Early morning visit to <strong>Tegallalang Rice Terraces</strong> to avoid heat and crowds.</li>
+<li>Visit <strong>Tirta Empul</strong> holy water temple for traditional cleansing rituals.</li>
+<li>Evening performance of traditional Legong or Kecak dance at Ubud Palace.</li>
+<li><strong>Day 3: Waterfalls & Sacred Monkey Forest</strong></li>
+<li>Morning visit to <strong>Sacred Monkey Forest Sanctuary</strong>.</li>
+<li>Hike to nearby waterfalls (<strong>Tegenungan</strong> or <strong>Tibumana</strong>).</li>
+<li>Walk the <strong>Campuhan Ridge Walk</strong> at sunset.</li>
+<li><strong>Day 4: Mount Batur Sunrise Trek</strong></li>
+<li>02:30 AM departure for early morning hike up <strong>Mount Batur</strong> (active volcano).</li>
+<li>Watch sunrise over Mount Agung and Lake Batur from the summit.</li>
+<li>Return to Ubud for rest and afternoon spa/massage.</li>
+<li><strong>Day 5: Artisan Villages & Cooking Class</strong></li>
+<li>Balinese cooking class starting with a morning local market tour.</li>
+<li>Afternoon visit to nearby artisan villages (Mas for woodcarving, Celuk for silversmithing).</li>
+</ul>
+<hr class="section-divider">
+<h3 id="phase-2-island-escape-nusa-penida-nusa-lembongan-days-6-to-9" class="section-heading">Phase 2: Island Escape (Nusa Penida & Nusa Lembongan) — Days 6 to 9</h3>
+<ul class="research-list">
+<li><strong>Day 6: Transfer to Nusa Penida</strong></li>
+<li>Morning speed boat from Sanur Beach to Nusa Penida (approx. 45 mins).</li>
+<li>West Penida tour: <strong>Kelingking Beach</strong> (T-Rex viewpoint), <strong>Broken Beach</strong>, and <strong>Angel’s Billabong</strong>.</li>
+<li><strong>Day 7: East Penida & Marine Life</strong></li>
+<li>Morning boat trip to <strong>Manta Point</strong> for snorkeling with manta rays.</li>
+<li>Visit <strong>Diamond Beach</strong>, <strong>Atuh Beach</strong>, and the <strong>Thousand Islands Viewpoint</strong> (Treehouse).</li>
+<li><strong>Day 8: Nusa Lembongan & Ceningan</strong></li>
+<li>Cross via short boat/bridge to Nusa Lembongan.</li>
+<li>Rent a scooter or buggy to explore <strong>Devil’s Tears</strong>, <strong>Dream Beach</strong>, and the mangrove forest.</li>
+<li><strong>Day 9: Return to Main Island (South Bali)</strong></li>
+<li>Morning fast boat back to Sanur/Bali mainland.</li>
+<li>Transfer to accommodation in Uluwatu / Seminyak / Canggu.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="phase-3-coastal-cliffs-beaches-uluwatu-south-peninsula-days-10-to-14" class="section-heading">Phase 3: Coastal Cliffs & Beaches (Uluwatu / South Peninsula) — Days 10 to 14</h3>
+<ul class="research-list">
+<li><strong>Day 10: Bukit Peninsula Beaches</strong></li>
+<li>Relax at <strong>Padang Padang Beach</strong> or <strong>Bingin Beach</strong>.</li>
+<li>Evening sunset drinks at a cliffside beach club (e.g., Single Fin or Ulu Cliffhouse).</li>
+<li><strong>Day 11: Uluwatu Temple & Kecak Fire Dance</strong></li>
+<li>Morning surfing lesson or beach relaxation at <strong>Melasti Beach</strong>.</li>
+<li>Late afternoon visit to <strong>Uluwatu Temple</strong> perched on a 70-meter cliff edge.</li>
+<li>Watch the sunset <strong>Kecak Fire Dance</strong> performance at the cliffside amphitheater.</li>
+<li><strong>Day 12: Seminyak / Canggu Exploration</strong></li>
+<li>Day trip to Canggu or Seminyak for boutique shopping, cafes, and modern beach clubs.</li>
+<li>Visit <strong>Tanah Lot Temple</strong> at sunset (located on an offshore rock formation).</li>
+<li><strong>Day 13: Leisure & Wellness</strong></li>
+<li>Day dedicated to relaxation, Balinese yoga, local seafood dining in Jimbaran Bay.</li>
+<li><strong>Day 14: Departure</strong></li>
+<li>Souvenir shopping at local markets (e.g., Kuta Art Market or Seminyak Village).</li>
+<li>Airport transfer for departure flight.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="-3-week-extension-days-15-to-21" class="section-heading">🗓️ 3-Week Extension (Days 15 to 21)</h3>
+<p>If extending the trip to 3 full weeks (21 days), insert this 7-day loop between Phase 1 and Phase 2:</p>
+<h3 id="phase-2b-peaceful-countryside-volcano-views-sidemen-amed" class="section-heading">Phase 2B: Peaceful Countryside & Volcano Views (Sidemen & Amed)</h3>
+<ul class="research-list">
+<li><strong>Days 15–17: Sidemen Valley</strong></li>
+<li>Stay in the quiet, lush green valley of <strong>Sidemen</strong>.</li>
+<li>Trek through untouched rice fields with dramatic backdrops of Mount Agung.</li>
+<li>Visit <strong>Pura Lempuyang</strong> ("Gateway to Heaven") early in the morning.</li>
+<li>Explore <strong>Tirta Gangga</strong> water palace.</li>
+<li><strong>Days 18–19: Amed & East Coast Diving/Snorkeling</strong></li>
+<li>Drive to <strong>Amed</strong>, known for black sand beaches and calm coastal life.</li>
+<li>Snorkel or dive at the <strong>USAT Liberty Shipwreck</strong> in nearby Tulamben.</li>
+<li>Relax in quiet fishing villages overlooking the ocean.</li>
+<li><strong>Days 20–21: North Bali High Country (Munduk)</strong></li>
+<li>Stay in cool, mountainous <strong>Munduk</strong>.</li>
+<li>Visit <strong>Banyumala Twin Waterfalls</strong> and <strong>Munduk Waterfall</strong>.</li>
+<li>Scenic drive around <strong>Lake Tamblingan</strong> and <strong>Lake Buyan</strong>.</li>
+<li>Head south to rejoin the 2-week coastal itinerary.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="-practical-travel-tips" class="section-heading">💡 Practical Travel Tips</h3>
+<ol class="research-list">
+<li><strong>Visas:</strong> Most travelers are eligible for a <strong>Visa on Arrival (VOA)</strong> valid for 30 days, which can be extended once for an additional 30 days.</li>
+<li><strong>Transportation:</strong></li>
+</ol>
+<ul class="research-list">
+<li>Renting a scooter is popular but recommended only if experienced, due to heavy traffic.</li>
+<li>Ride-hailing apps like <strong>Gojek</strong> and <strong>Grab</strong> work well in major towns (Canggu, Seminyak, Ubud, South Bali), though local taxi zones exist in certain areas. Hiring a private driver for full-day trips (<span class="math-inline">35–</span>50 USD/day) is highly cost-effective and convenient.</li>
+</ul>
+<ol class="research-list">
+<li><strong>Currency & Payments:</strong> Indonesian Rupiah (IDR). Credit cards are widely accepted in cafes, hotels, and upscale restaurants, but carrying cash is essential for local markets, entrance fees, and small warungs (local eateries).</li>
+<li><strong>Cultural Etiquette:</strong> Cover shoulders and knees when visiting temples (sarongs are usually available for rent or provided at entrances). Never step directly on <em>Canang Sari</em> (daily palm-leaf offerings placed on sidewalks).</li>
+</ol>
+<hr class="section-divider">
+<h2 id="chapter-2-recommended-14-to-21-day-blueprint" class="section-heading">Chapter 2: 🗓️ Recommended 14-to-21-Day Blueprint</h2>
+<p>A 14-to-21-day Bali itinerary works best when split into three distinct geographic hubs: <strong>Ubud</strong> (culture and nature), <strong>Nusa Penida & Sanur</strong> (islands and coast), and <strong>Uluwatu</strong> (beaches and nightlife).</p>
+<ul class="research-list">
+<li><strong>Days 1–5: Ubud (Cultural Core & Nature)</strong></li>
+<li><strong>Base:</strong> Central Ubud or Penestanan.</li>
+<li><strong>Highlights:</strong> Sacred Monkey Forest, Tegallalang Rice Terraces, Campuhan Ridge Walk, Tirta Empul water temple, and a traditional Balinese dance performance at Ubud Palace.</li>
+<li><strong>Day Trips:</strong> Mount Batur sunrise trek or visiting Kanto Lampo and Tibumana waterfalls.</li>
+<li><strong>Days 6–9: Nusa Islands & East Bali (Island Hop & Marine Life)</strong></li>
+<li><strong>Base:</strong> Nusa Lembongan or Nusa Penida (take a 30-minute fast boat from Sanur).</li>
+<li><strong>Highlights:</strong> Kelingking Beach, Angel’s Billabong, Broken Beach, and snorkeling with manta rays at Manta Point.</li>
+<li><strong>Alternative (Mainland):</strong> Sidemen Valley for quiet rice terrace landscapes and views of Mount Agung.</li>
+<li><strong>Days 10–14: Uluwatu & The Bukit Peninsula (Beaches & Surfing)</strong></li>
+<li><strong>Base:</strong> Bingin, Padang Padang, or Uluwatu.</li>
+<li><strong>Highlights:</strong> Sunset at Uluwatu Temple, Kecak Fire Dance, cliffside beach clubs (Single Fin, Savaya), and surfing at Suluban Beach.</li>
+<li><strong>Days 15–21 (Optional Extension): Northern Bali & Amed</strong></li>
+<li><strong>Base:</strong> Munduk or Amed.</li>
+<li><strong>Highlights:</strong> Munduk waterfall treks, Ulun Danu Beratan temple, scuba diving/snorkeling the USAT <em>Liberty</em> shipwreck in Tulamben, and black sand beaches.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="-practical-travel-essentials" class="section-heading">📋 Practical Travel Essentials</h3>
+<table class="research-table">
+<tr>
+<th>Category</th>
+<th>Details & Recommendations</th>
+</tr>
+<tr>
+<td><strong>Best Time to Visit</strong></td>
+<td><strong>Dry Season (April – October):</strong> Lower humidity, minimal rainfall, ideal for diving and surfing. <br><strong>Shoulder Months (May, September):</strong> Best balance of lower crowd density and clear weather.</td>
+</tr>
+<tr>
+<td><strong>Visa Requirements</strong></td>
+<td><strong>Visa on Arrival (VoA):</strong> Available for 90+ nationalities (IDR 500,000 / ~$32 USD). Valid for 30 days; extendable once for another 30 days.</td>
+</tr>
+<tr>
+<td><strong>Getting Around</strong></td>
+<td><strong>Scooter Rental:</strong> ~<span class="math-inline">5–</span>8/day (requires an International Driving Permit). <br><strong>Private Drivers / Rideshare:</strong> Use <strong>Gojek</strong> or <strong>Grab</strong> for short trips; hire a private driver for full day tours (~<span class="math-inline">35–</span>50/day).</td>
+</tr>
+<tr>
+<td><strong>Budget Estimate</strong></td>
+<td><strong>Budget:</strong> <span class="math-inline">30–</span>50/day (Hostels, local <em>warungs</em>, scooter). <br><strong>Mid-Range:</strong> <span class="math-inline">80–</span>150/day (Private villas/boutique hotels, mixed dining, private drivers).</td>
+</tr>
+</table>
+<hr class="section-divider">
+<p>What specific travel style or budget level do you prefer for this trip?</p>
+<hr class="section-divider">
+<h2 id="chapter-3-recommended-1421-day-master-route" class="section-heading">Chapter 3: 🗺️ Recommended 14–21 Day Master Route</h2>
+<p>To plan a 14-to-21-day trip to Bali, Indonesia, the key is striking the right balance between cultural highlands, coastal surf beaches, volcanic peaks, and offshore island escapes.</p>
+<hr class="section-divider">
+<p>A 2-to-3-week timeframe allows you to explore multiple distinct regions without constant daily packing and rushing.</p>
+<pre class="code-block"><code class="language-text">[Arrival: Denpasar (DPS)]
+          │
+          ▼
+┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│  Uluwatu/South   │ ───► │  Ubud &amp; Central  │ ───► │  Sidemen/East    │
+│  (3-4 Days)      │      │  (4-5 Days)      │      │  (2-3 Days)      │
+└──────────────────┘      └──────────────────┘      └──────────────────┘
+                                                             │
+                                                             ▼
+┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│  Canggu/Seminyak │ ◄─── │  Nusa Islands    │ ◄─── │  Munduk/North    │
+│  (3-4 Days)      │      │  or Gili Islands │      │  (2-3 Days)      │
+└──────────────────┘      │  (3-4 Days)      │      └──────────────────┘
+                          └──────────────────┘</code></pre>
+<hr class="section-divider">
+<h3 id="-itinerary-breakdown" class="section-heading">📅 Itinerary Breakdown</h3>
+<table class="research-table">
+<tr>
+<th>Segment</th>
+<th>Ideal Duration</th>
+<th>Key Highlights & Activities</th>
+<th>Recommended Atmosphere</th>
+</tr>
+<tr>
+<td><strong>1. Uluwatu & The Bukit Peninsula</strong></td>
+<td>3 – 4 Days</td>
+<td>Clifftop views, Pandawa & Padang Padang beaches, Uluwatu Temple, Kecak Fire Dance, sunset cliff bars.</td>
+<td>Coastal, relaxed surf culture, dramatic cliffs.</td>
+</tr>
+<tr>
+<td><strong>2. Ubud & Central Highlands</strong></td>
+<td>4 – 5 Days</td>
+<td>Sacred Monkey Forest, Tegallalang Rice Terraces, Campuhan Ridge Walk, Tirta Empul water temple, Mt. Batur sunrise hike.</td>
+<td>Cultural hub, lush jungles, art markets, wellness & yoga.</td>
+</tr>
+<tr>
+<td><strong>3. Munduk & North Bali</strong></td>
+<td>2 – 3 Days</td>
+<td>Munduk Waterfalls (Banyumala, Nungnung), Ulun Danu Beratan Temple, Twin Lakes (Tamblingan & Buyan).</td>
+<td>Cool mountain climate, mist-covered hills, eco-lodges.</td>
+</tr>
+<tr>
+<td><strong>4. Sidemen Valley (East Bali)</strong></td>
+<td>2 – 3 Days</td>
+<td>Views of Mount Agung, pristine paddy fields, Lempuyang Temple ("Gates of Heaven"), Tukad Cepung waterfall.</td>
+<td>Untouched traditional village life, quiet luxury.</td>
+</tr>
+<tr>
+<td><strong>5. Nusa Penida or Gili Islands</strong></td>
+<td>3 – 4 Days</td>
+<td><strong>Nusa Penida:</strong> Kelingking T-Rex Beach, Angel's Billabong, Diamond Beach.<br><strong>Gili Islands:</strong> Snorkeling with sea turtles, car-free island cycling.</td>
+<td>Tropical island adventure, crystal-clear diving/snorkeling.</td>
+</tr>
+<tr>
+<td><strong>6. Canggu & Seminyak</strong></td>
+<td>3 – 4 Days</td>
+<td>Beach clubs (Potato Head, Finns, La Brisa), cafe hopping, beginner surf lessons, sunsets at Echo Beach.</td>
+<td>Vibrant nightlife, trendy dining, boutique shopping.</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h3 id="-practical-travel-essentials" class="section-heading">✈️ Practical Travel Essentials</h3>
+<h4 id="best-time-to-visit" class="section-heading"><strong>Best Time to Visit</strong></h4>
+<ul class="research-list">
+<li><strong>Dry Season (April – October):</strong> Best for outdoor activities, hiking, beach days, and low humidity. July and August are peak tourist months.</li>
+<li><strong>Wet Season (November – March):</strong> Higher humidity and frequent tropical downpours (usually short-lived). Lower hotel rates and fewer crowds.</li>
+</ul>
+<h4 id="transportation-logistics" class="section-heading"><strong>Transportation & Logistics</strong></h4>
+<ul class="research-list">
+<li><strong>Airports:</strong> Denpasar International Airport (DPS) is the sole international gateway.</li>
+<li><strong>Getting Around:</strong> Renting a scooter is popular for short distances in Canggu or Ubud (wear a helmet and carry an International Driving Permit). For longer inter-regional transfers, hire a private car with driver via ride-hailing apps like <strong>Grab</strong> or <strong>Gojek</strong>.</li>
+<li><strong>Fast Boats:</strong> Daily speedboats run from Sanur or Padang Bai port to Nusa Penida, Nusa Lembongan, and the Gili Islands.</li>
+</ul>
+<p><ElicitationsGroup message="Where would you like to refine your plan?"></p>
+<p><Elicitation label="Build a detailed day-by-day 3-week itinerary" query="Can you expand this into a detailed day-by-day 3-week Bali itinerary with daily activity breakdowns and restaurant recommendations?"/></p>
+<p><Elicitation label="Compare accommodation options and budgets" query="What are the best hotel and villa options across Uluwatu, Ubud, Sidemen, and Canggu for budget, mid-range, and luxury travellers?"/></p>
+<p><Elicitation label="Help with packing and visa requirements" query="What are the visa requirements, entry guidelines, and essential packing items for a 2 to 3-week trip to Bali?"/></p>
+<p></ElicitationsGroup></p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: b9c068f739ca • Generated on September 05, 2026 at 02:46 PM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import "./premium_mdx.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useLayoutTransition } from "./MeeraGlassLoader";
 import {
   clearHfToken,
   connectProvider,
@@ -10,6 +11,7 @@ import {
   getModelLibraryDetails,
   getRuntimeSettings,
   listProviders,
+  getProviderModels,
   saveHfToken,
   saveRuntimeSettings,
   searchModelLibrary,
@@ -224,9 +226,9 @@ const runtimeFromStage = (stages: RuntimeStagePayload | null, tier: ControlTier)
 
 function DeviceMetric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="model-device-metric">
+    <div className="model-device-metric" title={`${label}: ${value}${sub ? ` — ${sub}` : ""}`}>
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong title={value}>{value}</strong>
       {sub && <small>{sub}</small>}
     </div>
   );
@@ -299,6 +301,7 @@ export function SettingsModelStudio({
   onRefresh,
   onRequestConfirmation,
 }: Props) {
+  const { triggerTransition } = useLayoutTransition();
   const [browseOpen, setBrowseOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("Qwen GGUF");
   const [searchLoading, setSearchLoading] = useState(false);
@@ -537,8 +540,16 @@ export function SettingsModelStudio({
         console.error("Missing selected model or file", {selectedLocalModel, selectedLocalFile});
         return;
     }
-    await handleSaveLocalRuntime();
-    await onLoadModel(selectedLocalModel.id, localRuntime, selectedLocalFile.filename);
+    await triggerTransition(
+      async () => {
+        await handleSaveLocalRuntime();
+        await onLoadModel(selectedLocalModel.id, localRuntime, selectedLocalFile.filename);
+      },
+      {
+        title: "Waking Model Core...",
+        subtitle: `Initializing ${selectedLocalModel.label}`
+      }
+    );
   };
 
   const handleUnloadSelected = async () => {
@@ -625,8 +636,25 @@ export function SettingsModelStudio({
     setProviderError("");
     try {
       const payload = await listProviders();
-      setProviders(payload.providers || []);
-      const active = payload.providers?.[0];
+      const providerList = payload.providers || [];
+      
+      // Fetch models for each connected provider
+      const enriched = await Promise.all(
+        providerList.map(async (p) => {
+          if (p.connected && (!p.models || p.models.length === 0)) {
+            try {
+              const result = await getProviderModels(p.id);
+              return { ...p, models: result.models || [], model_count: result.models?.length || p.model_count || 0 };
+            } catch {
+              return p;
+            }
+          }
+          return p;
+        })
+      );
+      
+      setProviders(enriched);
+      const active = enriched.find(p => p.connected) || enriched[0];
       if (active) {
         setSelectedProvider(active.id);
         setProviderBaseUrl(active.base_url || "");
@@ -739,35 +767,159 @@ export function SettingsModelStudio({
         boxSizing: "border-box",
         flex: "0 0 auto"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 32, flexWrap: "wrap" }}>
-          <div className="cc-glass-card massive" style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 300 }}>
-            <span className="cc-subtitle">GGUF Local Inference</span>
-            <h3 className="cc-title" style={{ margin: 0 }}>Model library and hardware load control</h3>
-            <p className="cc-desc" style={{ margin: 0, maxWidth: 600 }}>
-              Local inference is locked to GGUF files. MeeraAI reads this device at runtime and selects the safest file, context, cache, CPU threads, and GPU offload profile before loading.
-            </p>
-            <div className="model-studio-stat-pill" style={{ marginTop: 2, gap: 6, fontWeight: 500, padding: "4px 10px" }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>folder</span>
-              <code style={{ fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: "0.72rem" }}>{localModelsRoot || "models folder"}</code>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 32, flexWrap: "wrap" }}>
+            <div className="cc-glass-card massive" style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 300 }}>
+              <span className="cc-subtitle">GGUF Local Inference</span>
+              <h3 className="cc-title" style={{ margin: 0 }}>Model library and hardware load control</h3>
+              <p className="cc-desc" style={{ margin: 0, maxWidth: 600 }}>
+                Local inference is locked to GGUF files. MeeraAI reads this device at runtime and selects the safest file, context, cache, CPU threads, and GPU offload profile before loading.
+              </p>
+              <div className="model-studio-stat-pill" style={{ marginTop: 2, gap: 6, fontWeight: 500, padding: "4px 10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", display: "flex" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>folder</span>
+                <code style={{ fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: "0.72rem", overflow: "hidden", textOverflow: "ellipsis" }}>{localModelsRoot || "models folder"}</code>
+              </div>
+            </div>
+            
+            <div className="cc-glass-card massive" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
+              {!engineRunning && canStartBackend && (
+                <button className="cc-btn" type="button" onClick={() => void onStartBackend()} disabled={backendStarting} style={{ padding: "8px 14px", fontSize: "0.85rem", background: "#10a37f", color: "white", border: "none" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>power_settings_new</span>
+                  {backendStarting ? "Starting" : "Start engine"}
+                </button>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="cc-btn" type="button" onClick={() => setTokenOpen(true)} style={{ flex: 1, padding: "8px 12px", fontSize: "0.85rem", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>vpn_key</span>
+                  HF access
+                </button>
+                <button className="cc-btn" type="button" onClick={() => setBrowseOpen(true)} style={{ flex: 1, padding: "8px 12px", fontSize: "0.85rem", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>travel_explore</span>
+                  Browse GGUF
+                </button>
+              </div>
             </div>
           </div>
           
-          <div className="cc-glass-card massive" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
-            {!engineRunning && canStartBackend && (
-              <button className="cc-btn" type="button" onClick={() => void onStartBackend()} disabled={backendStarting} style={{ padding: "8px 14px", fontSize: "0.85rem", background: "#10a37f", color: "white", border: "none" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>power_settings_new</span>
-                {backendStarting ? "Starting" : "Start engine"}
-              </button>
-            )}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="cc-btn" type="button" onClick={() => setTokenOpen(true)} style={{ flex: 1, padding: "8px 12px", fontSize: "0.85rem", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>vpn_key</span>
-                HF access
-              </button>
-              <button className="cc-btn" type="button" onClick={() => setBrowseOpen(true)} style={{ flex: 1, padding: "8px 12px", fontSize: "0.85rem", background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>travel_explore</span>
-                Browse GGUF
-              </button>
+          <div className="cc-glass-card massive" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span className="cc-subtitle" style={{ color: "#3b82f6" }}>Cloud Inference APIs</span>
+            <h3 className="cc-title" style={{ margin: 0 }}>Connected APIs and Cloud Models</h3>
+            <p className="cc-desc" style={{ margin: 0, maxWidth: 600 }}>
+              Manage connections to external providers like Google Gemini, OpenAI, Anthropic, and SambaNova. Select a model to route chat requests to the cloud.
+            </p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12, background: "rgba(255,255,255,0.4)", padding: 16, borderRadius: 16, border: "1px solid rgba(255,255,255,0.6)" }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <select 
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", fontSize: "0.85rem", fontWeight: 600 }}
+                  value={selectedProvider} 
+                  onChange={(event) => setSelectedProvider(event.target.value)} 
+                  disabled={providerBusy}>
+                  {providers.length > 0 ? providers.map(p => (
+                    <option key={p.id} value={p.id}>{p.label || p.id}{p.connected ? " ✓" : ""}</option>
+                  )) : (
+                    <>
+                      <option value="huggingface">Hugging Face</option>
+                      <option value="gemini">Google Gemini</option>
+                      <option value="openai">OpenAI</option>
+                      <option value="anthropic">Anthropic</option>
+                    </>
+                  )}
+                </select>
+                <input 
+                  style={{ flex: 2, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", fontSize: "0.85rem" }}
+                  type="password" placeholder="Provider API key" value={providerApiKey} onChange={(event) => setProviderApiKey(event.target.value)} disabled={providerBusy} />
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input 
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", fontSize: "0.85rem" }}
+                  type="text" placeholder="Base URL (optional)" value={providerBaseUrl} onChange={(event) => setProviderBaseUrl(event.target.value)} disabled={providerBusy} />
+                <input 
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", fontSize: "0.85rem" }}
+                  type="text" placeholder="Model ID (optional)" value={providerModel} onChange={(event) => setProviderModel(event.target.value)} disabled={providerBusy} />
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="cc-btn" style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "10px 20px" }} type="button" onClick={() => void handleConnectProvider()} disabled={providerBusy}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>link</span>
+                  {providerBusy ? "Connecting" : "Connect provider"}
+                </button>
+                <button className="cc-btn" style={{ background: "#fff", color: "#ef4444", border: "1px solid #fee2e2", padding: "10px 20px" }} type="button" onClick={() => void handleDisconnectProvider()} disabled={providerBusy}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>link_off</span>
+                  Disconnect
+                </button>
+              </div>
+              {(providerError || providerNotice) && (
+                <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, fontSize: "0.8rem", fontWeight: 600, background: providerError ? "#fef2f2" : "#f0fdf4", color: providerError ? "#ef4444" : "#16a34a", border: `1px solid ${providerError ? "#fee2e2" : "#dcfce3"}` }}>
+                  {providerError || providerNotice}
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ fontSize: "0.9rem", color: "#111827", margin: "0 0 10px 0" }}>Connected Providers &amp; Cloud Models</h4>
+              {providers.filter(p => p.connected).length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {providers.filter(p => p.connected).map(p => (
+                    <div key={p.id} style={{ background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", padding: "12px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1e293b" }}>{p.label}</span>
+                        <span style={{ fontSize: "0.7rem", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: 6 }}>{p.model_count || 0} models</span>
+                      </div>
+                      {(p.models && p.models.length > 0) ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
+                          {p.models.map(modelId => {
+                            const isSelected = selectedModelId === modelId || providerModel === modelId;
+                            return (
+                              <div
+                                key={modelId}
+                                onClick={async () => {
+                                  await triggerTransition(
+                                    async () => {
+                                      onSelectModel(modelId);
+                                      setProviderModel(modelId);
+                                      try {
+                                        await connectProvider({
+                                          provider: p.id,
+                                          api_key: providerApiKey.trim() || undefined,
+                                          base_url: providerBaseUrl.trim() || undefined,
+                                          model: modelId,
+                                        });
+                                      } catch {
+                                        // background sync optional
+                                      }
+                                    },
+                                    {
+                                      title: "Switching Model Core...",
+                                      subtitle: `Re-routing neural pathways to ${modelId}`
+                                    }
+                                  );
+                                }}
+                                style={{
+                                  cursor: "pointer",
+                                  padding: "10px 12px",
+                                  borderRadius: 10,
+                                  background: isSelected ? "#eff6ff" : "#fff",
+                                  border: `1.5px solid ${isSelected ? "#3b82f6" : "#e2e8f0"}`,
+                                  transition: "all 0.15s"
+                                }}
+                              >
+                                <span style={{ fontSize: "0.8rem", fontWeight: 600, color: isSelected ? "#1d4ed8" : "#334155" }}>{modelId}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Connected but no models listed yet.</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: "16px", fontSize: "0.82rem", color: "#64748b", background: "#f8fafc", borderRadius: 12, border: "1px dashed #cbd5e1", textAlign: "center" }}>
+                  No providers connected yet. Select a provider above, enter your API key, and click Connect.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1440,32 +1592,6 @@ export function SettingsModelStudio({
                 )}
                 <button className="settings-secondary-btn" type="button" onClick={() => void handleUnloadSelected()} disabled={unloadBusy || runtimeLoading || runtimeSaving}>
                   {unloadBusy ? "Unloading" : "Unload model"}
-                </button>
-              </div>
-              <div className="model-token-provider-section">
-                <strong>Cloud providers</strong>
-                <span>Manage cloud inference providers like Hugging Face, OpenAI, Anthropic, Google, and SambaNova.</span>
-              </div>
-              <div className="model-token-form-row">
-                <select value={selectedProvider} onChange={(event) => setSelectedProvider(event.target.value)} disabled={providerBusy}>
-                  <option value="huggingface">Hugging Face</option>
-                  <option value="openai">OpenAI</option>
-                  <option value="anthropic">Anthropic</option>
-                  <option value="google">Google</option>
-                  <option value="sambanova">SambaNova</option>
-                </select>
-                <input type="password" placeholder="Provider API key" value={providerApiKey} onChange={(event) => setProviderApiKey(event.target.value)} disabled={providerBusy} />
-              </div>
-              <div className="model-token-form-row">
-                <input type="text" placeholder="Base URL (optional)" value={providerBaseUrl} onChange={(event) => setProviderBaseUrl(event.target.value)} disabled={providerBusy} />
-                <input type="text" placeholder="Model ID (optional)" value={providerModel} onChange={(event) => setProviderModel(event.target.value)} disabled={providerBusy} />
-              </div>
-              <div className="model-token-form-row">
-                <button className="settings-primary-btn" type="button" onClick={() => void handleConnectProvider()} disabled={providerBusy}>
-                  {providerBusy ? "Connecting" : "Connect provider"}
-                </button>
-                <button className="settings-secondary-btn" type="button" onClick={() => void handleDisconnectProvider()} disabled={providerBusy}>
-                  Disconnect provider
                 </button>
               </div>
             </section>

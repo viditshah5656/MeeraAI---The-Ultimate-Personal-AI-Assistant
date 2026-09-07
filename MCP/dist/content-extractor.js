@@ -46,7 +46,7 @@ export class ContentExtractor {
             console.error(`Content extraction error for ${url}:`, error);
             // If it's a 403 error, try with different headers
             if (axios.isAxiosError(error) && error.response?.status === 403) {
-                console.log(`[ContentExtractor] Trying alternative headers for ${url}`);
+                console.error(`[ContentExtractor] Trying alternative headers for ${url}`);
                 try {
                     const response = await axios.get(url, {
                         headers: {
@@ -64,7 +64,7 @@ export class ContentExtractor {
                         maxContentLength,
                         validateStatus: (status) => status < 400,
                     });
-                    console.log(`[ContentExtractor] Alternative headers worked for ${url}`);
+                    console.error(`[ContentExtractor] Alternative headers worked for ${url}`);
                     return this.parseContent(response.data);
                 }
                 catch (retryError) {
@@ -77,20 +77,20 @@ export class ContentExtractor {
     async extractContentForResults(results, targetCount = results.length) {
         const enhancedResults = [];
         let processedCount = 0;
-        console.log(`[ContentExtractor] Processing up to ${results.length} results to get ${targetCount} non-PDF results`);
+        console.error(`[ContentExtractor] Processing up to ${results.length} results to get ${targetCount} non-PDF results`);
         for (const result of results) {
             if (enhancedResults.length >= targetCount) {
-                console.log(`[ContentExtractor] Reached target count of ${targetCount} results`);
+                console.error(`[ContentExtractor] Reached target count of ${targetCount} results`);
                 break;
             }
             processedCount++;
             // Skip PDF files
             if (isPdfUrl(result.url)) {
-                console.log(`[ContentExtractor] Skipping PDF file: ${result.url}`);
+                console.error(`[ContentExtractor] Skipping PDF file: ${result.url}`);
                 continue;
             }
             try {
-                console.log(`[ContentExtractor] Extracting content from: ${result.url}`);
+                console.error(`[ContentExtractor] Extracting content from: ${result.url}`);
                 const content = await this.extractContent({ url: result.url });
                 const cleanedContent = cleanText(content, this.maxContentLength);
                 enhancedResults.push({
@@ -101,10 +101,10 @@ export class ContentExtractor {
                     timestamp: generateTimestamp(),
                     fetchStatus: 'success',
                 });
-                console.log(`[ContentExtractor] Successfully extracted content (${enhancedResults.length}/${targetCount})`);
+                console.error(`[ContentExtractor] Successfully extracted content (${enhancedResults.length}/${targetCount})`);
             }
             catch (error) {
-                console.log(`[ContentExtractor] Failed to extract content from ${result.url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                console.error(`[ContentExtractor] Failed to extract content from ${result.url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
                 enhancedResults.push({
                     ...result,
                     fullContent: '',
@@ -116,7 +116,7 @@ export class ContentExtractor {
                 });
             }
         }
-        console.log(`[ContentExtractor] Processed ${processedCount} results, extracted ${enhancedResults.length} non-PDF results`);
+        console.error(`[ContentExtractor] Processed ${processedCount} results, extracted ${enhancedResults.length} non-PDF results`);
         return enhancedResults;
     }
     parseContent(html) {
@@ -166,14 +166,14 @@ export class ContentExtractor {
             if ($content.length > 0) {
                 mainContent = $content.text().trim();
                 if (mainContent.length > 100) { // Ensure we have substantial content
-                    console.log(`[ContentExtractor] Found content with selector: ${selector} (${mainContent.length} chars)`);
+                    console.error(`[ContentExtractor] Found content with selector: ${selector} (${mainContent.length} chars)`);
                     break;
                 }
             }
         }
         // If no main content found, try body content
         if (!mainContent || mainContent.length < 100) {
-            console.log(`[ContentExtractor] No main content found, using body content`);
+            console.error(`[ContentExtractor] No main content found, using body content`);
             mainContent = $('body').text().trim();
         }
         // Clean up the text

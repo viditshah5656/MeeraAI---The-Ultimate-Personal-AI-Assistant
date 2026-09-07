@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Destination Travel Itinerary & Visa Dossier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Destination Travel Itinerary & Visa Dossier</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 05:14 PM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul><li class="toc-level-1"><a href="#destination-travel-itinerary-visa-dossier">Destination Travel Itinerary & Visa Dossier</a></li>
+  <li class="toc-level-2"><a href="#chapter-1-bali-master-travel-architecture-immigration-blueprint">Chapter 1: BALI MASTER TRAVEL ARCHITECTURE & IMMIGRATION BLUEPRINT</a></li>
+    <li class="toc-level-3"><a href="#section-1-visa-preparation-immigration-protocol">SECTION 1: VISA PREPARATION & IMMIGRATION PROTOCOL</a></li>
+    <li class="toc-level-3"><a href="#visa-classification-requirements">Visa Classification & Requirements</a></li>
+    <li class="toc-level-3"><a href="#step-by-step-pre-departure-protocol">Step-by-Step Pre-Departure Protocol</a></li>
+    <li class="toc-level-3"><a href="#section-2-day-by-day-bali-itinerary">SECTION 2: DAY-BY-DAY BALI ITINERARY</a></li>
+    <li class="toc-level-3"><a href="#day-1-southern-cliffs-clifftop-temples-uluwatu">Day 1: Southern Cliffs & Clifftop Temples Uluwatu</a></li>
+    <li class="toc-level-3"><a href="#day-2-cultural-heart-jungle-sanctuary-ubud">Day 2: Cultural Heart & Jungle Sanctuary Ubud</a></li>
+    <li class="toc-level-3"><a href="#day-3-northern-lakes-cascading-waterfalls-bedugul-singaraja">Day 3: Northern Lakes & Cascading Waterfalls Bedugul & Singaraja</a></li>
+    <li class="toc-level-3"><a href="#day-4-ancient-agriculture-sacred-springs-tampaksiring">Day 4: Ancient Agriculture & Sacred Springs Tampaksiring</a></li>
+    <li class="toc-level-3"><a href="#day-5-west-coast-beach-clubs-sunset-departure">Day 5: West Coast Beach Clubs & Sunset Departure</a></li>
+    <li class="toc-level-3"><a href="#section-3-strategic-logistics-travel-tips">SECTION 3: STRATEGIC LOGISTICS & TRAVEL TIPS</a></li>
+  <li class="toc-level-2"><a href="#chapter-2-1-visa-entry-requirements-playbook">Chapter 2: 1. Visa & Entry Requirements Playbook</a></li>
+    <li class="toc-level-3"><a href="#entry-protocols-official-costs">Entry Protocols & Official Costs</a></li>
+    <li class="toc-level-3"><a href="#critical-entry-rules-common-traps">Critical Entry Rules & Common Traps</a></li>
+    <li class="toc-level-3"><a href="#2-top-rated-local-dining-street-food-guide">2. Top-Rated Local Dining & Street Food Guide</a></li>
+    <li class="toc-level-3"><a href="#food-safety-hygiene-guidelines-bali-belly-prevention">Food Safety & Hygiene Guidelines "Bali Belly" Prevention</a></li>
+    <li class="toc-level-3"><a href="#3-safety-ratings-risk-metrics">3. Safety Ratings & Risk Metrics</a></li>
+    <li class="toc-level-3"><a href="#primary-risk-vectors">Primary Risk Vectors</a></li>
+    <li class="toc-level-3"><a href="#4-common-tourist-scams-mitigation-playbooks">4. Common Tourist Scams & Mitigation Playbooks</a></li>
+    <li class="toc-level-3"><a href="#scam-1-unregulated-money-changer-manipulation">Scam 1: Unregulated Money Changer Manipulation</a></li>
+    <li class="toc-level-3"><a href="#scam-2-scooter-rental-damage-deposit-scams">Scam 2: Scooter Rental Damage & Deposit Scams</a></li>
+    <li class="toc-level-3"><a href="#scam-3-unmetered-airport-street-taxis">Scam 3: Unmetered Airport & Street Taxis</a></li>
+    <li class="toc-level-3"><a href="#scam-4-fake-local-guide-at-temples-waterfalls">Scam 4: "Fake Local Guide" at Temples & Waterfalls</a></li>
+    <li class="toc-level-3"><a href="#5-local-customs-etiquette-cultural-rules">5. Local Customs, Etiquette & Cultural Rules</a></li>
+    <li class="toc-level-3"><a href="#6-verified-feedback-insights-from-recent-travelers">6. Verified Feedback & Insights from Recent Travelers</a></li>
+  <li class="toc-level-2"><a href="#chapter-3-1-top-travel-agencies-booking-platforms-strategy-matrix">Chapter 3: 1. Top Travel Agencies & Booking Platforms Strategy Matrix</a></li>
+    <li class="toc-level-3"><a href="#2-concrete-budget-estimate-7-days-6-nights-in-bali">2. Concrete Budget Estimate 7 Days / 6 Nights in Bali</a></li>
+    <li class="toc-level-3"><a href="#expense-breakdown-table">Expense Breakdown Table</a></li>
+    <li class="toc-level-3"><a href="#3-mandatory-visa-regulatory-protocol-start-visa-prep">3. Mandatory Visa & Regulatory Protocol Start Visa Prep</a></li>
+    <li class="toc-level-3"><a href="#4-optimized-7-day-saved-itinerary-blueprint">4. Optimized 7-Day "Saved Itinerary" Blueprint</a></li>
+    <li class="toc-level-3"><a href="#5-proactive-problem-preemption-secret-discount-tactics">5. Proactive Problem Preemption & Secret Discount Tactics</a></li>
+    <li class="toc-level-3"><a href="#cost-saving-hacks">Cost-Saving Hacks</a></li>
+    <li class="toc-level-3"><a href="#safety-scam-mitigation-playbook">Safety & Scam Mitigation Playbook</a></li>
+  <li class="toc-level-2"><a href="#chapter-4-research-results-for-provide-an-authoritative-breakdown-of-visa-and-entry-requirements-for-traveling-to-destination-based-on-resolved-task-facts-for-this-conversation">Chapter 4: Research Results for: Provide an authoritative breakdown of visa and entry requirements for traveling to Destination based on: Resolved task facts for this conversation</a></li></ul></nav>
+        
+        <div class="content">
+            <h1 id="destination-travel-itinerary-visa-dossier" class="section-heading">Destination Travel Itinerary & Visa Dossier</h1>
+<h2 id="chapter-1-bali-master-travel-architecture-immigration-blueprint" class="section-heading">Chapter 1: BALI MASTER TRAVEL ARCHITECTURE & IMMIGRATION BLUEPRINT</h2>
+<p>http://googleusercontent.com/map_content/0</p>
+<hr class="section-divider">
+<h3 id="section-1-visa-preparation-immigration-protocol" class="section-heading">SECTION 1: VISA PREPARATION & IMMIGRATION PROTOCOL</h3>
+<h3 id="visa-classification-requirements" class="section-heading">Visa Classification & Requirements</h3>
+<p>For short-term holiday itineraries up to 30 days, the optimal choice for eligible tourists (including Indian passport holders) is the <strong>Electronic Visa on Arrival (e-VOA / Subclass B1)</strong>.</p>
+<table class="research-table">
+<tr>
+<th>Regulatory Requirement</th>
+<th>Operational Standard</th>
+<th>Verification Protocol</th>
+</tr>
+<tr>
+<td><strong>Visa Category</strong></td>
+<td>e-VOA (Subclass B1)</td>
+<td>Apply via official portal (<a href="https://molina.imigrasi.go.id" target="_blank">molina.imigrasi.go.id</a>). Avoid third-party markup platforms.</td>
+</tr>
+<tr>
+<td><strong>Validity & Stay</strong></td>
+<td>30 Days (Extendable once for +30 days)</td>
+<td>Valid for entry within 90 days of issuance.</td>
+</tr>
+<tr>
+<td><strong>Passport Validity</strong></td>
+<td>Minimum 6 Months</td>
+<td>Strict requirement from date of entry, with at least 2 blank pages.</td>
+</tr>
+<tr>
+<td><strong>Official Fee</strong></td>
+<td><strong>IDR 500,000</strong> (~$32 USD / ₹2,950)</td>
+<td>Payable online via Credit/Debit card (Visa/Mastercard).</td>
+</tr>
+<tr>
+<td><strong>Bali Tourist Levy</strong></td>
+<td><strong>IDR 150,000</strong> (~$10 USD / ₹850)</td>
+<td>Mandatory provincial tax paid via <a href="https://lovebali.baliprov.go.id" target="_blank">Love Bali</a>.</td>
+</tr>
+<tr>
+<td><strong>Customs Declaration</strong></td>
+<td>Electronic Customs Declaration (e-CD)</td>
+<td>Complete within 3 days prior to departure at <a href="https://ecd.beacukai.go.id" target="_blank">ecd.beacukai.go.id</a>.</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h3 id="step-by-step-pre-departure-protocol" class="section-heading">Step-by-Step Pre-Departure Protocol</h3>
+<pre class="code-block"><code class="language-text">[T-7 Days]: Verify Passport Validity (&gt;6 Months) &amp; Onward Flight Confirmation
+     │
+[T-3 Days]: Complete Electronic Customs Declaration (e-CD) → Save QR Code
+     │
+[T-2 Days]: Submit e-VOA Application on molina.imigrasi.go.id &amp; Pay IDR 500,000
+     │
+[T-1 Day ]: Pay Bali Tourist Levy (IDR 150,000) on Love Bali → Save QR Code Voucher
+     │
+
+http://googleusercontent.com/map_location_reference/1
+[Arrival ]: Scan e-Passport at Autogates at [I Gusti Ngurah Rai International Airport](http://googleusercontent.com/map_location_reference/0)</code></pre>
+<ol class="research-list">
+<li><strong>e-VOA Registration:</strong> Navigate to <a href="https://molina.imigrasi.go.id" target="_blank">molina.imigrasi.go.id</a>, upload your passport bio-data page and passport photo, enter hotel details, and clear the IDR 500,000 fee.</li>
+<li><strong>Tourist Levy Settlement:</strong> Visit <a href="https://lovebali.baliprov.go.id" target="_blank">Love Bali</a>, input passport credentials, submit the IDR 150,000 payment, and store the digital QR voucher on your phone.</li>
+<li><strong>Customs QR Code:</strong> Submit details on <a href="https://ecd.beacukai.go.id" target="_blank">ecd.beacukai.go.id</a> to receive a single QR code for your family/travel group.</li>
+<li><strong>Airport Arrival Flow:</strong> Upon landing at <a href="http://googleusercontent.com/map_location_reference/2" target="_blank">I Gusti Ngurah Rai International Airport</a>, bypass the physical visa payment line and proceed straight to the automated immigration e-Gates using your e-passport and e-VOA.</li>
+</ol>
+<hr class="section-divider">
+<h3 id="section-2-day-by-day-bali-itinerary" class="section-heading">SECTION 2: DAY-BY-DAY BALI ITINERARY</h3>
+<pre class="code-block"><code class="language-text">[Day 1: South Peninsula] ──&gt; [Day 2: Cultural Ubud] ──&gt; [Day 3: Highlands &amp; Lakes] ──&gt; [Day 4: Rice Terraces] ──&gt; [Day 5: Coastal Sunset]</code></pre>
+<hr class="section-divider">
+<h3 id="day-1-southern-cliffs-clifftop-temples-uluwatu" class="section-heading">Day 1: Southern Cliffs & Clifftop Temples (Uluwatu)</h3>
+<p>Start your trip by exploring the dramatic limestone cliffs and coastal sights of Southern Bali.</p>
+<h4 id="morning-arrival-coastal-clifftop-exploration" class="section-heading">Morning: Arrival & Coastal Clifftop Exploration</h4>
+<p>Arrive at <a href="http://googleusercontent.com/map_location_reference/3" target="_blank">I Gusti Ngurah Rai International Airport</a>, clear customs via the e-Gate autogates, and meet your private driver. Transfer 45 minutes south to the Bukit Peninsula to check into your resort and freshen up.</p>
+<h4 id="afternoon-sacred-clifftop-heritage" class="section-heading">Afternoon: Sacred Clifftop Heritage</h4>
+<p>Head to <a href="http://googleusercontent.com/map_location_reference/4" target="_blank">Uluwatu Temple</a>, perched 70 meters above the Indian Ocean. Walk along the cliffside paths and observe the resident macaque monkeys.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 7:00 AM – 7:00 PM</li>
+<li><strong>Entry:</strong> IDR 50,000</li>
+<li><strong>Safety Tip:</strong> Secure loose items such as glasses, hats, and phone lanyards from monkeys.</li>
+</ul>
+<h4 id="evening-sunset-clifftop-hospitality" class="section-heading">Evening: Sunset & Clifftop Hospitality</h4>
+<p>Walk over to <a href="http://googleusercontent.com/map_location_reference/5" target="_blank">Single Fin Bali</a> at Suluban Beach for clifftop views of the surf breaks below.</p>
+<ul class="research-list">
+<li><strong>Atmosphere:</strong> Lively lounge with direct sunset views over the ocean.</li>
+<li><strong>Transit:</strong> 10-minute drive from Uluwatu Temple.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="day-2-cultural-heart-jungle-sanctuary-ubud" class="section-heading">Day 2: Cultural Heart & Jungle Sanctuary (Ubud)</h3>
+<p>Travel north to Bali's central highlands to experience its natural sanctuaries and art traditions.</p>
+<h4 id="morning-jungle-sanctuary" class="section-heading">Morning: Jungle Sanctuary</h4>
+<p>Visit the <a href="http://googleusercontent.com/map_location_reference/6" target="_blank">Sacred Monkey Forest Sanctuary</a> in central Ubud, an ancient forest complex housing over 1,000 Balinese long-tailed macaques and moss-covered Hindu shrines.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 9:00 AM – 5:00 PM</li>
+<li><strong>Entry:</strong> IDR 80,000 (Weekdays) / IDR 100,000 (Weekends)</li>
+<li><strong>Guidelines:</strong> Maintain eye contact down, do not touch the animals, and keep food out of sight.</li>
+</ul>
+<h4 id="afternoon-artisanal-markets-heritage-paths" class="section-heading">Afternoon: Artisanal Markets & Heritage Paths</h4>
+<p>Explore the local art markets in central Ubud and hike along the nearby Campuhan Ridge Trail for panoramic views across the river valleys.</p>
+<h4 id="evening-traditional-balinese-gastronomy" class="section-heading">Evening: Traditional Balinese Gastronomy</h4>
+<p>Dine in central Ubud enjoying classic dishes such as <em>Babi Guling</em> (suckling pig) or <em>Bebek Betutu</em> (slow-cooked spiced duck).</p>
+<hr class="section-divider">
+<h3 id="day-3-northern-lakes-cascading-waterfalls-bedugul-singaraja" class="section-heading">Day 3: Northern Lakes & Cascading Waterfalls (Bedugul & Singaraja)</h3>
+<p>Head further north into the cool volcanic highlands of Bedugul.</p>
+<h4 id="morning-water-temple-on-lake-beratan" class="section-heading">Morning: Water Temple on Lake Beratan</h4>
+<p>http://googleusercontent.com/map_location_reference/8</p>
+<p>Depart early to visit <a href="http://googleusercontent.com/map_location_reference/7" target="_blank">Ulun Danu Beratan Temple</a>, a landmark temple structure set on the shores of Lake Bratan in the mountains.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 6:00 AM – 7:00 PM</li>
+<li><strong>Entry:</strong> IDR 75,000</li>
+<li><strong>Transit:</strong> 90-minute drive north from Ubud. Early visits avoid morning mountain mist and crowds.</li>
+</ul>
+<h4 id="afternoon-deep-jungle-waterfalls" class="section-heading">Afternoon: Deep Jungle Waterfalls</h4>
+<p>http://googleusercontent.com/map_location_reference/10</p>
+<p>Travel over the central mountain ridge toward North Bali to explore the multi-tiered cascades of <a href="http://googleusercontent.com/map_location_reference/9" target="_blank">Sekumpul Waterfall</a>.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 8:00 AM – 5:00 PM</li>
+<li><strong>Transit:</strong> 45 minutes north from Lake Bratan.</li>
+<li><strong>Logistics:</strong> Requires a local trekking guide at the registration station and a moderate hike down into the lush ravine.</li>
+</ul>
+<h4 id="evening-return-to-central-bali" class="section-heading">Evening: Return to Central Bali</h4>
+<p>Head back south toward Ubud for a restful evening meal.</p>
+<hr class="section-divider">
+<h3 id="day-4-ancient-agriculture-sacred-springs-tampaksiring" class="section-heading">Day 4: Ancient Agriculture & Sacred Springs (Tampaksiring)</h3>
+<p>Explore the traditional agricultural landscapes and holy springs of the Gianyar region.</p>
+<h4 id="morning-terraced-agricultural-valleys" class="section-heading">Morning: Terraced Agricultural Valleys</h4>
+<p>Visit the Tegallalang Rice Terrace north of Ubud to observe the ancient <em>Subak</em> cooperative irrigation system carved into the valley walls.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 8:00 AM – 6:00 PM</li>
+<li><strong>Entry:</strong> IDR 25,000</li>
+<li><strong>Tip:</strong> Arrive at opening time (8:00 AM) for soft lighting and peaceful trail walks.</li>
+</ul>
+<h4 id="afternoon-purification-rituals" class="section-heading">Afternoon: Purification Rituals</h4>
+<p>Drive 20 minutes northeast to Pura Tirta Empul, a water temple famous for its holy spring water where worshippers perform ritual purification baths.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 8:00 AM – 6:00 PM</li>
+<li><strong>Entry:</strong> IDR 50,000</li>
+<li><strong>Etiquette:</strong> A traditional sarong is required for entry; specific green sarongs are used if participating in the water cleansing ritual (<em>Melukat</em>).</li>
+</ul>
+<h4 id="evening-farm-to-table-dining" class="section-heading">Evening: Farm-to-Table Dining</h4>
+<p>Return to Ubud to sample organic farm-to-table cuisine prepared with local highland produce.</p>
+<hr class="section-divider">
+<h3 id="day-5-west-coast-beach-clubs-sunset-departure" class="section-heading">Day 5: West Coast Beach Clubs & Sunset Departure</h3>
+<p>Finish your journey along the western coast near Canggu before heading to the airport.</p>
+<h4 id="morning-coastal-vibe-surf-beaches" class="section-heading">Morning: Coastal Vibe & Surf Beaches</h4>
+<p>Transfer west to Canggu for a morning along Berawa Beach or Echo Beach, known for their black sand and surf breaks.</p>
+<h4 id="afternoon-beachfront-relaxation" class="section-heading">Afternoon: Beachfront Relaxation</h4>
+<p>http://googleusercontent.com/map_location_reference/12</p>
+<p>Spend the afternoon at <a href="http://googleusercontent.com/map_location_reference/11" target="_blank">FINNS Beach Club</a> on Berawa Beach.</p>
+<ul class="research-list">
+<li><strong>Hours:</strong> 11:00 AM – 12:00 AM</li>
+<li><strong>Offerings:</strong> Oceanfront pools, daybeds, and international dining options right along the shore.</li>
+</ul>
+<h4 id="evening-departure-transfer" class="section-heading">Evening: Departure Transfer</h4>
+<p>Transfer back south to <a href="http://googleusercontent.com/map_location_reference/13" target="_blank">I Gusti Ngurah Rai International Airport</a> for your flight home.</p>
+<ul class="research-list">
+<li><strong>Transit:</strong> Allow at least 90–120 minutes from Canggu/Seminyak to the airport due to peak coastal traffic.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="section-3-strategic-logistics-travel-tips" class="section-heading">SECTION 3: STRATEGIC LOGISTICS & TRAVEL TIPS</h3>
+<pre class="code-block"><code class="language-text">      TEMPLE ETIQUETTE             MONKEY SAFETY              AIRPORT TRANSIT
+┌──────────────────────────┐ ┌──────────────────────┐ ┌──────────────────────────┐
+│ • Wear Sarong &amp; Sash     │ │ • No Food in Bags    │ │ • Book Private Driver    │
+│ • Cover Shoulders        │ │ • Secure Loose Items │ │ • Use Grab/Gojek Apps    │
+│ • Modest Behavior        │ │ • Avoid Eye Contact  │ │ • Plan 2hr Traffic Buffer│
+└──────────────────────────┘ └──────────────────────┘ └──────────────────────────┘</code></pre>
+<ul class="research-list">
+<li><strong>Transportation:</strong> Renting a private car with a dedicated driver (approx. IDR 600,000–800,000 per day including fuel) is the most reliable way to navigate between regions without backtracking. For short local trips, ride-hailing apps like Grab and Gojek are widely available.</li>
+<li><strong>Currency & Payments:</strong> Carry cash (Indonesian Rupiah - IDR) for local temple entry fees, small shops, and tipping. Credit cards are accepted at major restaurants, beach clubs, and hotels.</li>
+<li><strong>Seasonal Timing:</strong> The dry season (April through October) offers sunnier days and lower humidity, making it ideal for outdoor trekking and beach visits.</li>
+</ul>
+<p>Would you like additional details on hotel recommendations, restaurant reservations, or custom daily timing adjustments?</p>
+<hr class="section-divider">
+<h2 id="chapter-2-1-visa-entry-requirements-playbook" class="section-heading">Chapter 2: 1. Visa & Entry Requirements Playbook</h2>
+<p>Bali remains one of the world's most vibrant destinations, blending deeply rooted Hindu traditions, world-class culinary scenes, and tropical landscapes. Standard travel brochures often obscure real operational details, hidden costs, and safety nuances.</p>
+<p>This guide synthesizes verified traveler feedback, ground truths, and local insights for Bali, covering entry procedures, top-rated dining, safety metrics, scam prevention protocols, and cultural etiquette.</p>
+<hr class="section-divider">
+<p>Navigating Indonesian immigration requires precision to avoid airport queues, unexpected fines, or administrative delays.</p>
+<h3 id="entry-protocols-official-costs" class="section-heading">Entry Protocols & Official Costs</h3>
+<ul class="research-list">
+<li><strong>Visa on Arrival (VoA / e-VoA - B213):</strong> Valid for 30 days. Cost: <strong>IDR 500,000 (~$32 USD)</strong>. Can be extended once for an additional 30 days (IDR 500,000).</li>
+<li><strong>Official e-VoA Portal:</strong> Apply strictly via the official Directorate General of Immigration website (<code class="inline-code">evisa.imigrasi.go.id</code>). Avoid third-party agency sites charging double or triple fees.</li>
+<li><strong>Bali Tourism Levy:</strong> <strong>IDR 150,000 (~$10 USD)</strong> per person. Payable online prior to arrival via <code class="inline-code">lovebali.baliprov.go.id</code> or at designated airport kiosks.</li>
+<li><strong>Electronic Customs Declaration (e-CD):</strong> Must be filled out online within 3 days prior to arrival at <code class="inline-code">ecd.beacukai.go.id</code>. Generates a QR code scanned upon exit.</li>
+</ul>
+<h3 id="critical-entry-rules-common-traps" class="section-heading">Critical Entry Rules & Common Traps</h3>
+<ul class="research-list">
+<li><strong>Passport Validity:</strong> Your passport <strong>must have at least 6 months validity</strong> remaining from your arrival date and at least two blank pages. Airlines strictly enforce this at origin departure gates and will deny boarding without exceptions.</li>
+<li><strong>Return Ticket Requirement:</strong> Immigration and airline check-in agents require proof of an onward/return ticket departing Indonesia within the 30-day window.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="2-top-rated-local-dining-street-food-guide" class="section-heading">2. Top-Rated Local Dining & Street Food Guide</h3>
+<p>Bali’s food scene spans traditional Balinese <em>Warungs</em> (family-owned eateries), bustling night markets, and elevated farm-to-table dining.</p>
+<table class="research-table">
+<tr>
+<th>Venue / Eatery</th>
+<th>Location</th>
+<th>Type / Cuisine</th>
+<th>Price Range (per person)</th>
+<th>Signature Dishes & Culinary Notes</th>
+</tr>
+<tr>
+<td><strong>Warung Babi Guling Ibu Oka 3</strong></td>
+<td>Ubud</td>
+<td>Traditional Balinese</td>
+<td>IDR 50,000 - 90,000 (~<span class="math-inline">3 - </span>6 USD)</td>
+<td><strong>Babi Guling (Spit-roasted pig):</strong> Served with crispy skin, blood sausage, pork satay, and spiced cassava leaves. Go before 1:00 PM for the freshest cuts.</td>
+</tr>
+<tr>
+<td><strong>Warung Mak Beng</strong></td>
+<td>Sanur</td>
+<td>Heritage Seafood</td>
+<td>IDR 55,000 - 75,000 (~<span class="math-inline">3.50 - </span>5 USD)</td>
+<td><strong>Deep-fried Fish & Spicy Fish Head Soup:</strong> Single iconic menu set served with sambal and rice since 1941. Expect long queues during lunch.</td>
+</tr>
+<tr>
+<td><strong>Gianyar Night Market (Pasar Malam Gianyar)</strong></td>
+<td>Gianyar</td>
+<td>Street Food Market</td>
+<td>IDR 15,000 - 40,000 (~<span class="math-inline">1 - </span>2.50 USD)</td>
+<td><strong>Sate Lilit & Nasi Campur:</strong> Minced seafood or chicken satay wrapped around lemongrass stalks, served alongside lawar (spiced vegetable salad).</td>
+</tr>
+<tr>
+<td><strong>Warung Local</strong></td>
+<td>Canggu / Seminyak</td>
+<td>Modern Nasi Campur</td>
+<td>IDR 40,000 - 80,000 (~<span class="math-inline">2.50 - </span>5.50 USD)</td>
+<td><strong>Buffet-Style Nasi Campur:</strong> Select your own base (red/white/yellow rice) with jackfruit curry, beef rendang, and fresh sambal matah.</td>
+</tr>
+<tr>
+<td><strong>Locavore NXT</strong></td>
+<td>Ubud</td>
+<td>Fine Dining / Sustainable</td>
+<td>IDR 1,500,000 - 2,500,000 (~<span class="math-inline">100 - </span>160 USD)</td>
+<td><strong>Hyper-Local Tasting Menu:</strong> Multi-course regional gastronomy utilizing 100% Indonesian ingredients, fermentation, and zero-waste practices.</td>
+</tr>
+</table>
+<h3 id="food-safety-hygiene-guidelines-bali-belly-prevention" class="section-heading">Food Safety & Hygiene Guidelines ("Bali Belly" Prevention)</h3>
+<ol class="research-list">
+<li><strong>Water Consumption:</strong> Never drink tap water. Use bottled, boiled, or filtered water even for brushing teeth.</li>
+<li><strong>Ice Standard:</strong> Commercial ice blocks with a hole through the center are government-regulated, safe manufactured ice. Avoid crushed block ice from informal street stalls.</li>
+<li><strong>Food Turnover:</strong> Eat at warungs with high local customer turnover where food is cooked fresh on demand rather than sitting at room temperature.</li>
+</ol>
+<hr class="section-divider">
+<h3 id="3-safety-ratings-risk-metrics" class="section-heading">3. Safety Ratings & Risk Metrics</h3>
+<ul class="research-list">
+<li><strong>Overall Safety Rating:</strong> <strong>Moderate-High (7.5/10)</strong>. Low rate of violent crime; primary risks are traffic accidents, petty theft, ocean hazards, and financial scams.</li>
+</ul>
+<pre class="code-block"><code class="language-text">[Safety Breakdown by Category]
+Physical Safety / Violent Crime : ██████████████████░░  (Very Low Risk)
+Petty Theft &amp; Bag Snatching      : ████████████░░░░░░░░  (Moderate - High on Scooters)
+Road Safety &amp; Traffic Hazards    : ████████░░░░░░░░░░░░  (High Risk - Unregulated Driving)
+Ocean Currents &amp; Rip Tides      : █████████░░░░░░░░░░░  (Moderate-High Risk)</code></pre>
+<h3 id="primary-risk-vectors" class="section-heading">Primary Risk Vectors</h3>
+<ul class="research-list">
+<li><strong>Scooter & Traffic Safety:</strong> Bali’s roads (especially in Canggu, Seminyak, and Ubud) are densely congested. Unlicensed scooter driving is a leading source of severe injury among tourists.</li>
+<li><strong>Ocean Rip Currents:</strong> Beaches along the southern coast (Kuta, Canggu, Dreamland, Seminyak) have strong rip tides. Always swim between red-and-yellow flags.</li>
+<li><strong>Arak Poisoning Hazard:</strong> Methanol contamination can occur in cheap, unbranded local spirits (<em>Arak</em>). Stick to sealed, commercially bottled alcohol or reputable establishments.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="4-common-tourist-scams-mitigation-playbooks" class="section-heading">4. Common Tourist Scams & Mitigation Playbooks</h3>
+<h3 id="scam-1-unregulated-money-changer-manipulation" class="section-heading">Scam 1: Unregulated Money Changer Manipulation</h3>
+<ul class="research-list">
+<li><strong>How it works:</strong> Unlicensed money changers offer above-market exchange rates. During manual cash counting, technicians use sleight-of-hand tricks to drop notes behind desks or shortchange bills.</li>
+<li><strong>Mitigation Playbook:</strong> Only use authorized money changers displaying a official green sticker from <strong>Bank Indonesia</strong> (e.g., <em>Central Kuta Money Exchange</em> or <em>PT. BMC</em>). Count cash yourself on the counter before placing it in your wallet, and never hand cash back to the teller after your final count.</li>
+</ul>
+<h3 id="scam-2-scooter-rental-damage-deposit-scams" class="section-heading">Scam 2: Scooter Rental Damage & Deposit Scams</h3>
+<ul class="research-list">
+<li><strong>How it works:</strong> Rental shops claim non-existent scratches or structural damage upon vehicle return, demanding exorbitant cash repair fees.</li>
+<li><strong>Mitigation Playbook:</strong> Thoroughly photograph and video-record every angle of the scooter, including undercarriage and existing scratches, in front of the rental agent before signing. Never surrender your physical passport as collateral—offer a photo ID or cash deposit instead.</li>
+</ul>
+<h3 id="scam-3-unmetered-airport-street-taxis" class="section-heading">Scam 3: Unmetered Airport & Street Taxis</h3>
+<ul class="research-list">
+<li><strong>How it works:</strong> Drivers at arrivals or on street corners refuse meter usage, demanding 3x to 5x standard rates.</li>
+<li><strong>Mitigation Playbook:</strong> Use ride-hailing apps like <strong>Gojek</strong> or <strong>Grab</strong> for clear, upfront pricing. If taking a street taxi, use official <strong>Bluebird Taxis</strong> (verify the driver wears a patterned blue uniform and the meter is turned on immediately upon entering).</li>
+</ul>
+<h3 id="scam-4-fake-local-guide-at-temples-waterfalls" class="section-heading">Scam 4: "Fake Local Guide" at Temples & Waterfalls</h3>
+<ul class="research-list">
+<li><strong>How it works:</strong> Self-appointed guides at sites like Besakih Temple or Lempuyang demand mandatory guide fees or claim areas are "closed to unguided tourists."</li>
+<li><strong>Mitigation Playbook:</strong> Verify official ticket counter prices. Standard entrance tickets include mandatory sarong rentals and official site access. Respectfully decline unofficial guides at parking lots.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="5-local-customs-etiquette-cultural-rules" class="section-heading">5. Local Customs, Etiquette & Cultural Rules</h3>
+<p>Balinese culture is heavily centered around <em>Tri Hita Karana</em> (harmony among people, nature, and the divine). Respecting local spiritual practices is mandatory.</p>
+<ul class="research-list">
+<li><strong>Temple Dress Code:</strong> Knees and shoulders must be covered. A <em>sarong</em> (waist cloth) and <em>selendang</em> (sash) are required for both men and women entering any temple complex (<em>Pura</em>).</li>
+<li><strong>Nyepi (Day of Silence):</strong> Balinese New Year (falls in March). The entire island shuts down for 24 hours: no flights, no traffic, no street lights, and no leaving your hotel premises.</li>
+<li><strong>Canang Sari (Daily Offerings):</strong> Small woven palm-leaf baskets containing flowers and incense placed on sidewalks and doorsteps. Avoid stepping on or tripping over them.</li>
+<li><strong>Sacred Trees & Mount Agung:</strong> Touching or climbing sacred banyan trees, or taking nude/disrespectful photos at sacred mountain peaks, is strictly illegal and subject to immediate deportation under Indonesian law.</li>
+<li><strong>Head & Hands Etiquette:</strong> The head is considered the most sacred part of the body; never touch anyone’s head (including children). Use your <strong>right hand</strong> to give or receive items, as the left hand is culturally considered unclean.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="6-verified-feedback-insights-from-recent-travelers" class="section-heading">6. Verified Feedback & Insights from Recent Travelers</h3>
+<ul class="research-list">
+<li><strong>Transport Logistics:</strong> Travelers consistently report severe traffic bottlenecks between Canggu, Seminyak, and Ubud. A drive of 15 km can take upwards of 1.5 to 2 hours during peak afternoon hours. Scooter taxis via Grab/Gojek remain the fastest way to move short distances.</li>
+<li><strong>Digital Cashless Payments:</strong> While high-end restaurants and hotels accept credit cards (3% surcharge is common), local warungs, driver tips, and night markets operate strictly on <strong>IDR Cash</strong>. Keep small denominations (IDR 10,000, 20,000, 50,000) handy.</li>
+<li><strong>ATM Security:</strong> Skimming devices remain prevalent on standalone street ATMs. Travelers recommend using ATMs located physically inside major bank branches (e.g., <em>BCA</em>, <em>Mandiri</em>, <em>BNI</em>) during operating hours.</li>
+</ul>
+<hr class="section-divider">
+<p><ElicitationsGroup message="Select an area below to build your custom Bali itinerary details:"></p>
+<p><Elicitation label="Create a day-by-day Bali itinerary" query="Create a detailed day-by-day Bali travel itinerary optimized for top attractions, dining, and minimal traffic delay."/></p>
+<p><Elicitation label="Calculate Bali trip budget breakdown" query="Provide a comprehensive budget breakdown for a 7-day trip to Bali covering accommodation, food, transport, and activities."/></p>
+<p><Elicitation label="Guide on Bali scooter rental & driving laws" query="What are the legal requirements, international driving permit rules, and safety tips for renting a scooter in Bali?"/></p>
+<p></ElicitationsGroup></p>
+<hr class="section-divider">
+<h2 id="chapter-3-1-top-travel-agencies-booking-platforms-strategy-matrix" class="section-heading">Chapter 3: 1. Top Travel Agencies & Booking Platforms Strategy Matrix</h2>
+<p>Structuring a high-value, budget-optimized travel strategy for Bali requires balancing cost efficiency, safety, and operational reliability. Below is an exhaustive blueprint breaking down trusted booking channels, concrete budget allocations, visa protocols, and risk-mitigation strategies for an optimal 7-Day / 6-Night Bali itinerary.</p>
+<hr class="section-divider">
+<p>To secure maximum value without compromising on safety or service quality, leverage a hybrid booking model. Combine Online Travel Agencies (OTAs) for transport and accommodation with vetted local operators for ground activities.</p>
+<table class="research-table">
+<tr>
+<th>Booking Platform / Agency</th>
+<th>Best Used For</th>
+<th>Price vs. Value Grade</th>
+<th>Unique Cost-Saving Mechanism</th>
+<th>Reliability & Risk Factors</th>
+</tr>
+<tr>
+<td><strong>Skyscanner / Google Flights</strong></td>
+<td>Flight Aggregation</td>
+<td><strong>A+</strong></td>
+<td>Matrix Search + Price Alerts (set 6–8 weeks out).</td>
+<td>Redirects to third parties; always finalize booking directly on the operating airline’s site.</td>
+</tr>
+<tr>
+<td><strong>Agoda</strong></td>
+<td>Bali Accommodations & Villas</td>
+<td><strong>A+</strong></td>
+<td>"Secret Deals" & VIP tier discounts (15%–25% off local villas).</td>
+<td>High reliability in Southeast Asia; verify inclusions (tax/service charge) before checkout.</td>
+</tr>
+<tr>
+<td><strong>Klook</strong></td>
+<td>Day Tours, Airport Transfers, SIM Cards</td>
+<td><strong>A</strong></td>
+<td>Bundle promo codes, app-exclusive cashback, and group package rates.</td>
+<td>Vetted local suppliers with instant voucher confirmation and clear refund terms.</td>
+</tr>
+<tr>
+<td><strong>Viator</strong></td>
+<td>Niche Cultural Tours & Water Sports</td>
+<td><strong>B+</strong></td>
+<td>Reserve Now, Pay Later feature (locks in price without locking cash).</td>
+<td>Higher markup than Klook, but offers extensive user reviews and flexible cancellation.</td>
+</tr>
+<tr>
+<td><strong>MakeMyTrip</strong></td>
+<td>Flight + Hotel Bundles from India</td>
+<td><strong>B</strong></td>
+<td>Coupon stacking (bank cards) on international packages.</td>
+<td>Good for package ease, but rigid cancellation policies compared to direct booking.</td>
+</tr>
+<tr>
+<td><strong>Flamingo Transworld</strong></td>
+<td>Escorted Group & Family Tours</td>
+<td><strong>B</strong></td>
+<td>All-inclusive itineraries with guaranteed meal preferences (e.g., Jain/Vegetarian).</td>
+<td>Higher base cost, but eliminates unexpected food/transport add-ons. <a href="https://www.flamingotravels.co.in/" target="_blank">Flamingo Transworld</a></td>
+</tr>
+<tr>
+<td><strong>TravelTriangle</strong></td>
+<td>Custom Marketplace Packages</td>
+<td><strong>B-</strong></td>
+<td>Bidding system among local agents to undercut retail package rates.</td>
+<td>Requires careful vetting of the specific assigned local agent. <a href="https://traveltriangle.com/budget-tour-packages" target="_blank">TravelTriangle</a></td>
+</tr>
+<tr>
+<td><strong>Bali Cab Driver / Local Operators</strong> (Direct via WhatsApp)</td>
+<td>Private Chauffeur & Custom Day Trips</td>
+<td><strong>A+</strong></td>
+<td>Direct negotiation (IDR 500,000–700,000 / <span class="math-inline">33–</span>46 USD per full day inclusive of petrol).</td>
+<td>Bypass middleman margins; ensure terms include toll fees and parking.</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h3 id="2-concrete-budget-estimate-7-days-6-nights-in-bali" class="section-heading">2. Concrete Budget Estimate (7 Days / 6 Nights in Bali)</h3>
+<p>The following financial blueprint details low-budget versus mid-range value tiers per person (calculated on a twin-sharing basis, excluding flight variations based on origin).</p>
+<h3 id="expense-breakdown-table" class="section-heading">Expense Breakdown Table</h3>
+<table class="research-table">
+<tr>
+<th>Category</th>
+<th>Budget Tier (INR / USD)</th>
+<th>Value / Comfort Tier (INR / USD)</th>
+<th>Primary Cost Drivers & Savings Tactic</th>
+</tr>
+<tr>
+<td><strong>Return Flights</strong> <em>(Hub-dependent)</em></td>
+<td>₹25,000 – ₹32,000 / <span class="math-inline">300 – </span>385</td>
+<td>₹35,000 – ₹48,000 / <span class="math-inline">420 – </span>580</td>
+<td>Fly mid-week; avoid peak July–August & Dec–Jan holidays.</td>
+</tr>
+<tr>
+<td><strong>Accommodation</strong> <em>(6 Nights)</em></td>
+<td>₹6,000 – ₹10,000 / <span class="math-inline">72 – </span>120 <em>(Guesthouses/Hostels)</em></td>
+<td>₹18,000 – ₹28,000 / <span class="math-inline">215 – </span>335 <em>(Private Villa with Pool)</em></td>
+<td>Book via Agoda in Ubud / Bedugul rather than beachfront Seminyak.</td>
+</tr>
+<tr>
+<td><strong>Ground Transport</strong></td>
+<td>₹3,500 – ₹5,000 / <span class="math-inline">42 – </span>60 <em>(Scooter Rental)</em></td>
+<td>₹8,500 – ₹12,000 / <span class="math-inline">100 – </span>145 <em>(Private Car + Driver split by 2)</em></td>
+<td>Use Grab/Gojek apps for short trips; hire private drivers for full-day tours.</td>
+</tr>
+<tr>
+<td><strong>Food & Dining</strong></td>
+<td>₹4,500 – ₹7,000 / <span class="math-inline">54 – </span>84 <em>(Local Warungs)</em></td>
+<td>₹12,000 – ₹18,000 / <span class="math-inline">145 – </span>215 <em>(Cafes & Beach Clubs)</em></td>
+<td>Dine at local <em>Warungs</em> (Nasi Goreng / Mie Goreng ~<span class="math-inline">2–</span>3 USD per meal).</td>
+</tr>
+<tr>
+<td><strong>Activities & Entry Fees</strong></td>
+<td>₹4,000 – ₹6,000 / <span class="math-inline">48 – </span>72</td>
+<td>₹8,000 – ₹14,000 / <span class="math-inline">96 – </span>170</td>
+<td>Pre-book entry tickets and tours on Klook to skip ticket line markups.</td>
+</tr>
+<tr>
+<td><strong>Visa & Entry Levies</strong></td>
+<td>₹4,100 / $50</td>
+<td>₹4,100 / $50</td>
+<td>Official e-VoA (<span class="math-inline">35 USD) + Bali Tourism Levy (IDR 150,000 / ~</span>10 USD).</td>
+</tr>
+<tr>
+<td><strong>Sim Card & Insurance</strong></td>
+<td>₹1,200 – ₹1,800 / <span class="math-inline">14 – </span>22</td>
+<td>₹2,000 – ₹3,000 / <span class="math-inline">24 – </span>36</td>
+<td>Pre-order Telkomsel eSIM via Klook; buy travel insurance covering scooter injury.</td>
+</tr>
+<tr>
+<td><strong>ESTIMATED TOTAL</strong></td>
+<td><strong>₹48,300 – ₹65,900 / <span class="math-inline">580 – </span>793</strong></td>
+<td><strong>₹87,600 – ₹127,100 / <span class="math-inline">1,050 – </span>1,526</strong></td>
+<td><strong>Excludes shopping/personal discretionary spending.</strong></td>
+</tr>
+</table>
+<hr class="section-divider">
+<h3 id="3-mandatory-visa-regulatory-protocol-start-visa-prep" class="section-heading">3. Mandatory Visa & Regulatory Protocol (Start Visa Prep)</h3>
+<p>Navigating official entry requirements smoothly avoids penalties and border delays:</p>
+<pre class="code-block"><code class="language-text">[Arrival Protocol Breakdown]
+├── 1. e-VoA (Electronic Visa on Arrival - B213)
+│   ├── Official Portal: molina.imigrasi.go.id (Avoid unofficial third-party sites)
+│   ├── Cost: IDR 500,000 (~$33 USD / ₹2,750)
+│   ├── Validity: 30 days (extendable once for another 30 days)
+│   └── Requirements: Passport valid ≥ 6 months, return flight ticket, digital passport photo.
+├── 2. International Tourist Levy
+│   ├── Official Portal: lovebali.baliprov.go.id
+│   └── Cost: IDR 150,000 (~$10 USD / ₹825) per person. Pay online before arrival to receive QR code.
+└── 3. Electronic Customs Declaration (e-ECD)
+    ├── Official Portal: ecd.beacukai.go.id
+    └── Timing: Complete within 2 days prior to arrival to obtain the mandatory customs clearance QR code.</code></pre>
+<hr class="section-divider">
+<h3 id="4-optimized-7-day-saved-itinerary-blueprint" class="section-heading">4. Optimized 7-Day "Saved Itinerary" Blueprint</h3>
+<p>This balanced itinerary minimizes transit times by grouping regional highlights:</p>
+<ul class="research-list">
+<li><strong>Days 1–3: Cultural Core (Ubud & Central Highlands)</strong></li>
+<li><em>Base:</em> Ubud (affordable boutique guesthouse or jungle villa).</li>
+<li><em>Highlights:</em> Tegallalang Rice Terraces, Sacred Monkey Forest, Tirta Empul Water Temple, Pura Ulun Danu Bratan.</li>
+<li><em>Budget Tip:</em> Rent a scooter for local Ubud movement (IDR 70,000–100,000/day), but hire a driver for the northern Bedugul circuit.</li>
+<li><strong>Days 4–5: Island Hopping or Coastal Cliffs (Nusa Penida / Uluwatu)</strong></li>
+<li><em>Base:</em> Sanur or Uluwatu.</li>
+<li><em>Highlights:</em> Day trip speed-boat to Nusa Penida (Kelingking Beach, Angel’s Billabong) OR Uluwatu Temple kecak fire dance at sunset.</li>
+<li><em>Budget Tip:</em> Book Nusa Penida speedboat tickets via Klook in advance to save up to 30% over portside walk-up rates.</li>
+<li><strong>Days 6–7: Coastal Chill & Departure (Canggu / Seminyak)</strong></li>
+<li><em>Base:</em> Seminyak or Canggu.</li>
+<li><em>Highlights:</em> Sunset at Tanah Lot, beach club visits (opt for no-minimum-spend entry lounges), local souvenir shopping at Sukawati Art Market.</li>
+</ul>
+<hr class="section-divider">
+<h3 id="5-proactive-problem-preemption-secret-discount-tactics" class="section-heading">5. Proactive Problem Preemption & Secret Discount Tactics</h3>
+<h3 id="cost-saving-hacks" class="section-heading">Cost-Saving Hacks</h3>
+<ol class="research-list">
+<li><strong>The Grab/Gojek Airport Hack:</strong> Airport taxi cabs at Denpasar (DPS) charge inflated rates (IDR 300,000+ to Kuta/Seminyak). Walk 3 minutes outside the arrival hall to the designated <strong>Grab Lounge</strong> to get upfront, regulated metered pricing (IDR 80,000–120,000).</li>
+<li><strong>Dine at Authentic Warungs:</strong> Look for <em>Warung Nasi Campur</em> spots with high local foot traffic. You get a full plate of rice, vegetables, and meat/chicken for IDR 25,000–40,000 (<span class="math-inline">1.60–</span>2.60 USD).</li>
+<li><strong>Currency Exchange Safety:</strong> Never exchange cash at small roadside booths offering unusually high exchange rates. Use automated machines or official multi-currency debit cards (e.g., Niyo, Wise, Revolut) at major bank ATMs (BCA, Mandiri, BNI) to avoid card-skimming scams.</li>
+</ol>
+<h3 id="safety-scam-mitigation-playbook" class="section-heading">Safety & Scam Mitigation Playbook</h3>
+<ul class="research-list">
+<li><strong>Scooter Insurance Trap:</strong> If renting a scooter, inspect and film the entire vehicle on video prior to driving off. Unscrupulous shops may charge steep penalties for pre-existing scratches. Always wear a helmet and carry an International Driving Permit (IDP).</li>
+<li><strong>Alcohol Safety:</strong> Avoid unbranded local spirits (like cheap <em>Arak</em> cocktails) in low-tier bars due to risk of methanol contamination. Stick to sealed Bintang beer or reputable establishments.</li>
+<li><strong>Temple Guide Scams:</strong> At temples like Besakih or Lempuyang, unaccredited local "guides" may demand mandatory high fees. Temple entries include standard access; verify official ticketing counters before handing over cash.</li>
+</ul>
+<p><ElicitationsGroup message="Where would you like to focus next?"></p>
+<p><Elicitation label="Get custom hotel & villa recommendations" query="Recommend top budget-to-midrange villas and hotels in Ubud and Seminyak with high review ratings."/></p>
+<p><Elicitation label="Explore day-by-day flight & food budget breakdown" query="Provide a detailed day-by-day cost breakdown covering specific meal options, entrance fees, and flight timing recommendations for Bali."/></p>
+<p></ElicitationsGroup></p>
+<hr class="section-divider">
+<h2 id="chapter-4-research-results-for-provide-an-authoritative-breakdown-of-visa-and-entry-requirements-for-traveling-to-destination-based-on-resolved-task-facts-for-this-conversation" class="section-heading">Chapter 4: Research Results for: Provide an authoritative breakdown of visa and entry requirements for traveling to Destination based on: [Resolved task facts for this conversation]</h2>
+<ul class="research-list">
+<li>agentic_trip_action_bali_like: start_visa_prep</li>
+<li>agentic_trip_action_destination: save_itinerary</li>
+</ul>
+<p>Treat these as already answered for the current task. Do not ask for them again unless the user contradicts or changes one of them.</p>
+<p>save_itinerary. Detail visa categories (e-visa, visa on arrival, tourist visa), passport validity rules, required financial solvency documents, exact processing times and fees, official government portal links, and customs regulations.</p>
+<ol class="research-list">
+<li><a href="https://indianvisaonline.gov.in/evisa/" target="_blank">e-Visa</a></li>
+</ol>
+<p>For the nationals of all other countries eligible for e-Visa, the e-visa application have to be filled online and the applicant must wait till …</p>
+<ol class="research-list">
+<li><a href="https://visa.immigration.go.tz/guidelines" target="_blank">Tanzania eVisa - Guidelines - Immigration</a></li>
+</ol>
+<p>Aug 1, 2026 · The nearby Embassy is regarded as the Embassy closest to where the applicant is while applying for Visa, and If …</p>
+<ol class="research-list">
+<li><a href="https://indianvisaonline.gov.in/" target="_blank">India Visa Online</a></li>
+</ol>
+<p>All foreign nationals entering India are required to possess a valid international travel document in the form of a national passport …</p>
+<ol class="research-list">
+<li><a href="https://myvisachecker.com/" target="_blank">Visa Checker Tool – Free, Instant Requirements for 199 Countries (2026)</a></li>
+</ol>
+<p>Check visa requirements for any passport and destination instantly. Covers 199 countries with visa-free, visa-on-arrival, e-visa, and …</p>
+<ol class="research-list">
+<li><a href="https://www.thaievisa.go.th/visa/dtv-visa" target="_blank">Official Website of Thailand Electronic Visa</a></li>
+</ol>
+<p>Welcome to electronic visa application system. The official website by ministry of foreign affairs of kingdom thailand.</p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: fa0bc8a2ef65 • Generated on September 05, 2026 at 05:14 PM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

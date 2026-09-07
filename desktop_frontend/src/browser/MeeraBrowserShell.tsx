@@ -102,6 +102,8 @@ import {
   PiBackspace,
   PiGridNine,
   PiNewspaper,
+  PiSpinnerGap,
+  PiFileText,
 } from "react-icons/pi";
 import { LuGlobe, LuLink, LuSearch, LuChevronLeft, LuChevronRight, LuRotateCw, LuLock, LuLockOpen, LuChevronDown } from "react-icons/lu";
 import { useAuth } from "../AuthProvider";
@@ -354,15 +356,16 @@ const WIDGET_META: Record<WidgetType, WidgetMeta> = {
   todo: { type: "todo", label: "To-Do List", description: "A simple checklist for your day.", icon: <PiCheckSquare size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
   notes: { type: "notes", label: "Quick Notes", description: "A scratchpad that saves as you type.", icon: <PiPencilSimple size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
   topsites: { type: "topsites", label: "Top Sites", description: "Your bookmarks and frequent sites in a grid.", icon: <PiSquaresFour size={16} />, defaultSize: "l", sizes: ["m", "l"] },
+  news: { type: "news", label: "Headlines", description: "Top headlines and stories.", icon: <PiNewspaper size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
   calendar: { type: "calendar", label: "Calendar", description: "This month at a glance.", icon: <PiBookOpenText size={16} />, defaultSize: "m", sizes: ["s", "m"] },
   calculator: { type: "calculator", label: "Calculator", description: "A quick calculator for simple math.", icon: <PiTerminalWindow size={16} />, defaultSize: "s", sizes: ["s", "m"] },
   bookmarks: { type: "bookmarks", label: "Bookmarks", description: "Jump back into your saved pages.", icon: <PiBookmarkSimple size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
-  downloads: { type: "downloads", label: "Recent Downloads", description: "Your most recent downloaded files.", icon: <PiDownloadSimple size={16} />, defaultSize: "m", sizes: ["s", "m"] },
+  downloads: { type: "downloads", label: "Recent Downloads", description: "Your most recent downloaded files.", icon: <PiDownloadSimple size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
   stocks: { type: "stocks", label: "Stocks", description: "A simulated watchlist ticker.", icon: <PiChartBar size={16} />, defaultSize: "m", sizes: ["s", "m", "l"] },
   focus: { type: "focus", label: "Focus Timer", description: "A Pomodoro-style focus and break timer.", icon: <PiClock size={16} />, defaultSize: "s", sizes: ["s", "m"] },
 };
 
-const WIDGET_TYPES_ORDERED: WidgetType[] = ["clock", "todo", "notes", "topsites", "calendar", "calculator", "bookmarks", "downloads", "stocks", "focus"];
+const WIDGET_TYPES_ORDERED: WidgetType[] = ["clock", "todo", "notes", "topsites", "news", "calendar", "calculator", "bookmarks", "downloads", "stocks", "focus"];
 
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return "0 B";
@@ -449,6 +452,7 @@ export type BrowserHistoryItem = {
   url: string;
   title: string;
   timestamp: number;
+  favicon?: string;
 };
 
 export type BrowserBookmark = {
@@ -1392,6 +1396,7 @@ function FocusWidget({ focus, onUpdate }: { focus: FocusState; onUpdate: (update
 
 export function MeeraBrowserShell() {
   const { user } = useAuth();
+  const isMac = useMemo(() => /mac/i.test(navigator.platform), []);
   const initialTarget = useMemo(() => readInitialTarget(), []);
   const initialTab = useMemo(() => createInitialTab(initialTarget), [initialTarget]);
   const [tabs, setTabs] = useState<BrowserTab[]>(() => {
@@ -1662,7 +1667,7 @@ export function MeeraBrowserShell() {
   }, []);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -2100,8 +2105,9 @@ export function MeeraBrowserShell() {
     broadcastRef.current = channel;
 
     const handleMessage = (event: MessageEvent<BrowserMessage>) => {
-      if (event.data?.type === "meera-browser:open-tab") {
-        const payload = event.data.payload;
+      const type = event.data?.type;
+      if ((type as string) === "meera-browser:open-tab") {
+        const payload = (event.data as any)?.payload;
         if (payload?.url) {
           openTab(payload.url);
           window.focus();
@@ -2430,6 +2436,31 @@ export function MeeraBrowserShell() {
       const webview = webviewRefs.current.get(activeTab.id);
       if (webview?.loadURL) webview.loadURL(nextUrl);
     }
+  };
+
+  const navigate = navigateActiveTab;
+
+  const toggleBookmark = (url?: string, title?: string, favicon?: string) => {
+    const targetUrl = url || address;
+    if (!targetUrl || targetUrl.startsWith("meera://")) return;
+    setBookmarks((prev) => {
+      const exists = prev.some((b) => b.url === targetUrl);
+      if (exists) {
+        showToast("Bookmark removed", <PiBookmarkSimple size={14} />);
+        return prev.filter((b) => b.url !== targetUrl);
+      }
+      showToast("Bookmark added", <PiCheckCircle size={14} />);
+      return [
+        {
+          id: createId("bm"),
+          url: targetUrl,
+          title: title || activeTab?.title || targetUrl,
+          favicon: favicon || activeTab?.favicon,
+          dateAdded: Date.now(),
+        },
+        ...prev,
+      ];
+    });
   };
 
   // Called when a real login-form submission was captured on a page. If we
@@ -3607,38 +3638,42 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
           </div>
 
           {/* WINDOW CONTROLS AND LIVE DIGITAL CLOCK */}
-          <div className="dock-window-controls titlebar-controls" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: 'auto', WebkitAppRegion: 'no-drag' as any }}>
+          <div className="dock-window-controls titlebar-controls" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: 'auto', WebkitAppRegion: 'no-drag' } as any}>
             <div className="topbar-time" aria-label="Current time">
               <span className="topbar-time-main">{localTime}</span>
               <span className="topbar-time-seconds">{localSeconds}</span>
             </div>
-            <button
-              className="titlebar-btn minimize"
-              type="button"
-              aria-label="Minimize window"
-              title="Minimize"
-              onClick={() => windowControls?.minimize?.()}
-            >
-              <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/minimize.svg`} alt="Minimize" />
-            </button>
-            <button
-              className="titlebar-btn maximize"
-              type="button"
-              aria-label="Maximize window"
-              title="Maximize"
-              onClick={() => windowControls?.maximize?.()}
-            >
-              <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/maximize.svg`} alt="Maximize" />
-            </button>
-            <button
-              className="titlebar-btn close"
-              type="button"
-              aria-label="Close window"
-              title="Close"
-              onClick={() => windowControls?.close?.()}
-            >
-              <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/close.svg`} alt="Close" />
-            </button>
+            {!isMac && (
+              <>
+                <button
+                  className="titlebar-btn minimize"
+                  type="button"
+                  aria-label="Minimize window"
+                  title="Minimize"
+                  onClick={() => windowControls?.minimize?.()}
+                >
+                  <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/minimize.svg`} alt="Minimize" />
+                </button>
+                <button
+                  className="titlebar-btn maximize"
+                  type="button"
+                  aria-label="Maximize window"
+                  title="Maximize"
+                  onClick={() => windowControls?.maximize?.()}
+                >
+                  <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/maximize.svg`} alt="Maximize" />
+                </button>
+                <button
+                  className="titlebar-btn close"
+                  type="button"
+                  aria-label="Close window"
+                  title="Close"
+                  onClick={() => windowControls?.close?.()}
+                >
+                  <img className="ui-icon" src={`${import.meta.env.BASE_URL}ui/close.svg`} alt="Close" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -4144,7 +4179,7 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
                         title={item.url}
                       >
                         <div className="drawer-card-favicon">
-                          {item.favicon ? <img src={item.favicon} alt="" /> : <LuGlobe size={15} />}
+                          {(item as any).favicon ? <img src={(item as any).favicon} alt="" /> : <LuGlobe size={15} />}
                         </div>
                         <div className="drawer-card-details">
                           <span className="drawer-card-title">{item.title || item.url}</span>
@@ -4873,8 +4908,8 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
                 borderRadius: '12px',
                 boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
                 animation: 'fadeInUp 0.15s ease-out',
-                WebkitAppRegion: 'no-drag' as any
-              }}
+                WebkitAppRegion: 'no-drag',
+              } as any}
             >
               <button
                 className="selection-pill-btn"
@@ -5434,8 +5469,8 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
                   )}
                 </div>
                 <div className="cc-profile-info">
-                  <span className="cc-profile-name">{user?.displayName || "Vidit Shah"}</span>
-                  <span className="cc-profile-desc" style={{ fontSize: 10 }}>{user?.email || "viditshah5656@gmail.com"}</span>
+                  <span className="cc-profile-name">{user?.displayName || "Guest Explorer"}</span>
+                  <span className="cc-profile-desc" style={{ fontSize: 10 }}>{user?.email || "Sign in to sync"}</span>
                 </div>
               </div>
 

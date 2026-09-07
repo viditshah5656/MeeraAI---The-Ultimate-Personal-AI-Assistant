@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theoretical Foundations Architectural Frameworks and Academic Pathways for Graduate Studies in Italian Autonomous Systems Engineering</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #1a1a2e;
+            --accent: #6c63ff;
+            --accent-light: #8b83ff;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fc;
+            --text: #2d3748;
+            --text-muted: #718096;
+            --border: #e2e8f0;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.85;
+            font-size: 16px;
+        }
+        
+        .document {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .title-page {
+            text-align: center;
+            padding: 80px 0 60px;
+            border-bottom: 3px solid var(--accent);
+            margin-bottom: 50px;
+        }
+        
+        .title-page h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .title-page .subtitle {
+            font-size: 1.15em;
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 10px;
+        }
+        
+        .title-page .meta {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .title-page .badge {
+            display: inline-block;
+            padding: 6px 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 0.05em;
+        }
+        
+        .table-of-contents {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px 40px;
+            margin-bottom: 50px;
+        }
+        
+        .table-of-contents h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .table-of-contents ul { list-style: none; padding-left: 0; }
+        .table-of-contents li { padding: 5px 0; font-family: 'Inter', sans-serif; font-size: 0.95em; }
+        .table-of-contents li a { color: var(--accent); text-decoration: none; }
+        .table-of-contents li a:hover { text-decoration: underline; }
+        .toc-level-2 { padding-left: 20px !important; }
+        .toc-level-3 { padding-left: 40px !important; font-size: 0.9em !important; }
+        
+        .section-heading {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            margin-top: 50px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        h1.section-heading { font-size: 2.2em; border-bottom-color: var(--accent); }
+        h2.section-heading { font-size: 1.65em; }
+        h3.section-heading { font-size: 1.3em; border-bottom: none; }
+        
+        p { margin-bottom: 20px; text-align: justify; }
+        strong { color: var(--primary); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        .research-list { margin: 15px 0 25px 30px; }
+        .research-list li { margin-bottom: 10px; }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88em;
+            line-height: 1.6;
+            border: 1px solid #313244;
+        }
+        
+        .inline-code {
+            background: var(--bg-alt);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+        
+        .math-inline {
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-style: italic;
+            color: var(--primary);
+            padding: 0 4px;
+        }
+        
+        .math-display {
+            text-align: center;
+            padding: 22px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-family: 'KaTeX_Math', 'Times New Roman', serif;
+            font-size: 1.15em;
+            overflow-x: auto;
+        }
+        
+        .research-quote {
+            border-left: 4px solid var(--accent);
+            padding: 15px 25px;
+            margin: 25px 0;
+            background: var(--bg-alt);
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        
+        .research-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92em;
+        }
+        
+        .research-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .research-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .research-table tr:nth-child(even) td {
+            background: var(--bg-alt);
+        }
+        
+        .section-divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 40px 0;
+        }
+        
+        .document-footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid var(--border);
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        
+        .document-footer .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        
+        @media print {
+            body { font-size: 12pt; }
+            .document { padding: 0; max-width: none; }
+            .title-page { page-break-after: always; }
+            .table-of-contents { page-break-after: always; }
+            .code-block { background: #f5f5f5 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document">
+        <div class="title-page">
+            <h1>Theoretical Foundations Architectural Frameworks and Academic Pathways for Graduate Studies in Italian Autonomous Systems Engineering</h1>
+            <p class="subtitle">🔬 Advanced Research Paper — Meera AI</p>
+            <p class="meta">Published: September 05, 2026 at 03:49 AM • Autonomous Cognitive Engine</p>
+            <span class="badge">AUTONOMOUS SCIENTIFIC REPORT</span>
+        </div>
+        
+        <nav class="table-of-contents"><h2>📑 Table of Contents</h2><ul><li class="toc-level-1"><a href="#-theoretical-foundations-architectural-frameworks-and-academic-pathways-for-graduate-studies-in-italian-autonomous-systems-engineering">🧠 Theoretical Foundations, Architectural Frameworks, and Academic Pathways for Graduate Studies in Italian Autonomous Systems Engineering</a></li>
+  <li class="toc-level-2"><a href="#-executive-summary-theoretical-ontology">📋 Executive Summary & Theoretical Ontology</a></li>
+    <li class="toc-level-3"><a href="#conceptual-taxonomy">Conceptual Taxonomy</a></li>
+  <li class="toc-level-2"><a href="#-mathematical-foundations-formal-derivations">📐 Mathematical Foundations & Formal Derivations</a></li>
+    <li class="toc-level-3"><a href="#1-nonlinear-systems-control-dynamic-feedback-linearization">1. Nonlinear Systems Control & Dynamic Feedback Linearization</a></li>
+    <li class="toc-level-3"><a href="#2-modern-optimal-control-infinite-horizon-continuous-time-lqr">2. Modern Optimal Control: Infinite-Horizon Continuous-Time LQR</a></li>
+    <li class="toc-level-3"><a href="#3-rigid-multibody-dynamics-lie-group-kinematics-se3">3. Rigid Multibody Dynamics & Lie Group Kinematics $SE3$</a></li>
+  <li class="toc-level-2"><a href="#-system-architectures-computational-workflows">🏗️ System Architectures & Computational Workflows</a></li>
+    <li class="toc-level-3"><a href="#end-to-end-real-time-autonomous-control-architecture">End-to-End Real-Time Autonomous Control Architecture</a></li>
+  <li class="toc-level-2"><a href="#-algorithmic-formulations-reference-implementation">💻 Algorithmic Formulations & Reference Implementation</a></li>
+<li class="toc-level-1"><a href="#demonstration">Demonstration</a></li>
+  <li class="toc-level-2"><a href="#-empirical-state-of-the-art-top-italian-universities">📊 Empirical State of the Art: Top Italian Universities</a></li>
+  <li class="toc-level-2"><a href="#-prerequisites-ects-credit-mappings-and-entry-pathways">📑 Prerequisites, ECTS Credit Mappings, and Entry Pathways</a></li>
+    <li class="toc-level-3"><a href="#1-mandatory-minimum-ects-mapping-180-ects-bachelor-equivalent">1. Mandatory Minimum ECTS Mapping 180 ECTS Bachelor Equivalent</a></li>
+    <li class="toc-level-3"><a href="#2-italian-grading-equivalency-scale-selection-metrics">2. Italian Grading Equivalency Scale & Selection Metrics</a></li>
+    <li class="toc-level-3"><a href="#3-step-by-step-international-student-application-pathway">3. Step-by-Step International Student Application Pathway</a></li>
+  <li class="toc-level-2"><a href="#-critical-bottlenecks-theoretical-limits">🛑 Critical Bottlenecks & Theoretical Limits</a></li>
+    <li class="toc-level-3"><a href="#1-real-time-non-convex-optimization-constraints">1. Real-Time Non-Convex Optimization Constraints</a></li>
+    <li class="toc-level-3"><a href="#2-the-sim-to-real-domain-shift-gap">2. The Sim-to-Real Domain Shift Gap</a></li>
+    <li class="toc-level-3"><a href="#3-formal-verification-of-neural-network-controllers">3. Formal Verification of Neural Network Controllers</a></li>
+  <li class="toc-level-2"><a href="#-actionable-research-roadmap">🔮 Actionable Research Roadmap</a></li>
+    <li class="toc-level-3"><a href="#key-areas-for-exploration">Key Areas for Exploration</a></li>
+    <li class="toc-level-3"><a href="#-chapter-references-citations">📚 Chapter References & Citations</a></li></ul></nav>
+        
+        <div class="content">
+            <h1 id="-theoretical-foundations-architectural-frameworks-and-academic-pathways-for-graduate-studies-in-italian-autonomous-systems-engineering" class="section-heading">🧠 Theoretical Foundations, Architectural Frameworks, and Academic Pathways for Graduate Studies in Italian Autonomous Systems Engineering</h1>
+<h2 id="-executive-summary-theoretical-ontology" class="section-heading">📋 Executive Summary & Theoretical Ontology</h2>
+<p>The Italian higher education architecture for graduate studies (<span class="math-inline">2^{\circ}</span> <em>ciclo</em>, <em>Laurea Magistrale</em>, LM) in Control Systems, Robotics, Automation, and Mechatronics operates primarily within two distinct ministerial degree classes defined by the Italian Ministry of University and Research (MUR): <strong>LM-25 (Automation Engineering / Ingegneria dell'Automazione)</strong> and <strong>LM-32 (Computer Science Engineering / Ingegneria Informatica)</strong>, alongside specialized tracks in <strong>LM-28 (Electrical Engineering)</strong> and <strong>LM-33 (Mechanical Engineering)</strong>.</p>
+<h3 id="conceptual-taxonomy" class="section-heading">Conceptual Taxonomy</h3>
+<p>The theoretical domain spanned by these programs is unified under the paradigm of <strong>Cyber-Physical Systems (CPS)</strong> and <strong>Interconnected Autonomous Dynamical Systems</strong>.</p>
+<pre class="code-block"><code class="language-text">                           ┌─────────────────────────────────────────┐
+                           │    INTERCONNECTED CYBER-PHYSICAL        │
+                           │           SYSTEMS (CPS)                 │
+                           └────────────────────┬────────────────────┘
+                                                │
+         ┌──────────────────────────────────────┼──────────────────────────────────────┐
+         │                                      │                                      │
+         ▼                                      ▼                                      ▼
+┌──────────────────┐                  ┌──────────────────┐                  ┌──────────────────┐
+│   LM-25 CLASS    │                  │   LM-32 CLASS    │                  │   LM-33 CLASS    │
+│ Automation &amp;     │                  │ AI &amp; Robotics    │                  │ Mechatronics &amp;   │
+│ Control Systems  │                  │ Engineering      │                  │ Mechanical Systems│
+└────────┬─────────┘                  └────────┬─────────┘                  └────────┬─────────┘
+         │                                      │                                      │
+ ┌───────┴───────┐                      ┌───────┴───────┐                      ┌───────┴───────┐
+ │ Nonlinear &amp;   │                      │ Visual SLAM,  │                      │ Multibody     │
+ │ Optimal       │                      │ Kinematics,   │                      │ Dynamics,     │
+ │ Control Theory│                      │ Deep Learning │                      │ Actuation     │
+ └───────────────┘                      └───────────────┘                      └───────────────┘</code></pre>
+<p>The fundamental goal of these master's programs is to synthesize five primary theoretical domains:</p>
+<ol class="research-list">
+<li><strong>Model-Based Deterministic Dynamics</strong>: Rigorous formulation of differential-algebraic equations (DAEs) governing physical systems.</li>
+<li><strong>Stochastic Estimation & Information Theory</strong>: Modern state estimation, visual-inertial sensor fusion, and optimal filtering under unmodeled disturbances.</li>
+<li><strong>Real-Time Embedded Optimization</strong>: Model Predictive Control (MPC) and optimal control solved under strict real-time hardware constraints.</li>
+<li><strong>Perception & Representation Learning</strong>: High-dimensional visual mapping, spatial representation, and probabilistic reasoning.</li>
+<li><strong>Physical Actuation & Sensorics</strong>: Power electronics, electromechanical energy conversion, and compliance control.</li>
+</ol>
+<hr class="section-divider">
+<h2 id="-mathematical-foundations-formal-derivations" class="section-heading">📐 Mathematical Foundations & Formal Derivations</h2>
+<p>To understand the academic level expected of incoming students, consider the core mathematical models taught in these programs.</p>
+<h3 id="1-nonlinear-systems-control-dynamic-feedback-linearization" class="section-heading">1. Nonlinear Systems Control & Dynamic Feedback Linearization</h3>
+<p>Consider a smooth affine control nonlinear dynamical system defined on a smooth manifold <span class="math-inline">\mathcal{M} \subseteq \mathbb{R}^n</span>:</p>
+<div class="math-display">\dot{x} = f(x) + \sum_{i=1}^m g_i(x) u_i = f(x) + G(x)u</div>
+<div class="math-display">y = h(x)</div>
+<p>where <span class="math-inline">x \in \mathbb{R}^n</span> represents the state vector, <span class="math-inline">u \in \mathbb{R}^m</span> is the control input vector, and <span class="math-inline">y \in \mathbb{R}^m</span> is the output vector. <span class="math-inline">f, g_1, \dots, g_m</span> are smooth vector fields, and <span class="math-inline">h = [h_1, \dots, h_m]^T</span> is a vector of smooth scalar functions.</p>
+<h4 id="lie-derivatives-and-relative-degree" class="section-heading">Lie Derivatives and Relative Degree</h4>
+<p>The Lie derivative of a scalar function <span class="math-inline">h_i(x)</span> along a vector field <span class="math-inline">f(x)</span> is defined as:</p>
+<div class="math-display">\mathcal{L}_f h_i(x) = \nabla h_i(x) \cdot f(x) = \frac{\partial h_i(x)}{\partial x} f(x)</div>
+<p>Higher-order Lie derivatives are defined recursively:</p>
+<div class="math-display">\mathcal{L}_f^k h_i(x) = \mathcal{L}_f \left( \mathcal{L}_f^{k-1} h_i(x) \right), \quad \text{with } \mathcal{L}_f^0 h_i(x) = h_i(x)</div>
+<div class="math-display">\mathcal{L}_g \mathcal{L}_f^k h_i(x) = \frac{\partial \left( \mathcal{L}_f^k h_i(x) \right)}{\partial x} g(x)</div>
+<p>The system possesses a <strong>vector relative degree</strong> <span class="math-inline">r = [r_1, r_2, \dots, r_m]^T</span> at a point <span class="math-inline">x_0</span> if:</p>
+<ol class="research-list">
+<li><span class="math-inline">\mathcal{L}_{g_j} \mathcal{L}_f^k h_i(x) = 0</span> for all <span class="math-inline">1 \le j \le m</span>, <span class="math-inline">1 \le i \le m</span>, <span class="math-inline">k < r_i - 1</span>, in a neighborhood of <span class="math-inline">x_0</span>.</li>
+<li>The <span class="math-inline">m \times m</span> <strong>Decoupling Matrix</strong> (or Advantage Matrix) <span class="math-inline">A(x)</span> is non-singular at <span class="math-inline">x_0</span>:</li>
+</ol>
+<p>$$A(x) = \begin{bmatrix}</p>
+<p>\mathcal{L}_{g_1} \mathcal{L}_f^{r_1-1} h_1(x) & \dots & \mathcal{L}_{g_m} \mathcal{L}_f^{r_1-1} h_1(x) \\</p>
+<p>\vdots & \ddots & \vdots \\</p>
+<p>\mathcal{L}_{g_1} \mathcal{L}_f^{r_m-1} h_m(x) & \dots & \mathcal{L}_{g_m} \mathcal{L}_f^{r_m-1} h_m(x)</p>
+<p>\end{bmatrix}$$</p>
+<h4 id="exact-feedback-linearization-transformation" class="section-heading">Exact Feedback Linearization Transformation</h4>
+<p>When the total relative degree <span class="math-inline">r_{tot} = \sum_{i=1}^m r_i = n</span>, the system exhibits no internal zero dynamics. Define the diffeomorphism <span class="math-inline">\Phi(x) = [\xi_1^1, \dots, \xi_{r_1}^1, \dots, \xi_1^m, \dots, \xi_{r_m}^m]^T</span> as:</p>
+<div class="math-display">\xi_k^i = \mathcal{L}_f^{k-1} h_i(x), \quad 1 \le i \le m, \, 1 \le k \le r_i</div>
+<p>Differentiating <span class="math-inline">\xi_{r_i}^i</span> with respect to time yields:</p>
+<div class="math-display">\dot{\xi}_{r_i}^i = \mathcal{L}_f^{r_i} h_i(x) + \sum_{j=1}^m \mathcal{L}_{g_j} \mathcal{L}_f^{r_i-1} h_i(x) u_j</div>
+<p>In vector notation across all outputs:</p>
+<div class="math-display">\begin{bmatrix} \xi_{r_1}^1 \\ \vdots \\ \xi_{r_m}^m \end{bmatrix}^{\bullet} = b(x) + A(x) u</div>
+<p>where <span class="math-inline">b(x) = \left[ \mathcal{L}_f^{r_1} h_1(x), \dots, \mathcal{L}_f^{r_m} h_m(x) \right]^T</span>.</p>
+<p>By choosing the feedback control law:</p>
+<div class="math-display">u = A^{-1}(x) \left( v - b(x) \right)</div>
+<p>where <span class="math-inline">v \in \mathbb{R}^m</span> is a synthetic control vector, the nonlinear system is converted into <span class="math-inline">m</span> decoupled integrator chains:</p>
+<div class="math-display">\xi_{r_i}^{(r_i)} = v_i</div>
+<hr class="section-divider">
+<h3 id="2-modern-optimal-control-infinite-horizon-continuous-time-lqr" class="section-heading">2. Modern Optimal Control: Infinite-Horizon Continuous-Time LQR</h3>
+<p>For a linear time-invariant (LTI) state space system:</p>
+<div class="math-display">\dot{x}(t) = A x(t) + B u(t), \quad x(0) = x_0</div>
+<p>We seek the feedback policy <span class="math-inline">u(t) = -K x(t)</span> that minimizes the infinite-horizon quadratic performance index:</p>
+<div class="math-display">J(x_0, u) = \int_{0}^{\infty} \left( x(t)^T Q x(t) + u(t)^T R u(t) \right) dt</div>
+<p>where <span class="math-inline">Q = Q^T \succeq 0</span> (symmetric positive semi-definite) and <span class="math-inline">R = R^T \succ 0</span> (symmetric positive definite).</p>
+<h4 id="derivation-via-the-continuous-time-hamilton-jacobi-bellman-hjb-equation" class="section-heading">Derivation via the Continuous-Time Hamilton-Jacobi-Bellman (HJB) Equation</h4>
+<p>Define the Value Function <span class="math-inline">V(x(t))</span> as the optimal cost-to-go:</p>
+<div class="math-display">V(x(t)) = \min_{u_{[t, \infty)}} \int_{t}^{\infty} \left( x(\tau)^T Q x(\tau) + u(\tau)^T R u(\tau) \right) d\tau</div>
+<p>Applying Bellman's Principle of Optimality over a small interval <span class="math-inline">\delta t</span>:</p>
+<div class="math-display">V(x(t)) = \min_{u_{[t, t+\delta t]}} \left\{ \int_{t}^{t+\delta t} \left( x^T Q x + u^T R u \right) d\tau + V(x(t + \delta t)) \right\}</div>
+<p>Taking the Taylor expansion of <span class="math-inline">V(x(t + \delta t))</span> around <span class="math-inline">x(t)</span>:</p>
+<div class="math-display">V(x(t + \delta t)) = V(x(t)) + \nabla V(x)^T \dot{x}(t) \delta t + \mathcal{O}(\delta t^2)</div>
+<p>Substituting this back and letting <span class="math-inline">\delta t \to 0</span> yields the continuous-time HJB equation:</p>
+<div class="math-display">0 = \min_{u} \left\{ x^T Q x + u^T R u + \nabla V(x)^T (A x + B u) \right\}</div>
+<p>For the quadratic cost and linear dynamics, we assume a quadratic value function <span class="math-inline">V(x) = x^T P x</span>, where <span class="math-inline">P = P^T \succ 0</span>. Thus, <span class="math-inline">\nabla V(x) = 2 P x</span>. The HJB becomes:</p>
+<div class="math-display">0 = \min_{u} \left\{ x^T Q x + u^T R u + 2 x^T P (A x + B u) \right\}</div>
+<p>To minimize with respect to <span class="math-inline">u</span>, set the gradient of the bracketed expression with respect to <span class="math-inline">u</span> to zero:</p>
+<div class="math-display">\frac{\partial}{\partial u} \left( u^T R u + 2 x^T P B u \right) = 2 R u + 2 B^T P x = 0</div>
+<div class="math-display">u^*(t) = -R^{-1} B^T P x(t)</div>
+<p>Substituting <span class="math-inline">u^*</span> back into the HJB equation:</p>
+<div class="math-display">0 = x^T Q x + (-R^{-1} B^T P x)^T R (-R^{-1} B^T P x) + 2 x^T P A x + 2 x^T P B (-R^{-1} B^T P x)</div>
+<div class="math-display">0 = x^T \left( Q + P B R^{-1} B^T P + P A + A^T P - 2 P B R^{-1} B^T P \right) x</div>
+<p>Since this must hold for all <span class="math-inline">x(t)</span>, <span class="math-inline">P</span> must solve the <strong>Continuous Algebraic Riccati Equation (CARE)</strong>:</p>
+<div class="math-display">A^T P + P A - P B R^{-1} B^T P + Q = 0</div>
+<p>The optimal control law gain is then given by:</p>
+<div class="math-display">K = R^{-1} B^T P</div>
+<hr class="section-divider">
+<h3 id="3-rigid-multibody-dynamics-lie-group-kinematics-se3" class="section-heading">3. Rigid Multibody Dynamics & Lie Group Kinematics (<span class="math-inline">SE(3)</span>)</h3>
+<p>Robot manipulators and mobile bases move in the special Euclidean group <span class="math-inline">SE(3)</span>, defined as:</p>
+<div class="math-display">SE(3) = \left\{ T = \begin{bmatrix} R & p \\ 0_{1 \times 3} & 1 \end{bmatrix} \in \mathbb{R}^{4 \times 4} \;\middle|\; R \in SO(3), \, p \in \mathbb{R}^3 \right\}</div>
+<p>The corresponding Lie algebra <span class="math-inline">\mathfrak{se}(3)</span> consists of spatial velocities (twists) <span class="math-inline">S</span>:</p>
+<div class="math-display">\mathfrak{se}(3) = \left\{ \hat{\eta} = \begin{bmatrix} [\omega]_\times & v \\ 0_{1 \times 3} & 0 \end{bmatrix} \in \mathbb{R}^{4 \times 4} \;\middle|\; \omega, v \in \mathbb{R}^3 \right\}</div>
+<p>where <span class="math-inline">[\omega]_\times</span> is the skew-symmetric matrix representation of the vector cross product:</p>
+<div class="math-display">[\omega]_\times = \begin{bmatrix} 0 & -\omega_z & \omega_y \\ \omega_z & 0 & -\omega_x \\ -\omega_y & \omega_x & 0 \end{bmatrix}</div>
+<p>Using the <strong>Product of Exponentials (PoE)</strong> formula, the forward kinematics of an <span class="math-inline">n</span>-degree-of-freedom manipulator is written as:</p>
+<div class="math-display">T_{bs}(q) = e^{\hat{S}_1 q_1} e^{\hat{S}_2 q_2} \cdots e^{\hat{S}_n q_n} M</div>
+<p>where <span class="math-inline">q = [q_1, \dots, q_n]^T</span> are joint coordinates, <span class="math-inline">S_i \in \mathbb{R}^6</span> are joint screw axes in the base frame, and <span class="math-inline">M \in SE(3)</span> is the home configuration matrix.</p>
+<p>The equation of motion for an <span class="math-inline">n</span>-link rigid open-chain manipulator is derived via the Euler-Lagrange equations:</p>
+<div class="math-display">\frac{d}{dt} \left( \frac{\partial \mathcal{L}}{\partial \dot{q}} \right) - \frac{\partial \mathcal{L}}{\partial q} = \tau</div>
+<p>where <span class="math-inline">\mathcal{L}(q, \dot{q}) = \mathcal{K}(q, \dot{q}) - \mathcal{P}(q)</span> is the system Lagrangian. This yields the equations of motion:</p>
+<div class="math-display">M(q) \ddot{q} + C(q, \dot{q}) \dot{q} + g(q) = \tau + J^T(q) F_{ext}</div>
+<ul class="research-list">
+<li><span class="math-inline">M(q) \in \mathbb{R}^{n \times n}</span> is the symmetric, positive-definite joint-space inertia matrix.</li>
+<li><span class="math-inline">C(q, \dot{q}) \in \mathbb{R}^{n \times n}</span> is the Coriolis and centrifugal matrix, satisfying the skew-symmetric property: <span class="math-inline">\dot{M}(q) - 2C(q, \dot{q})</span> is skew-symmetric.</li>
+<li><span class="math-inline">g(q) \in \mathbb{R}^n</span> is the gravitational torque vector.</li>
+<li><span class="math-inline">J(q) \in \mathbb{R}^{6 \times n}</span> is the geometric Jacobian map converting joint space velocities to end-effector twists: <span class="math-inline">V_{b} = J(q) \dot{q}</span>.</li>
+</ul>
+<hr class="section-divider">
+<h2 id="-system-architectures-computational-workflows" class="section-heading">🏗️ System Architectures & Computational Workflows</h2>
+<p>Modern automation and robotics master's curricula in Italy focus heavily on the integration of hardware-in-the-loop (HIL) testing, real-time control loops, and perception systems.</p>
+<h3 id="end-to-end-real-time-autonomous-control-architecture" class="section-heading">End-to-End Real-Time Autonomous Control Architecture</h3>
+<pre class="code-block"><code class="language-text"> ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                       PERCEPTION &amp; STATE ESTIMATION                         │
+ │                                                                             │
+ │  ┌──────────────────┐    LiDAR / Camera    ┌─────────────────────────────┐  │
+ │  │ Hardware Sensors ├────────────────────&gt;│ Visual-Inertial Odometry    │  │
+ │  │ (LiDAR, IMU, Enc)│                    │ (Factor Graph Optimization) │  │
+ │  └────────┬─────────┘                    └──────────────┬──────────────┘  │
+ └───────────┼─────────────────────────────────────────────┼───────────────────┘
+             │ Raw IMU / Encoder                           │ Estimated State
+             ▼                                             ▼ (x_hat, P)
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                         HIGH-LEVEL DECISION &amp; PLANNING                      │
+ │                                                                             │
+ │  ┌──────────────────────────────┐          ┌─────────────────────────────┐  │
+ │  │ Search-Based Motion Planner  ├─────────&gt;│ Trajectory Generation       │  │
+ │  │ (A*, Kinodynamic RRT*)       │  Path    │ (Minimum Snap Polynomials)  │  │
+ │  └──────────────────────────────┘          └──────────────┬──────────────┘  │
+ └───────────────────────────────────────────────────────────┼─────────────────┘
+                                                             │ Reference Trajectory
+                                                             ▼ (x_ref, u_ref)
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                      REAL-TIME OPTIMAL CONTROL (100 Hz)                     │
+ │                                                                             │
+ │  ┌───────────────────────────────────────────────────────────────────────┐  │
+ │  │ Non-linear Model Predictive Control (NMPC)                            │  │
+ │  │                                                                       │  │
+ │  │  min  ∑ ||x_k - x_ref,k||²_Q + ||u_k - u_ref,k||²_R                   │  │
+ │  │  s.t. x_{k+1} = f(x_k, u_k),  u_min ≤ u_k ≤ u_max                       │  │
+ │  └──────────────────────────────────┬────────────────────────────────────┘  │
+ └─────────────────────────────────────┼───────────────────────────────────────┘
+                                       │ Control Torque / Voltage Command (u*)
+                                       ▼
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                       HARDWARE ACTUATION LAYER (1 kHz)                      │
+ │                                                                             │
+ │  ┌──────────────────────────────┐          ┌─────────────────────────────┐  │
+ │  │ Field-Oriented Control (FOC) │          │ Brushless Direct Current    │  │
+ │  │ Motor Drives (PWM Signal)   ├─────────&gt;│ (BLDC) Actuators            │  │
+ │  └──────────────────────────────┘          └─────────────────────────────┘  │
+ └─────────────────────────────────────────────────────────────────────────────┘</code></pre>
+<hr class="section-divider">
+<h2 id="-algorithmic-formulations-reference-implementation" class="section-heading">💻 Algorithmic Formulations & Reference Implementation</h2>
+<p>Below is a reference Python implementation using <code class="inline-code">PyTorch</code> that demonstrates a differentiable nonlinear model predictive controller (or batch optimal controller) utilizing gradient descent over control sequences for an unicycle mobile robot.</p>
+<pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+
+class UnicycleNMPC(nn.Module):
+    """
+    Differentiable Non-Linear Model Predictive Controller for Unicycle Kinematics
+    State x = [px, py, theta]^T
+    Control u = [v, omega]^T
+    """
+    def __init__(self, horizon: int = 20, dt: float = 0.05):
+        super(UnicycleNMPC, self).__init__()
+        self.H = horizon
+        self.dt = dt
+        
+        # State cost matrix Q and Control cost matrix R
+        self.Q = torch.diag(torch.tensor([10.0, 10.0, 1.0]))
+        self.R = torch.diag(torch.tensor([0.1, 0.05]))
+        
+        # Actuation limits
+        self.v_max = 1.5   # m/s
+        self.omega_max = 2.0 # rad/s
+
+    def forward_kinematics(self, state: torch.Tensor, action: torch.Tensor) -&gt; torch.Tensor:
+        """
+        Euler Integration of Unicycle Kinematics
+        x_{k+1} = x_k + v * cos(theta) * dt
+        y_{k+1} = y_k + v * sin(theta) * dt
+        theta_{k+1} = theta_k + omega * dt
+        """
+        px, py, theta = state[..., 0], state[..., 1], state[..., 2]
+        v, omega = action[..., 0], action[..., 1]
+
+        px_next = px + v * torch.cos(theta) * self.dt
+        py_next = py + v * torch.sin(theta) * self.dt
+        theta_next = theta + omega * self.dt
+
+        return torch.stack([px_next, py_next, theta_next], dim=-1)
+
+    def compute_cost(self, state_traj: torch.Tensor, control_seq: torch.Tensor, target_state: torch.Tensor) -&gt; torch.Tensor:
+        """
+        Evaluates stage costs and terminal state costs over horizon
+        """
+        cost = torch.tensor(0.0)
+        for t in range(self.H):
+            state_error = state_traj[t] - target_state
+            # Quadratic state error
+            cost += torch.matmul(torch.matmul(state_error, self.Q), state_error)
+            # Quadratic control penalization
+            cost += torch.matmul(torch.matmul(control_seq[t], self.R), control_seq[t])
+            
+        return cost
+
+    def solve(self, current_state: torch.Tensor, target_state: torch.Tensor, iterations: int = 30) -&gt; torch.Tensor:
+        """
+        Solves MPC optimization using gradient descent over control sequence
+        """
+        # Initialize control sequence (H, 2)
+        control_seq = torch.zeros(self.H, 2, requires_grad=True)
+        optimizer = torch.optim.Adam([control_seq], lr=0.05)
+
+        for _ in range(iterations):
+            optimizer.zero_grad()
+            
+            # Clamp controls to physical boundaries
+            bounded_controls = torch.stack([
+                torch.clamp(control_seq[:, 0], -self.v_max, self.v_max),
+                torch.clamp(control_seq[:, 1], -self.omega_max, self.omega_max)
+            ], dim=-1)
+
+            # Rollout trajectories
+            states = []
+            curr = current_state
+            for t in range(self.H):
+                curr = self.forward_kinematics(curr, bounded_controls[t])
+                states.append(curr)
+
+            state_traj = torch.stack(states, dim=0)
+            cost = self.compute_cost(state_traj, bounded_controls, target_state)
+            
+            # Backpropagate cost to optimize control parameters
+            cost.backward()
+            optimizer.step()
+
+        # Return optimal sequence first control action
+        with torch.no_grad():
+            return torch.stack([
+                torch.clamp(control_seq[0, 0], -self.v_max, self.v_max),
+                torch.clamp(control_seq[0, 1], -self.omega_max, self.omega_max)
+            ])
+
+# Demonstration
+if __name__ == "__main__":
+    nmpc = UnicycleNMPC(horizon=15, dt=0.1)
+    x0 = torch.tensor([0.0, 0.0, 0.0]) # Origin
+    x_goal = torch.tensor([2.0, 2.0, 1.57]) # Goal: (2,2) with 90 deg orientation
+    
+    u_optimal = nmpc.solve(x0, x_goal)
+    print(f"Optimal Initial Command [v*, omega*]: {u_optimal.numpy()}")</code></pre>
+<hr class="section-divider">
+<h2 id="-empirical-state-of-the-art-top-italian-universities" class="section-heading">📊 Empirical State of the Art: Top Italian Universities</h2>
+<p>Italian engineering institutions consistently rank among the top globally for Automation, Control Systems, and Robotics. Below is a comparative overview of the leading institutions, their specific degree classifications, key focus areas, and institutional rankings.</p>
+<table class="research-table">
+<tr>
+<th>Institution</th>
+<th>Master Program Name (Class)</th>
+<th>QS Subject Ranking (Eng & Tech)</th>
+<th>Core Focus & Specialization</th>
+<th>Admission GPA Threshold</th>
+<th>Language</th>
+</tr>
+<tr>
+<td><strong>Politecnico di Milano (Polimi)</strong></td>
+<td>MSc in Automation and Control Engineering (LM-25)</td>
+<td>Top 20 Global</td>
+<td>Advanced Process Control, Industrial Robotics, Mechatronics, Cyber-Physical Systems</td>
+<td><span class="math-inline">\ge 70\%</span> (Non-EU) / Weighted 23/30</td>
+<td>English</td>
+</tr>
+<tr>
+<td><strong>Politecnico di Torino (Polito)</strong></td>
+<td>MSc in Mechatronic Engineering (LM-33/LM-25)</td>
+<td>Top 45 Global</td>
+<td>Automotive Mechatronics, Embedded Controls, Smart Actuators, Industrial Automation</td>
+<td>Equivalent to <span class="math-inline">\ge 70-75\%</span> Cumulative Average</td>
+<td>English</td>
+</tr>
+<tr>
+<td><strong>Sapienza University of Rome</strong></td>
+<td>MSc in Control Engineering (LM-25) / MSc in AI & Robotics (LM-32)</td>
+<td>Top 100 Global</td>
+<td>Non-linear Control, Swarm Robotics, Medical Robotics, Deep Learning for Perception</td>
+<td>Direct Evaluation of Prerequisites + High GPA</td>
+<td>English</td>
+</tr>
+<tr>
+<td><strong>University of Bologna (UNIBO)</strong></td>
+<td>MSc in Automation Engineering (LM-25)</td>
+<td>Top 100 Global</td>
+<td>Autonomous Systems, Motion Control, Vision-Based Control, Smart Manufacturing</td>
+<td>Rigorous ECTS mapping + GPA check</td>
+<td>English</td>
+</tr>
+<tr>
+<td><strong>University of Naples Federico II</strong></td>
+<td>MSc in Autonomous Systems / Robotics Engineering (LM-25)</td>
+<td>Top 150 Global</td>
+<td>Underwater Robotics, Aerial Manipulators, Industrial Automation</td>
+<td>Strict Subject Mapping in Math/Physics</td>
+<td>English</td>
+</tr>
+<tr>
+<td><strong>University of Genoa (UniGe)</strong></td>
+<td>MSc in Robotics Engineering (LM-32)</td>
+<td>Top 200 Global</td>
+<td>Software Architecture for Robotics, Human-Robot Interaction, Kinematics</td>
+<td>Evaluation of Transcript & ECTS Map</td>
+<td>English</td>
+</tr>
+</table>
+<hr class="section-divider">
+<h2 id="-prerequisites-ects-credit-mappings-and-entry-pathways" class="section-heading">📑 Prerequisites, ECTS Credit Mappings, and Entry Pathways</h2>
+<p>For international applicants holding a Bachelor of Science (B.Sc.) or Bachelor of Technology (B.Tech.) in Robotics, Automation, Electrical, or Mechanical Engineering, Italian universities enforce a detailed <strong>ECTS (European Credit Transfer and Accumulation System)</strong> audit.</p>
+<h3 id="1-mandatory-minimum-ects-mapping-180-ects-bachelor-equivalent" class="section-heading">1. Mandatory Minimum ECTS Mapping (180 ECTS Bachelor Equivalent)</h3>
+<p>To qualify for unconditional admission to an Italian <em>Laurea Magistrale</em> in Automation/Robotics (LM-25 or LM-32), the undergraduate transcript must demonstrate coverage across two foundational domains:</p>
+<pre class="code-block"><code class="language-text">Total Undergraduate Prerequisites (180 ECTS Basis)
+ ├── Basic Sciences (Min. 36-45 ECTS)
+ │    ├── Mathematical Analysis / Calculus I &amp; II
+ │    ├── Linear Algebra &amp; Analytical Geometry
+ │    ├── Ordinary &amp; Partial Differential Equations
+ │    └── General Physics (Classical Mechanics &amp; Electromagnetism)
+ └── Core Engineering (Min. 45-60 ECTS)
+      ├── Automatic Control Systems / System Theory
+      ├── Electrical Circuits &amp; Signal Processing
+      ├── Computer Science, Algorithms &amp; Programming (C++/Python)
+      └── Applied Mechanics, Kinematics, or Thermodynamics</code></pre>
+<h3 id="2-italian-grading-equivalency-scale-selection-metrics" class="section-heading">2. Italian Grading Equivalency Scale & Selection Metrics</h3>
+<p>Admissions committees evaluate applicants using a weighted combination of academic performance, curriculum alignment, and motivation:</p>
+<div class="math-display">\text{Composite Score} = w_1 \cdot \text{Normalized GPA} + w_2 \cdot \text{Curricular Alignment (ECTS)} + w_3 \cdot \text{SOP / CV}</div>
+<p>Where:</p>
+<ul class="research-list">
+<li><strong>GPA Threshold</strong>: Non-EU candidates are typically expected to score above <span class="math-inline">70\text{--}75\%</span> (e.g., First Class division or GPA <span class="math-inline">> 3.0/4.0</span>). For Italian domestic applicants, an average grade <span class="math-inline">\ge 23/30</span> is standard for direct evaluation.</li>
+<li><strong>English Proficiency</strong>: C1 or B2 level according to the CEFR standard. Common minimum accepted scores include:</li>
+<li><strong>IELTS Academic</strong>: Minimum overall score of <span class="math-inline">6.0\text{--}6.5</span> (with no band lower than <span class="math-inline">5.5\text{--}6.0</span>).</li>
+<li><strong>TOEFL iBT</strong>: Minimum score of <span class="math-inline">78\text{--}90</span>.</li>
+<li><strong>GRE (Graduate Record Examination)</strong>: Highly recommended or explicitly required at institutions like Politecnico di Milano for non-EU applicants to strengthen competitiveness in Quantitative Reasoning.</li>
+</ul>
+<h3 id="3-step-by-step-international-student-application-pathway" class="section-heading">3. Step-by-Step International Student Application Pathway</h3>
+<pre class="code-block"><code class="language-text">  Step 1: Prequalification &amp; Document Assessment
+  │ Submit academic transcripts, syllabus, course descriptions,
+  │ English language certification, and SOP directly to the university portal.
+  ▼
+  Step 2: Formal Eligibility &amp; Evaluation (Letter of Acceptability)
+  │ Academic board reviews syllabus match against LM-25 / LM-32 standards.
+  │ Issuance of conditional or unconditional offer letter.
+  ▼
+  Step 3: Universitaly Portal Pre-Enrolment
+  │ Register on the official Italian Government Universitaly Portal 
+  │ and submit application selecting the target program and Italian Embassy/Consulate.
+  ▼
+  Step 4: Visa Issuance &amp; CIMEA / DOV Verification
+  │ Complete Study Visa Type-D application. Obtain Statement of Comparability
+  │ (CIMEA) or Declaration of Value (Dichiarazione di Valore - DoV).
+  ▼
+  Step 5: On-Campus Enrolment &amp; Codice Fiscale
+  │ Arrive in Italy, finalize tuition payment, obtain Fiscal Code (Codice Fiscale),
+  │ apply for Residency Permit (Permesso di Soggiorno) within 8 days.</code></pre>
+<hr class="section-divider">
+<h2 id="-critical-bottlenecks-theoretical-limits" class="section-heading">🛑 Critical Bottlenecks & Theoretical Limits</h2>
+<p>Despite significant advances in robotics and automation, several foundational theoretical and computational bottlenecks remain active areas of research:</p>
+<h3 id="1-real-time-non-convex-optimization-constraints" class="section-heading">1. Real-Time Non-Convex Optimization Constraints</h3>
+<p>Solving Non-Linear Model Predictive Control (NMPC) for high-dimensional underactuated systems (e.g., humanoid robots with <span class="math-inline">> 30</span> degrees of freedom) requires solving non-convex Trajectory Optimization problems within <span class="math-inline">1\text{--}10\text{ ms}</span> control loops. Real-time iteration (RTI) schemes often struggle with local minima and constraint violations during dynamic maneuvers.</p>
+<h3 id="2-the-sim-to-real-domain-shift-gap" class="section-heading">2. The Sim-to-Real Domain Shift Gap</h3>
+<p>While reinforcement learning policies trained in massive parallel simulators (e.g., Isaac Gym) show strong performance in simulation, transferring them to physical hardware remains challenging. Unmodeled dynamics—such as joint backlash, non-linear friction, thermal deformation, and uncalibrated compliance—frequently cause performance degradation or instability on physical systems.</p>
+<h3 id="3-formal-verification-of-neural-network-controllers" class="section-heading">3. Formal Verification of Neural Network Controllers</h3>
+<p>Deep neural networks are increasingly used for direct end-to-end perception and control. However, standard Lyapunov-based stability criteria cannot easily be applied to high-dimensional non-linear neural networks. Proving safety guarantees, forward invariance of control barrier functions (CBFs), and worst-case bounds under adversarial noise remains an open challenge.</p>
+<hr class="section-divider">
+<h2 id="-actionable-research-roadmap" class="section-heading">🔮 Actionable Research Roadmap</h2>
+<p>To advance the state of the art in autonomous systems, research efforts at top universities are focusing on several key paradigms:</p>
+<pre class="code-block"><code class="language-text">                                NEXT-GENERATION PARADIGMS
+                                            │
+        ┌───────────────────────────────────┼───────────────────────────────────┐
+        │                                   │                                   │
+        ▼                                   ▼                                   ▼
+┌───────────────┐                   ┌───────────────┐                   ┌───────────────┐
+│ Neuro-Symbolic│                   │ Learning-Aided│                   │ Differentiable│
+│ Hybrid Control│                   │ Control (CBFs)│                   │ Simulation    │
+└───────┬───────┘                   └───────┬───────┘                   └───────┬───────┘
+        │                                   │                                   │
+  Combines discrete                   Integrates neural                   Enables gradient
+  logic / symbolic                    networks with Control               backpropagation
+  reasoning with continuous           Barrier Functions for               directly through
+  differential models.                verifiable safety.                  contact dynamics.</code></pre>
+<h3 id="key-areas-for-exploration" class="section-heading">Key Areas for Exploration</h3>
+<ol class="research-list">
+<li><strong>Provably Safe Physics-Informed Learning</strong>:</li>
+</ol>
+<p>Integrating Control Barrier Functions (CBFs) and Control Lyapunov Functions (CLFs) into the output layers of deep neural networks to guarantee safety constraints during runtime.</p>
+<ol class="research-list">
+<li><strong>Real-Time Differentiable Simulation & Model Identification</strong>:</li>
+</ol>
+<p>Developing differentiable physics engines that run onboard embedded hardware, allowing robots to continuously update their inner dynamical models in real time based on active physical interaction.</p>
+<ol class="research-list">
+<li><strong>Semantic Mapping & Foundation Models for Physical Interaction</strong>:</li>
+</ol>
+<p>Combining Vision-Language Models (VLMs) with spatial memory structures to move beyond passive spatial mapping toward semantic object manipulation and long-horizon goal planning.</p>
+<hr class="section-divider">
+<h3 id="-chapter-references-citations" class="section-heading">📚 Chapter References & Citations</h3>
+<ul class="research-list">
+<li><a href="https://www.polimi.it/en/education/laurea-magistrale-programmes/programme-detail/automation-and-control-engineering" target="_blank">Politecnico di Milano: MSc in Automation and Control Engineering Requirements</a></li>
+<li><a href="https://corsidilaurea.uniroma1.it/en/course/33509/objectives" target="_blank">Sapienza University of Rome: Master in Control Engineering Syllabus & Objectives</a></li>
+<li><a href="https://www.polito.it/sites/default/files/2025-07/Academic%20Regulations_MA_MECHATRONIC%20ENG%25_26.pdf" target="_blank">Politecnico di Torino: MSc in Mechatronic Engineering Course Overview</a></li>
+<li><a href="https://corsi.unibo.it/2cycle/AutomationEngineering" target="_blank">University of Bologna: Automation Engineering Master's Degree Structure</a></li>
+<li><a href="https://www.mur.gov.it/it" target="_blank">Italian Ministry of University and Research (MUR): University System & Degree Classes (LM-25, LM-32)</a></li>
+</ul>
+<p><ElicitationsGroup message="To tailor this analysis to your academic application strategy:"></p>
+<p><Elicitation label="Generate a course syllabus alignment report for your degree" query="I hold a Bachelor's degree in Engineering. Help me map my completed courses against the Italian LM-25 Automation Engineering prerequisites to check my ECTS compatibility."/></p>
+<p><Elicitation label="Draft a target university application roadmap and checklist" query="Create a timeline and checklist for applying to Italian universities for an English-taught Master's in Robotics and Control Engineering as an international student."/></p>
+<p></ElicitationsGroup></p>
+        </div>
+        
+        <div class="document-footer">
+            <div class="logo">✦ Meera AI Autonomous Research Engine</div>
+            <p>Comprehensive scientific paper synthesized with deep multi-source research & formal derivations.</p>
+            <p>Document ID: 2b37b24b2a45 • Generated on September 05, 2026 at 03:49 AM</p>
+        </div>
+    </div>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.math-inline').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: false });
+                } catch(e) {}
+            });
+            document.querySelectorAll('.math-display').forEach(function(el) {
+                try {
+                    katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+                } catch(e) {}
+            });
+        });
+    </script>
+</body>
+</html>

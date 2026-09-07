@@ -40,9 +40,9 @@
       "runtime_settings": {
         "context_length": 4096,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -134,9 +134,9 @@
       "runtime_settings": {
         "context_length": 2048,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 1792,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -172,9 +172,9 @@
       "runtime_settings": {
         "context_length": 1024,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -211,9 +211,9 @@
       "runtime_settings": {
         "context_length": 4096,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -250,9 +250,9 @@
       "runtime_settings": {
         "context_length": 4096,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -289,9 +289,9 @@
       "runtime_settings": {
         "context_length": 4096,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -328,9 +328,9 @@
       "runtime_settings": {
         "context_length": 2048,
         "gpu_layers_mode": "custom",
-        "gpu_layers": 35,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -367,9 +367,9 @@
       "runtime_settings": {
         "context_length": 4096,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
-        "cpu_thread_pool_size": 8,
-        "cpu_batch_thread_pool_size": 12,
+        "gpu_layers": "auto",
+        "cpu_thread_pool_size": 0,
+        "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
         "physical_batch_size": 512,
         "max_concurrent_predictions": 1,
@@ -406,7 +406,7 @@
       "runtime_settings": {
         "context_length": 1024,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
+        "gpu_layers": "auto",
         "cpu_thread_pool_size": 0,
         "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
@@ -445,7 +445,7 @@
       "runtime_settings": {
         "context_length": 1024,
         "gpu_layers_mode": "max",
-        "gpu_layers": -1,
+        "gpu_layers": "auto",
         "cpu_thread_pool_size": 0,
         "cpu_batch_thread_pool_size": 0,
         "evaluation_batch_size": 2048,
@@ -471,5 +471,19 @@
   "auto_download": false,
   "auto_load": true,
   "runtime_cache_size": 2,
-  "gpu_only_mode": true
+  "gpu_only_mode": false,
+  "inference": {
+    "mode": "cloud",
+    "default_cloud_provider": "gemini"
+  },
+  "cloud_providers": {
+    "gemini": {
+      "provider_id": "gemini",
+      "name": "Google Gemini",
+      "connected": false,
+      "api_key": null,
+      "models": [],
+      "model": null
+    }
+  }
 }

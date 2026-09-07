@@ -22,18 +22,27 @@ html body #root .app-root.professional-chat.view-workspace .wallpaper {
 
 /* The former header is now a clean floating control strip: controls remain,
    but no card, fill, blur, or reserved header area remains. */
+html body #root .app-root .topbar.copilot-topbar,
+html body #root .app-root .topbar.copilot-topbar::before,
+html body #root .app-root .topbar.copilot-topbar::after,
 html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar,
 html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar::before,
-html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar::after,
-html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner,
-html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner::before,
-html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner::after {
+html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar::after {
   background: transparent !important;
   background-image: none !important;
   border: 0 !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+}
+
+html body #root .app-root .copilot-topbar-inner,
+html body #root .app-root.view-home .copilot-topbar-inner,
+html body #root .app-root.professional-chat.view-workspace .copilot-topbar-inner {
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(36px) saturate(190%) contrast(105%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) contrast(105%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(255, 255, 255, 0.4) !important;
+  border-radius: 18px !important;
 }
 
 html body #root .app-root.professional-chat.view-workspace .topbar.copilot-topbar {
@@ -91,11 +100,11 @@ html body #root .app-root.professional-chat.view-workspace .titlebar-btn:hover {
 /* Stable app viewport.  The content becomes a genuine two-row chat: a scroll
    area and a composer row.  No absolute message or composer positioning. */
 html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace {
-  position: fixed !important;
-  inset: 78px 0 0 !important;
+  position: relative !important;
+  inset: auto !important;
   display: block !important;
-  width: auto !important;
-  height: auto !important;
+  width: 100% !important;
+  height: 100% !important;
   min-height: 0 !important;
   overflow: hidden !important;
 }
@@ -149,11 +158,13 @@ html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conv
   max-width: none !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 34px 40px 28px !important;
+  padding: 104px 40px 120px !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  scroll-padding-top: 24px !important;
-  scroll-padding-bottom: 28px !important;
+  scroll-padding-top: 104px !important;
+  scroll-padding-bottom: 120px !important;
+  scroll-behavior: auto !important;
+  overscroll-behavior-y: contain !important;
   background: transparent !important;
   scrollbar-color: #cbd5e1 transparent;
 }
@@ -513,7 +524,7 @@ html body #root .app-root.professional-chat.view-workspace .chat-empty {
   }
 
   html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation {
-    padding: 20px 14px !important;
+    padding: 104px 14px 20px !important;
   }
 
   html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .chat-bubble {

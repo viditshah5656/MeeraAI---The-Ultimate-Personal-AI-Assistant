@@ -1,25 +1,13 @@
-{
-  "web-search-mcp": {
-    "name": "web-search-mcp",
-    "transport": "stdio",
-    "command": "node",
-    "args": [
-      "./MCP/dist/index.js"
-    ],
-    "env": {},
-    "enabled": true,
-    "auto_connect": true
-  },
-  "meera-personal": {
-    "name": "meera-personal",
-    "transport": "stdio",
-    "command": "python3",
-    "args": [
-      "./MCP/meera-personal-mcp/server.py"
-    ],
-    "env": {},
-    "enabled": true,
-    "auto_connect": true
-  }
-}
+An inspection of the workspace root reveals the core architecture and key modules of **MeeraAI — The Ultimate Personal AI Assistant**:
 
+### Architecture Summary
+
+* **Core Backend (`Meera.py`)**: Central orchestration engine managing AI assistant reasoning, message handling, and tool dispatching.
+* **Cognitive & Memory Layer (`meera_memory.py`, `memory_store.py`)**: Persistent episodic memory storage, state tracking, and contextual retrieval mechanisms.
+* **Agent Framework (`agent_planner.py`, `agent_tools.py`, `agent_daenson.py`)**: Multi-agent planning routines, tool routing, and task execution logic.
+* **Document Engine (`document_generator.py`)**: Generates and manages structured output documents saved within `generated_documents/`.
+* **Model Context Protocol (`MCP/`, `mcp_servers.example.json`)**: Protocol interfaces enabling modular client/server tool integrations.
+* **Frontend UI (`desktop_frontend/`, `puter.html`, `serve_puter.js`)**: Desktop interface components and web application entry points.
+* **Testing & Utility Scripts (`test_*.py`, `fix_*.py`)**: Test harness validating memory integration, cognitive orchestration, and API payload schemas.
+
+<FollowUp label="Would you like me to run the test suite or inspect a specific module in detail?" query="Run the test suite across the codebase and report any errors or failures."/>

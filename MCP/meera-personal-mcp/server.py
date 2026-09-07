@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from github import Github
 from playwright.async_api import async_playwright
 import asyncio
+import sys
 
 # Initialize FastMCP Server
 mcp = FastMCP("meera-personal")
@@ -134,9 +135,13 @@ async def _async_scrape(url: str, wait_selector: str = None) -> str:
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         # Using a persistent context could allow keeping login sessions
-        context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
+        ua = None
+        if sys.platform == "darwin":
+            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        if ua:
+            context = await browser.new_context(user_agent=ua)
+        else:
+            context = await browser.new_context()
         page = await context.new_page()
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=30000)
@@ -160,11 +165,11 @@ async def _async_scrape(url: str, wait_selector: str = None) -> str:
             await browser.close()
 
 @mcp.tool()
-def scrape_dynamic_website(url: str, wait_selector: str = "") -> str:
+async def scrape_dynamic_website(url: str, wait_selector: str = "") -> str:
     """Scrape and read dynamic JS-heavy websites (like public LinkedIn profiles, Lovable pages, Canva public links) perfectly and freely using a local headless browser."""
     try:
-        # Run the async playwright scrape in the synchronous tool execution
-        return asyncio.run(_async_scrape(url, wait_selector if wait_selector else None))
+        # Await the async playwright scrape directly
+        return await _async_scrape(url, wait_selector if wait_selector else None)
     except Exception as e:
         return f"Playwright Error: {e}"
 
@@ -174,7 +179,10 @@ def scrape_dynamic_website(url: str, wait_selector: str = "") -> str:
 def search_github(token: str, query: str) -> str:
     """Search github repositories using a free Personal Access Token."""
     try:
-        g = Github(token)
+        ua = None
+        if sys.platform == "darwin":
+            ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        g = Github(token, user_agent=ua) if ua else Github(token)
         repos = g.search_repositories(query=query)
         results = []
         for repo in repos[:10]:
