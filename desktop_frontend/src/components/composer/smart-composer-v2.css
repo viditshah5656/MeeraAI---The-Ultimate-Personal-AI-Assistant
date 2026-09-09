@@ -1,0 +1,332 @@
+/*
+ * MeeraAI Composer V2
+ *
+ * A clean, standalone visual system for the rebuilt composer. It does not
+ * patch the legacy composer selectors.
+ */
+
+.meera-composer-v2 {
+  --composer-white: #ffffff;
+  --composer-text: #172033;
+  --composer-muted: #8b95a7;
+  --composer-border-width: 4px;
+  --composer-radius: 999px;
+  --composer-ring: linear-gradient(
+    105deg,
+    #ff3d81 0%,
+    #ff6b6b 14%,
+    #ffad4d 29%,
+    #ffe36e 43%,
+    #79df9c 59%,
+    #35cfd0 73%,
+    #48a6ff 88%,
+    #7568ff 100%
+  );
+  position: relative;
+  width: min(820px, calc(100% - 32px));
+  margin: 0 auto;
+  isolation: isolate;
+  box-sizing: border-box;
+  z-index: 20;
+}
+
+.meera-composer-v2__surface {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px 7px 10px;
+  border: var(--composer-border-width) solid transparent;
+  border-radius: var(--composer-radius);
+  background-color: var(--composer-white);
+  background-image: linear-gradient(var(--composer-white), var(--composer-white)), var(--composer-ring);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 0 15px rgb(255 61 129 / 0.22),
+    0 0 27px rgb(255 173 77 / 0.16),
+    0 0 40px rgb(72 166 255 / 0.19),
+    0 12px 30px rgb(15 23 42 / 0.13);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.meera-composer-v2__surface::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--composer-ring);
+  filter: blur(18px);
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.meera-composer-v2:hover .meera-composer-v2__surface,
+.meera-composer-v2:focus-within .meera-composer-v2__surface {
+  box-shadow:
+    0 0 20px rgb(255 61 129 / 0.28),
+    0 0 34px rgb(255 173 77 / 0.21),
+    0 0 50px rgb(72 166 255 / 0.25),
+    0 14px 34px rgb(15 23 42 / 0.14);
+}
+
+.meera-composer-v2:hover .meera-composer-v2__surface::after,
+.meera-composer-v2:focus-within .meera-composer-v2__surface::after {
+  opacity: 0.24;
+  filter: blur(20px);
+}
+
+.meera-composer-v2.is-resizing .meera-composer-v2__surface {
+  transition: none;
+}
+
+.meera-composer-v2__editor {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 10px;
+  background: var(--composer-white);
+}
+
+.meera-composer-v2__textarea,
+.meera-composer-v2__textarea:hover,
+.meera-composer-v2__textarea:focus,
+.meera-composer-v2__textarea:active {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  max-height: 220px;
+  margin: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: 0;
+  border-radius: 0;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--composer-text) !important;
+  caret-color: #26344f;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 450;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  scrollbar-width: thin;
+}
+
+.meera-composer-v2__textarea::placeholder {
+  color: var(--composer-muted);
+  opacity: 1;
+}
+
+.meera-composer-v2__textarea:focus::placeholder {
+  color: #9aa3b3;
+}
+
+.meera-composer-v2__ghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  color: transparent;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.meera-composer-v2__ghost-suffix {
+  color: #aeb6c4;
+  opacity: 0.7;
+}
+
+.meera-composer-v2__right-controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--composer-white);
+}
+
+.meera-composer-v2__icon-button,
+.meera-composer-v2__send {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.meera-composer-v2__icon-button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #4b5568;
+  background: #f3f5f8;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
+  font-size: 18px;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+
+.meera-composer-v2__attach {
+  margin-right: 1px;
+}
+
+.meera-composer-v2__icon-button:hover:not(:disabled) {
+  color: #25324a;
+  background: #edf0f5;
+  box-shadow: 0 4px 11px rgb(15 23 42 / 0.10);
+  transform: translateY(-1px);
+}
+
+.meera-composer-v2__icon-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
+}
+
+.meera-composer-v2__icon-button:focus-visible,
+.meera-composer-v2__send:focus-visible,
+.meera-composer-v2__resize:focus-visible {
+  outline: 3px solid rgb(66 133 244 / 0.22);
+  outline-offset: 2px;
+}
+
+.meera-composer-v2__icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.meera-composer-v2__mic.is-recording {
+  color: #dc3657;
+  background: #fff0f3;
+  box-shadow: 0 0 0 4px rgb(220 54 87 / 0.10);
+}
+
+.meera-composer-v2__send {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #1f2d46;
+  box-shadow: 0 5px 13px rgb(31 45 70 / 0.24);
+  font-size: 18px;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, opacity 150ms ease;
+}
+
+.meera-composer-v2__send:hover:not(:disabled) {
+  background: #17243a;
+  box-shadow: 0 7px 17px rgb(31 45 70 / 0.29);
+  transform: translateY(-1px);
+}
+
+.meera-composer-v2__send:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.meera-composer-v2__send:disabled {
+  cursor: default;
+  color: #a6adba;
+  background: #e9edf2;
+  box-shadow: none;
+}
+
+.meera-composer-v2__send.is-stop {
+  color: #ffffff;
+  background: #263750;
+}
+
+.meera-composer-v2__resize {
+  position: absolute;
+  right: 78px;
+  bottom: 2px;
+  width: 22px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  opacity: 0;
+  cursor: ns-resize;
+  transition: opacity 150ms ease;
+}
+
+.meera-composer-v2:hover .meera-composer-v2__resize,
+.meera-composer-v2:focus-within .meera-composer-v2__resize {
+  opacity: 0.55;
+}
+
+.meera-composer-v2__resize span {
+  width: 10px;
+  height: 2px;
+  border-radius: 999px;
+  background: #7b8799;
+}
+
+@media (max-width: 720px) {
+  .meera-composer-v2 {
+    width: calc(100% - 18px);
+  }
+
+  .meera-composer-v2__surface {
+    min-height: 58px;
+    padding: 6px 7px 6px 8px;
+  }
+
+  .meera-composer-v2__editor {
+    padding: 0 6px;
+  }
+
+  .meera-composer-v2__icon-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .meera-composer-v2__send {
+    width: 42px;
+    height: 42px;
+  }
+
+  .meera-composer-v2__right-controls {
+    gap: 4px;
+  }
+
+  .meera-composer-v2__resize {
+    right: 68px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meera-composer-v2__surface,
+  .meera-composer-v2__surface::after,
+  .meera-composer-v2__icon-button,
+  .meera-composer-v2__send,
+  .meera-composer-v2__resize {
+    transition: none;
+  }
+}
