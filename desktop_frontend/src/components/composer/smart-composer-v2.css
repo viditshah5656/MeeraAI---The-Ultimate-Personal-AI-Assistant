@@ -42,27 +42,14 @@
   border-radius: var(--composer-radius);
   background-color: var(--composer-white);
   background-image: linear-gradient(var(--composer-white), var(--composer-white)), var(--composer-ring);
-  background-origin: padding-box, border-box;
+  background-origin: border-box;
   background-clip: padding-box, border-box;
   box-shadow:
     0 0 15px rgb(255 61 129 / 0.22),
     0 0 27px rgb(255 173 77 / 0.16),
     0 0 40px rgb(72 166 255 / 0.19),
     0 12px 30px rgb(15 23 42 / 0.13);
-  transition: box-shadow 180ms ease, transform 180ms ease;
-}
-
-.meera-composer-v2__surface::after {
-  content: "";
-  position: absolute;
-  inset: -5px;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--composer-ring);
-  filter: blur(18px);
-  opacity: 0.18;
-  pointer-events: none;
-  transition: opacity 180ms ease, filter 180ms ease;
+  transition: box-shadow 180ms ease;
 }
 
 .meera-composer-v2:hover .meera-composer-v2__surface,
@@ -72,12 +59,6 @@
     0 0 34px rgb(255 173 77 / 0.21),
     0 0 50px rgb(72 166 255 / 0.25),
     0 14px 34px rgb(15 23 42 / 0.14);
-}
-
-.meera-composer-v2:hover .meera-composer-v2__surface::after,
-.meera-composer-v2:focus-within .meera-composer-v2__surface::after {
-  opacity: 0.24;
-  filter: blur(20px);
 }
 
 .meera-composer-v2.is-resizing .meera-composer-v2__surface {
@@ -323,7 +304,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .meera-composer-v2__surface,
-  .meera-composer-v2__surface::after,
   .meera-composer-v2__icon-button,
   .meera-composer-v2__send,
   .meera-composer-v2__resize {
