@@ -118,6 +118,8 @@ html body #root .app-root.professional-chat.view-workspace .main.copilot-workspa
   min-width: 0 !important;
   min-height: 0 !important;
   overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 html body #root .app-root.professional-chat.view-workspace .main.copilot-workspace .copilot-workspace-body {
@@ -206,11 +208,22 @@ html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conv
   width: 100% !important;
   max-width: none !important;
   min-width: 0 !important;
-  padding: 23px 26px !important;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 18px !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025) !important;
+  padding: 22px 24px !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(28px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 8px 32px #0000000f,
+    inset 0 1px #fff9 !important;
+}
+
+html body #root .app-root.professional-chat.view-workspace.theme-dark .chat-feed.meera-conversation .chat-message.assistant .chat-bubble {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45) !important;
 }
 
 html body #root .app-root.professional-chat.view-workspace .chat-feed.meera-conversation .chat-message.assistant .chat-body,
@@ -375,17 +388,17 @@ html body #root .app-root.professional-chat.view-workspace .chat-meta-btn {
 /* Composer */
 html body #root .app-root.professional-chat.view-workspace .chat-composer.chat-composer-bumped,
 html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped {
-  position: relative !important;
-  inset: auto !important;
-  z-index: 12 !important;
+  position: fixed !important;
+  bottom: 12px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 70 !important;
   display: block !important;
-  flex: 0 0 auto !important;
-  align-self: center !important;
-  width: min(900px, calc(100% - 80px)) !important;
-  max-width: 900px !important;
-  margin: 0 auto 28px !important;
+  width: min(720px, calc(100vw - 160px)) !important;
+  max-width: 720px !important;
+  margin: 0 !important;
   padding: 0 !important;
-  transform: none !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -405,21 +418,14 @@ html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped
   box-shadow: none !important;
 }
 
-html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-main {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  min-height: 64px !important;
-  padding: 7px !important;
-  background: #ffffff !important;
-  border: 1px solid #d7e0eb !important;
-  border-radius: 18px !important;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.09), 0 1px 2px rgba(15, 23, 42, 0.05) !important;
-}
-
+html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-main,
 html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-composer-main:focus-within {
-  border-color: #8cb5fa !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12), 0 12px 30px rgba(15, 23, 42, 0.1) !important;
+  display: contents !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped .chat-input-wrap,
@@ -538,7 +544,11 @@ html body #root .app-root.professional-chat.view-workspace .chat-empty {
 
   html body #root .app-root.professional-chat.view-workspace .chat-composer.chat-composer-bumped,
   html body #root .app-root.professional-chat.view-workspace .chat-composer-bumped {
+    position: fixed !important;
+    bottom: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     width: calc(100% - 24px) !important;
-    margin-bottom: 12px !important;
+    margin: 0 !important;
   }
 }

@@ -146,3 +146,25 @@ desktop_frontend/trim_css.js
 .idea/
 .DS_Store
 Thumbs.db
+
+# Pre-OS private GitHub backup safety rules
+!.env.sample
+!.env.template
+.next/
+out/
+.cache/
+tts-env/
+*.ckpt
+*.dll
+*.msix
+*.msixbundle
+*.7z
+*.rar
+*.iso
+*.img
+*.vhdx
+auth.json
+oauth_creds.json
+credentials.json
+*recovery-codes*
+*recovery_codes*

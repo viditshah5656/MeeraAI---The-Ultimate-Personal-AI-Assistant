@@ -9,7 +9,7 @@
     "setup-deps": "node scripts/setup-electron-deps.js",
     "predev": "node scripts/prepare-build-assets.js",
     "prebuild": "node scripts/prepare-build-assets.js",
-    "dev": "npx concurrently \"vite\" \"wait-on http-get://localhost:5173 && tsc -p electron/tsconfig.json && electron .\"",
+    "dev": "npx concurrently \"vite --host 127.0.0.1 --port 5173\" \"wait-on http-get://127.0.0.1:5173 && npx tsc -p electron/tsconfig.json && electron .\"",
     "build": "vite build && tsc -p electron/tsconfig.json",
     "package": "npm run build && node scripts/run-electron-builder.js --win --x64",
     "package:mac": "npm run build && node scripts/run-mac-builder.js all",
@@ -17,7 +17,7 @@
     "package:mac:silicon": "npm run build && node scripts/run-mac-builder.js silicon",
     "package:mac:universal": "npm run build && node scripts/run-mac-builder.js universal",
     "dist": "npm run build && node scripts/run-electron-builder.js",
-    "backend": "python3 ../Meera.py --api --port 8000",
+    "backend": "cd .. && python Meera.py --api --host 127.0.0.1 --port 8000",
     "preview": "vite preview"
   },
   "build": {

@@ -3,7 +3,7 @@
  * Displays current model status and provides quick access to model settings
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useModelManagement } from "../hooks/useModelManagement";
 
@@ -17,12 +17,8 @@ export function ModelStatusIndicator({
   onOpenSettings,
 }: ModelStatusIndicatorProps) {
   const { models } = useModelManagement(authToken);
-  const [loadedModel, setLoadedModel] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loaded = models.find((m) => m.loaded);
-    setLoadedModel(loaded ? loaded.label : null);
-  }, [models]);
+  const loadedModel = useMemo(() => models.find((model) => model.loaded) ?? null, [models]);
+  const loadedModelLabel = loadedModel?.label ?? null;
 
   return (
     <motion.div
@@ -47,6 +43,15 @@ export function ModelStatusIndicator({
         e.currentTarget.style.background = "rgba(8, 18, 33, 0.6)";
         e.currentTarget.style.borderColor = "rgba(102, 187, 106, 0.3)";
       }}
+      role="button"
+      tabIndex={0}
+      aria-label={loadedModelLabel ? `Loaded model: ${loadedModelLabel}. Open model settings` : "No model loaded. Open model settings"}
+      onKeyDown={(event) => {
+        if ((event.key === "Enter" || event.key === " ") && onOpenSettings) {
+          event.preventDefault();
+          onOpenSettings();
+        }
+      }}
       onClick={onOpenSettings}
     >
       {/* Status Indicator */}
@@ -57,8 +62,8 @@ export function ModelStatusIndicator({
           width: "8px",
           height: "8px",
           borderRadius: "50%",
-          background: loadedModel ? "#66bb6a" : "#ffc107",
-          boxShadow: loadedModel
+          background: loadedModelLabel ? "#66bb6a" : "#ffc107",
+          boxShadow: loadedModelLabel
             ? "0 0 8px rgba(102, 187, 106, 0.6)"
             : "0 0 8px rgba(255, 193, 7, 0.6)",
         }}
@@ -73,7 +78,7 @@ export function ModelStatusIndicator({
           whiteSpace: "nowrap",
         }}
       >
-        {loadedModel ? `🤖 ${loadedModel}` : "No model loaded"}
+        {loadedModelLabel ? `🤖 ${loadedModelLabel}` : "No local model loaded"}
       </span>
 
       {/* Icon */}
@@ -81,3 +86,5 @@ export function ModelStatusIndicator({
     </motion.div>
   );
 }
+
+export { ModelFloatingSwitcher } from "./model-switcher";

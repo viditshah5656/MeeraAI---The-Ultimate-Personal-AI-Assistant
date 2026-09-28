@@ -23,7 +23,7 @@ export function PersonalitySelector({ apiBase, activeId, onActiveChange }: Perso
 
   const refresh = async () => {
     try {
-      const response = await fetch(`${apiBase}/api/personalities`);
+      const response = await fetch(`${apiBase}/api/v1/personalities`);
       if (!response.ok) return;
       const payload = await response.json();
       setRoles(Array.isArray(payload.personalities) ? payload.personalities : []);
@@ -39,7 +39,7 @@ export function PersonalitySelector({ apiBase, activeId, onActiveChange }: Perso
   const activate = async (role: PersonalitySummary) => {
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/personalities/${encodeURIComponent(role.id)}/activate`, {
+      const response = await fetch(`${apiBase}/api/v1/personalities/${encodeURIComponent(role.id)}/activate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lifecycle: role.id === "coding-agent" ? "project" : "session" }),
@@ -58,7 +58,7 @@ export function PersonalitySelector({ apiBase, activeId, onActiveChange }: Perso
     if (!activeRole) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/personalities/${encodeURIComponent(activeRole.id)}/deactivate`, { method: "POST" });
+      const response = await fetch(`${apiBase}/api/v1/personalities/${encodeURIComponent(activeRole.id)}/deactivate`, { method: "POST" });
       if (response.ok) {
         onActiveChange(null);
         setOpen(false);

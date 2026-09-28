@@ -51,9 +51,15 @@ window.addEventListener("unhandledrejection", (event) => {
       } else {
         await import("./styles.css");
         await import("./reasoning.css");
-        const { default: App } = await import("./App");
-        const { AuthProvider } = await import("./AuthProvider");
-        const { LayoutTransitionProvider } = await import("./components/MeeraGlassLoader");
+        const AppModule = await import("./App");
+        const AuthModule = await import("./AuthProvider");
+        const LoaderModule = await import("./components/MeeraGlassLoader");
+        const App = AppModule.default ?? AppModule.App;
+        const AuthProvider = AuthModule.AuthProvider ?? AuthModule.default;
+        const LayoutTransitionProvider = LoaderModule.LayoutTransitionProvider ?? LoaderModule.default;
+        if (!App || !AuthProvider || !LayoutTransitionProvider) {
+          throw new Error("App bootstrap modules did not load correctly.");
+        }
         createRoot(rootEl).render(
           <React.StrictMode>
             <AuthProvider>

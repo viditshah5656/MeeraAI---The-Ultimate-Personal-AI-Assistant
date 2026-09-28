@@ -265,6 +265,59 @@ def test_auto_continue_and_failsafe():
     asyncio.run(run_test())
 
 
+def test_prefetched_web_context_retries_empty_answer():
+    import asyncio
+    import json
+    from unittest.mock import AsyncMock, MagicMock
+    from Meera import ChatService
+
+    class MockRequest:
+        model = "test-model"
+        tool_choice = "auto"
+
+    async def run_test():
+        service = ChatService(
+            persistence=MagicMock(),
+            cloud_engine=MagicMock(),
+            local_engine=MagicMock(),
+            mcp_manager=MagicMock(),
+            rag_service=MagicMock(),
+            image_search=MagicMock(),
+            model_manager=MagicMock(),
+            param_resolver=MagicMock(),
+        )
+
+        async def empty_answer(*args, **kwargs):
+            yield "event: done\ndata: " + json.dumps({"reply": ""}) + "\n\n"
+
+        async def completed_answer(*args, **kwargs):
+            yield "event: token\ndata: " + json.dumps({"chunk": "A complete grounded answer."}) + "\n\n"
+            yield "event: done\ndata: " + json.dumps({"reply": "A complete grounded answer."}) + "\n\n"
+
+        service.cloud_engine.chat_completion = AsyncMock(
+            side_effect=[empty_answer(), completed_answer()]
+        )
+
+        response = await service._stream_with_tools(
+            request=MockRequest(),
+            provider_id="test_provider",
+            mode="cloud",
+            messages=[{"role": "user", "content": "Give me the latest phones"}],
+            params={},
+            tools=[{"type": "function", "function": {"name": "search_web"}}],
+            web_context="Verified phone data and source links",
+        )
+
+        output = "".join([str(event) async for event in response.body_iterator])
+        assert "A complete grounded answer." in output
+        assert service.cloud_engine.chat_completion.await_count == 2
+        for call in service.cloud_engine.chat_completion.await_args_list:
+            assert call.args[4] is None
+            assert call.args[5] is None
+
+    asyncio.run(run_test())
+
+
 if __name__ == "__main__":
     test_auto_continue_and_failsafe()
     test_greeting_sanitization_and_classification()

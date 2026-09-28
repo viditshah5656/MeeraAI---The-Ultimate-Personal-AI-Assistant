@@ -88,10 +88,14 @@ $verifyScript = @"
 import torch
 import transformers
 import sambanova
+import fitz
+from rapidocr_onnxruntime import RapidOCR
 
 print("torch", torch.__version__)
 print("transformers", transformers.__version__)
 print("sambanova", getattr(sambanova, "__version__", "unknown"))
+print("pymupdf", getattr(fitz, "__version__", "available"))
+print("rapidocr", RapidOCR.__module__)
 "@
 
 $verifyPath = Join-Path $env:TEMP "meera-verify-remote.py"

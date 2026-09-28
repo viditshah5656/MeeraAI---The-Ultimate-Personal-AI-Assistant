@@ -31,7 +31,7 @@ export default function AgentTaskPanel({ apiBase }: AgentTaskPanelProps) {
 
   const refreshWorkspaces = async () => {
     try {
-      const response = await fetch(`${apiBase}/api/workspaces`);
+      const response = await fetch(`${apiBase}/api/v1/workspaces`);
       if (!response.ok) return;
       const payload = await response.json();
       const next = Array.isArray(payload.workspaces) ? payload.workspaces : [];
@@ -51,7 +51,7 @@ export default function AgentTaskPanel({ apiBase }: AgentTaskPanelProps) {
     if (!workspacePath.trim()) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/workspaces/open`, {
+      const response = await fetch(`${apiBase}/api/v1/workspaces/open`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ root_path: workspacePath.trim() }),
@@ -69,7 +69,7 @@ export default function AgentTaskPanel({ apiBase }: AgentTaskPanelProps) {
 
   const subscribe = (taskId: string) => {
     eventSourceRef.current?.close();
-    const source = new EventSource(`${apiBase}/api/agent/tasks/${encodeURIComponent(taskId)}/events`);
+    const source = new EventSource(`${apiBase}/api/v1/agent/tasks/${encodeURIComponent(taskId)}/events`);
     source.addEventListener("agent", (event) => {
       try {
         const next = JSON.parse((event as MessageEvent).data) as AgentEvent;
@@ -87,7 +87,7 @@ export default function AgentTaskPanel({ apiBase }: AgentTaskPanelProps) {
     if (!workspaceId || !objective.trim()) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/agent/tasks`, {
+      const response = await fetch(`${apiBase}/api/v1/agent/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace_id: workspaceId, objective: objective.trim(), command: command.trim() || undefined }),
@@ -106,7 +106,7 @@ export default function AgentTaskPanel({ apiBase }: AgentTaskPanelProps) {
     if (!task) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/agent/tasks/${encodeURIComponent(task.id)}/${action}`, { method: "POST" });
+      const response = await fetch(`${apiBase}/api/v1/agent/tasks/${encodeURIComponent(task.id)}/${action}`, { method: "POST" });
       if (!response.ok) return;
       const payload = await response.json();
       setTask(payload.task);

@@ -107,11 +107,15 @@ Invoke-Checked -FilePath $venvPython -Arguments @("-m", "pip", "install", "--upg
 $verifyScript = @"
 import torch
 import bitsandbytes as bnb
+import fitz
+from rapidocr_onnxruntime import RapidOCR
 
 print("torch", torch.__version__)
 print("cuda_available", torch.cuda.is_available())
 print("cuda_version", torch.version.cuda)
 print("bitsandbytes", getattr(bnb, "__version__", "unknown"))
+print("pymupdf", getattr(fitz, "__version__", "available"))
+print("rapidocr", RapidOCR.__module__)
 
 if not torch.cuda.is_available():
     raise SystemExit("CUDA verification failed")

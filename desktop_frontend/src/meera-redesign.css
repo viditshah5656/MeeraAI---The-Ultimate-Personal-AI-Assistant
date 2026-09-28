@@ -242,6 +242,8 @@ body {
 
 .chat-message.user {
   justify-content: flex-end !important;
+  max-width: min(500px, 65%) !important;
+  margin-left: auto !important;
 }
 
 .chat-message.assistant {
@@ -259,6 +261,22 @@ body {
   max-width: 88% !important;
 }
 
+.chat-message.user .chat-stack {
+  max-width: 100% !important;
+  width: fit-content !important;
+  align-items: flex-end !important;
+  margin-left: auto !important;
+}
+
+.user-floating-attachments {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  align-self: flex-end !important;
+  margin-bottom: 6px !important;
+  gap: 8px !important;
+}
+
 /* User bubble: filled, high contrast, right-aligned — establishes
    figure/ground so the eye separates "what I said" from "what it said"
    at a glance (Gestalt: similarity + proximity). */
@@ -269,6 +287,10 @@ body {
   padding: 12px 16px !important;
   box-shadow: var(--md-shadow-sm) !important;
   border: none !important;
+  max-width: 100% !important;
+  width: fit-content !important;
+  align-self: flex-end !important;
+  overflow: hidden !important;
 }
 
 .chat-message.user .chat-bubble .chat-body,
@@ -509,4 +531,70 @@ body {
   --md-text-secondary: #94a3b8;
   --md-text-tertiary: #64748b;
   --md-accent-soft: rgba(37, 99, 235, 0.18);
+}
+
+/* -------------------------------------------------------------------------
+   Professional Inner Reasoning Styling
+   ------------------------------------------------------------------------- */
+.reasoning-prose-card {
+  background: rgba(15, 23, 42, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  max-height: 440px !important;
+  overflow-y: auto !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+.reasoning-prose-content {
+  font-family: Inter, system-ui, -apple-system, sans-serif !important;
+  font-size: 13.5px !important;
+  line-height: 1.65 !important;
+  color: #cbd5e1 !important;
+  word-break: break-word !important;
+}
+
+.reasoning-prose-content p {
+  margin-bottom: 8px !important;
+  color: #cbd5e1 !important;
+  font-size: 13.5px !important;
+  line-height: 1.65 !important;
+}
+
+.reasoning-prose-content ul,
+.reasoning-prose-content ol {
+  margin: 6px 0 10px 18px !important;
+  color: #cbd5e1 !important;
+  padding-left: 8px !important;
+}
+
+.reasoning-prose-content li {
+  margin-bottom: 4px !important;
+  color: #cbd5e1 !important;
+  font-size: 13.5px !important;
+}
+
+.reasoning-prose-content strong {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+}
+
+.reasoning-prose-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 12px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #93c5fd !important;
+  padding: 2px 5px !important;
+  border-radius: 4px !important;
+}
+
+.reasoning-prose-content pre {
+  margin: 10px 0 !important;
+  padding: 12px !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
 }

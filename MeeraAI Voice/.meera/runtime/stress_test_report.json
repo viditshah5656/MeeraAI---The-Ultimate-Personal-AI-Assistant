@@ -1,0 +1,55 @@
+{
+  "turns_count": 4,
+  "total_elapsed_seconds": 9.89,
+  "initial_rss_mb": 28.26,
+  "final_rss_mb": 2118.78,
+  "drift_mb": 2090.52,
+  "drift_pct": 7396.99,
+  "turns": [
+    {
+      "turn": 1,
+      "prompt": "Hello Meera, what is your current system status?",
+      "ok": true,
+      "summary": "My system status is currently normal. Apple reports no planned or unplanned even...",
+      "duration_ms": 7250.0,
+      "rss_before_mb": 28.27,
+      "rss_after_mb": 2116.68,
+      "rss_delta_mb": 2088.41,
+      "workers_ok": true
+    },
+    {
+      "turn": 2,
+      "prompt": "Remember that my favorite project name is Project Starlight.",
+      "ok": true,
+      "summary": "I'll remember that my favorite project name is Project Starlight.",
+      "duration_ms": 32.0,
+      "rss_before_mb": 2116.69,
+      "rss_after_mb": 2116.68,
+      "rss_delta_mb": -0.0,
+      "workers_ok": true
+    },
+    {
+      "turn": 3,
+      "prompt": "What is my favorite project name?",
+      "ok": true,
+      "summary": "Your favorite project name is Project Starlight. It sounds like a place where we...",
+      "duration_ms": 1078.0,
+      "rss_before_mb": 2116.68,
+      "rss_after_mb": 2118.28,
+      "rss_delta_mb": 1.59,
+      "workers_ok": true
+    },
+    {
+      "turn": 4,
+      "prompt": "How does quantum computing differ from classical computing?",
+      "ok": true,
+      "summary": "Quantum computing is all about using tiny particles called qubits to solve hard ...",
+      "duration_ms": 1531.0,
+      "rss_before_mb": 2118.28,
+      "rss_after_mb": 2118.78,
+      "rss_delta_mb": 0.5,
+      "workers_ok": true
+    }
+  ],
+  "workers": {}
+}

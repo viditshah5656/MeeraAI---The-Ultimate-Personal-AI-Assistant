@@ -93,7 +93,8 @@ export type RuntimeStagePayload = {
   formula?: string;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = ((import.meta.env && import.meta.env.VITE_MEERA_API_BASE_URL) || "http://127.0.0.1:8000/api/v1").replace(/\/api(?:\/v1)?\/?$/, "");
+const API_LEGACY = `${API_BASE}/api`;
 
 async function readJson<T>(response: Response): Promise<T> {
   const data = await response.json();
@@ -107,7 +108,7 @@ export async function searchModelLibrary(query: string, limit = 20): Promise<Lib
   const params = new URLSearchParams();
   params.set("q", query);
   params.set("limit", String(limit));
-  const response = await fetch(`${API_BASE}/api/models/library/search?${params.toString()}`);
+  const response = await fetch(`${API_LEGACY}/models/library/search?${params.toString()}`);
   const data = await readJson<{ results?: LibrarySearchResult[] }>(response);
   return data.results ?? [];
 }
@@ -115,7 +116,7 @@ export async function searchModelLibrary(query: string, limit = 20): Promise<Lib
 export async function getModelLibraryDetails(repoId: string): Promise<LibraryDetails> {
   const params = new URLSearchParams();
   params.set("repo_id", repoId);
-  const response = await fetch(`${API_BASE}/api/models/library/details?${params.toString()}`);
+  const response = await fetch(`${API_LEGACY}/models/library/details?${params.toString()}`);
   const data = await readJson<{ model?: LibraryDetails } & LibraryDetails>(response);
   return (data.model ?? data) as LibraryDetails;
 }
@@ -123,12 +124,12 @@ export async function getModelLibraryDetails(repoId: string): Promise<LibraryDet
 export async function getRuntimeSettings(modelId: string): Promise<{ runtime_settings: RuntimeSettings; recommended_settings: RuntimeSettings; gguf_files: GgufFileOption[]; recommended_gguf?: GgufFileOption | null; hardware_profile?: HardwareProfile; parameter_stages?: RuntimeStagePayload; }> {
   const params = new URLSearchParams();
   params.set("model_id", modelId);
-  const response = await fetch(`${API_BASE}/api/models/runtime-settings?${params.toString()}`);
+  const response = await fetch(`${API_LEGACY}/models/runtime-settings?${params.toString()}`);
   return readJson(response);
 }
 
 export async function saveRuntimeSettings(modelId: string, runtimeSettings: RuntimeSettings): Promise<RuntimeSettings> {
-  const response = await fetch(`${API_BASE}/api/models/runtime-settings`, {
+  const response = await fetch(`${API_LEGACY}/models/runtime-settings`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model_id: modelId, runtime_settings: runtimeSettings }),
@@ -137,22 +138,49 @@ export async function saveRuntimeSettings(modelId: string, runtimeSettings: Runt
   return data.runtime_settings;
 }
 
-export async function downloadLibraryModel(repoId: string, label: string, filename: string): Promise<{ model_id?: string }> {
-  const response = await fetch(`${API_BASE}/api/models/hf/download`, {
+export async function downloadLibraryModel(
+  repoId: string,
+  label: string,
+  filename?: string,
+  signal?: AbortSignal,
+): Promise<{ ok?: boolean; model_id?: string; status?: string; message?: string }> {
+  const response = await fetch(`${API_LEGACY}/models/hf/download`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ repo_id: repoId, label, filename }),
+    body: JSON.stringify({ repo_id: repoId, label, ...(filename ? { filename } : {}) }),
+    signal,
   });
   return readJson(response);
 }
 
+export type DownloadStatus = {
+  model_id: string;
+  status: string;
+  progress?: number;
+  downloaded_bytes?: number;
+  total_bytes?: number;
+  speed?: number;
+  error?: string;
+};
+
+export async function getModelDownloadStatus(): Promise<Record<string, DownloadStatus>> {
+  const response = await fetch(`${API_LEGACY}/models/status`);
+  const data = await readJson<{ active_downloads?: Record<string, DownloadStatus> }>(response);
+  return data.active_downloads ?? {};
+}
+
 export type HfTokenResult = { ok?: boolean; hf_token_set?: boolean; token_count?: number; message?: string; };
-export type ProviderConfig = { provider: string; api_key?: string; base_url?: string; model?: string; };
-export type ProviderStatus = { id: string; label: string; description: string; configured: boolean; connected: boolean; api_key_set: boolean; enabled?: boolean; token_count?: number; model_count?: number; base_url?: string; model?: string; models?: string[]; };
+export type ProviderConfig = { provider: string; api_key: string; base_url?: string; model?: string; };
+export type ProviderStatus = {
+  id: string; label: string; description: string; configured: boolean; connected: boolean; api_key_set: boolean;
+  enabled?: boolean; token_count?: number; model_count?: number; base_url?: string; model?: string; models?: string[];
+  format?: string; api_key_label?: string; api_key_placeholder?: string; base_url_required?: boolean; error?: string | null;
+  base_url_label?: string; model_label?: string; model_required?: boolean; help_url?: string;
+};
 export type ImageSearchResult = { id: string; title: string; imageUrl: string; thumbnailUrl: string; sourceUrl: string; license: string; };
 
 export async function saveHfToken(token: string): Promise<HfTokenResult> {
-  const response = await fetch(`${API_BASE}/api/models/token`, {
+  const response = await fetch(`${API_LEGACY}/models/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),
@@ -161,7 +189,7 @@ export async function saveHfToken(token: string): Promise<HfTokenResult> {
 }
 
 export async function clearHfToken(): Promise<HfTokenResult> {
-  const response = await fetch(`${API_BASE}/api/models/token/clear`, {
+  const response = await fetch(`${API_LEGACY}/models/token/clear`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }
   });
@@ -169,7 +197,7 @@ export async function clearHfToken(): Promise<HfTokenResult> {
 }
 
 export async function unloadLocalModel(modelId?: string): Promise<{ ok?: boolean; unloaded?: boolean; message?: string; error?: string }> {
-  const response = await fetch(`${API_BASE}/api/models/unload/memory`, {
+  const response = await fetch(`${API_LEGACY}/models/unload/memory`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(modelId ? { model_id: modelId } : {}),
@@ -178,7 +206,7 @@ export async function unloadLocalModel(modelId?: string): Promise<{ ok?: boolean
 }
 
 export async function deleteLocalModel(modelId: string): Promise<{ ok?: boolean; status?: string; model_id?: string; message?: string; error?: string }> {
-  const response = await fetch(`${API_BASE}/api/models/delete`, {
+  const response = await fetch(`${API_LEGACY}/models/delete`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model_id: modelId }),
@@ -187,7 +215,7 @@ export async function deleteLocalModel(modelId: string): Promise<{ ok?: boolean;
 }
 
 export async function listProviders(): Promise<{ providers: ProviderStatus[] }> {
-  const response = await fetch(`${API_BASE}/api/providers`);
+  const response = await fetch(`${API_LEGACY}/providers`);
   const raw = await response.json();
   if (!response.ok) {
     throw new Error(raw?.detail || raw?.message || raw?.error || `Request failed (${response.status})`);
@@ -212,17 +240,26 @@ export async function listProviders(): Promise<{ providers: ProviderStatus[] }> 
       base_url: info.base_url || "",
       model: info.model || null,
       models: info.models || [],
+      error: info.error || null,
+      format: info.format,
+      api_key_label: info.api_key_label,
+      api_key_placeholder: info.api_key_placeholder,
+      base_url_required: info.base_url_required,
+      base_url_label: info.base_url_label,
+      model_label: info.model_label,
+      model_required: info.model_required,
+      help_url: info.help_url,
     }));
   return { providers };
 }
 
-export async function getProviderModels(providerId: string): Promise<{ models: string[] }> {
-  const response = await fetch(`${API_BASE}/api/providers/${providerId}/models`);
+export async function getProviderModels(providerId: string): Promise<{ models: string[]; error?: string }> {
+  const response = await fetch(`${API_LEGACY}/providers/${providerId}/models`);
   return readJson(response);
 }
 
 export async function connectProvider(config: ProviderConfig): Promise<{ ok: boolean; provider: string; configured: boolean; api_key_set: boolean; config: Partial<ProviderConfig>; saved: Record<string, ProviderConfig>; }> {
-  const response = await fetch(`${API_BASE}/api/providers/connect`, {
+  const response = await fetch(`${API_LEGACY}/providers/connect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(config),
@@ -231,7 +268,7 @@ export async function connectProvider(config: ProviderConfig): Promise<{ ok: boo
 }
 
 export async function disconnectProvider(provider: string): Promise<{ ok: boolean; provider: string; configured: boolean; disconnected: boolean }> {
-  const response = await fetch(`${API_BASE}/api/providers/disconnect`, {
+  const response = await fetch(`${API_LEGACY}/providers/disconnect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ provider }),
@@ -243,17 +280,17 @@ export type InferenceModeStatus = { ok?: boolean; mode: "local" | "cloud"; cloud
 
 export async function searchImages(query: string, limit = 24): Promise<{ ok: boolean; query: string; results: ImageSearchResult[] }> {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
-  const response = await fetch(`${API_BASE}/api/images/search?${params.toString()}`);
+  const response = await fetch(`${API_LEGACY}/images/search?${params.toString()}`);
   return readJson(response);
 }
 
 export async function getInferenceMode(): Promise<InferenceModeStatus> {
-  const response = await fetch(`${API_BASE}/api/inference/mode`);
+  const response = await fetch(`${API_LEGACY}/inference/mode`);
   return readJson(response);
 }
 
 export async function setInferenceMode(mode: "local" | "cloud"): Promise<{ ok: boolean; mode: string; error?: string }> {
-  const response = await fetch(`${API_BASE}/api/inference/mode`, {
+  const response = await fetch(`${API_LEGACY}/inference/mode`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mode }),

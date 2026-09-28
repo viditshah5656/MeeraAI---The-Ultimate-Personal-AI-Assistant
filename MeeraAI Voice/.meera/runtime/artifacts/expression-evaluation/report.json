@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Hmm.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\01-hmm.wav",
+    "duration_s": 0.56,
+    "rms": 0.12634,
+    "peak": 0.47433,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Oh.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\02-oh.wav",
+    "duration_s": 1.2,
+    "rms": 0.07825,
+    "peak": 0.27975,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Wait.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\03-wait.wav",
+    "duration_s": 0.48,
+    "rms": 0.113,
+    "peak": 0.5361,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Wow.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\04-wow.wav",
+    "duration_s": 0.8,
+    "rms": 0.08824,
+    "peak": 0.40524,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Heh.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\05-heh.wav",
+    "duration_s": 0.72,
+    "rms": 0.0285,
+    "peak": 0.22421,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Ah.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\06-ah.wav",
+    "duration_s": 0.88,
+    "rms": 0.04838,
+    "peak": 0.3027,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "Really?",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\07-really.wav",
+    "duration_s": 0.64,
+    "rms": 0.13103,
+    "peak": 0.53757,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  },
+  {
+    "text": "No way.",
+    "path": "C:\\MeeraAI\\.meera\\runtime\\artifacts\\expression-evaluation\\08-no-way.wav",
+    "duration_s": 1.12,
+    "rms": 0.10518,
+    "peak": 0.44919,
+    "automatic_pass": true,
+    "reasons": [],
+    "human_naturalness_pass": null
+  }
+]

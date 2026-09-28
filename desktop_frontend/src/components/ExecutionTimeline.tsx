@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from 'react-markdown';
+import { copyText } from "../utils/clipboard";
 import {
   MdAutoAwesome,
   MdError,
@@ -75,7 +76,7 @@ const TerminalMetaCard: React.FC<{ node: ExecutionNode }> = ({ node }) => {
 
   const copy = async (text: string, which: "cmd" | "out") => {
     try {
-      await navigator.clipboard.writeText(text);
+      if (!(await copyText(text))) return;
       if (which === "cmd") { setCmdCopied(true); setTimeout(() => setCmdCopied(false), 1200); }
       else { setOutCopied(true); setTimeout(() => setOutCopied(false), 1200); }
     } catch { /* ignore */ }
