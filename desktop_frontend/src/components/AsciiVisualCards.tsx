@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { LuTable, LuCopy, LuCheck, LuGitBranch, LuCode, LuLayoutGrid } from "react-icons/lu";
+import { copyText } from "../utils/clipboard";
 
 export interface ParsedAsciiTable {
   title: string;
@@ -185,9 +186,9 @@ export const AsciiTableCard: React.FC<{
     return null;
   }, [inputParsed, rawContent]);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!parsed) {
-      if (rawContent) navigator?.clipboard?.writeText(rawContent);
+      if (rawContent) await copyText(rawContent);
       return;
     }
     // Format as clean TSV / Markdown
@@ -195,9 +196,10 @@ export const AsciiTableCard: React.FC<{
       parsed.headers.join("\t"),
       ...parsed.rows.map((r) => r.join("\t")),
     ].join("\n");
-    navigator?.clipboard?.writeText(tsv);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+    if (await copyText(tsv)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    }
   }, [parsed, rawContent]);
 
   if (!parsed && !rawContent) return null;
@@ -283,10 +285,11 @@ export const AsciiDiagramCard: React.FC<{
 
   const displayTitle = propTitle || detectedTitle || "Routing & Architecture Flowchart";
 
-  const handleCopy = useCallback(() => {
-    navigator?.clipboard?.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+  const handleCopy = useCallback(async () => {
+    if (await copyText(content)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    }
   }, [content]);
 
   // Transform lines to highlight nodes, arrows, and transit labels

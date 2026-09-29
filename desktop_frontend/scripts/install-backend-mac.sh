@@ -54,6 +54,9 @@ log_step "Installing backend requirements from ${REQUIREMENTS_PATH}..."
 log_step "Installing Playwright browsers (chromium)..."
 "${VENV_PYTHON}" -m playwright install chromium
 
+log_step "Verifying document OCR support..."
+"${VENV_PYTHON}" -c 'import fitz; from rapidocr_onnxruntime import RapidOCR; print("OCR ready:", RapidOCR.__module__)'
+
 # Create runtime root and atomic sentinel
 mkdir -p "${RUNTIME_ROOT}"
 # touch after ensuring directory exists (atomicity via directory creation + touch)

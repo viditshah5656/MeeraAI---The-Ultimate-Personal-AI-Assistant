@@ -98,6 +98,7 @@ import { ExecutionTimeline } from "./components/ExecutionTimeline";
 import AgentActionLog from "./components/AgentActionLog";
 import AgentTaskPanel from "./components/AgentTaskPanel";
 import { SettingsModelStudio } from "./components/SettingsModelStudio";
+import { ModelFloatingSwitcher } from "./components/model-switcher";
 import { SplitViewWrapper } from "./components/SplitViewWrapper";
 import {
   AgentInteractionDialog,
@@ -140,6 +141,7 @@ import CollapsibleUserMessage from "./components/composer/CollapsibleUserMessage
 import SmartComposerBar from "./components/composer/SmartComposerBar";
 import { fetchInternetDailyThought, getDynamicAnonymousName, getSmartTimeGreeting } from "./services/dynamicGreeting";
 import { PersonalitySelector } from "./components/PersonalitySelector";
+import { VoiceAssistant, type VoiceCaption, type VoicePreparationState } from "./components/VoiceAssistant";
 
 SyntaxHighlighter.registerLanguage("tsx", tsxLang);
 SyntaxHighlighter.registerLanguage("typescript", typescriptLang);
@@ -147,6 +149,10 @@ SyntaxHighlighter.registerLanguage("javascript", javascriptLang);
 
 const UiIcon = ({ name, className, alt = "" }: { name: string; className?: string; alt?: string }) => (
   <img className={["ui-icon", className].filter(Boolean).join(" ")} src={`${import.meta.env.BASE_URL}ui/${name}`} alt={alt} />
+);
+
+const BrandLogo = ({ className, alt = "MeeraAI logo" }: { className?: string; alt?: string }) => (
+  <img className={className} src={`${import.meta.env.BASE_URL}logo.png`} alt={alt} />
 );
 
 type BrowserSpeechRecognitionEvent = {
@@ -213,12 +219,44 @@ type VoiceRecordingSession = {
   sampleRate: number;
   stopTimer: number | null;
   stopped: boolean;
+  startedAt: number;
+  speechStarted: boolean;
+  voicedFrames: number;
+  lastVoiceAt: number;
+  noiseFloor: number;
+  endpointTriggered: boolean;
+  lastMeterUpdate: number;
+  assistantSession: boolean;
+  speechCaptionShown: boolean;
 };
 type VoiceTranscribeResponse = {
   ok?: boolean;
   text?: string;
   error?: string;
   message?: string;
+  detail?: string;
+  engine?: string;
+  model?: string;
+  confidence?: number;
+  word_confidence?: number;
+};
+type VoiceExpression =
+  | "composed"
+  | "warm"
+  | "empathetic"
+  | "concerned"
+  | "curious"
+  | "delighted"
+  | "amused"
+  | "surprised"
+  | "urgent"
+  | "sad"
+  | "reflective"
+  | "confident";
+type VoiceSpeechChunk = {
+  text: string;
+  expression: VoiceExpression;
+  pauseAfterMs: number;
 };
 
 const MAX_REPLY_IMAGES = 6;
@@ -752,7 +790,14 @@ const STORAGE_MODEL = "meera.selectedModel";
 const STORAGE_CLOUD_TIER_MODEL = "meera.selectedCloudTier";
 const STORAGE_INTENT_MODEL_OVERRIDES = "meera.intentModelOverrides";
 const LEGACY_MODEL_OPTION_ID_MAP: Record<string, string> = {
-  "meera-ultra-8b": "meera-ultra-7b",
+  "meera-lite-1b": "meera-nano",
+  "meera-core-2b": "meera-mini",
+  "meera-core-3b": "meera-edge",
+  "meera-pro-4b": "meera",
+  "meera-reasoning-8b": "meera-deep",
+  "meera-ultra-7b": "meera-ultra",
+  "meera-ultra-8b": "meera-ultra",
+  "meera-ultra-9b": "meera-ultra",
 };
 
 const normalizeLegacyModelOptionId = (id: string | null | undefined): string => {
@@ -801,6 +846,130 @@ const STORAGE_USER_CUSTOM_FACTS = "meera.userCustomFacts";
 const STORAGE_AGENT_MEMORY = "meera.agentMemory";
 const STORAGE_USER_INTEGRATIONS = "meera.userIntegrations";
 const STORAGE_EMAIL_IMAP_CONFIG = "meera.emailImapConfig";
+const STORAGE_PERSONALIZATION_PROFILE = "meera.personalizationProfile";
+
+type PersonalizationProfile = {
+  honorific: string;
+  preferredLanguage: string;
+  homeRegion: string;
+  responseDepth: "concise" | "balanced" | "deep";
+  responseTone: "professional" | "friendly" | "direct" | "coach";
+  interests: string[];
+  movieGenres: string[];
+  newsTopics: string[];
+  productivityGoals: string[];
+  contentAvoidances: string;
+};
+
+const DEFAULT_PERSONALIZATION_PROFILE: PersonalizationProfile = {
+  honorific: "",
+  preferredLanguage: "English",
+  homeRegion: "",
+  responseDepth: "deep",
+  responseTone: "friendly",
+  interests: [],
+  movieGenres: [],
+  newsTopics: [],
+  productivityGoals: [],
+  contentAvoidances: "",
+};
+
+const HONORIFIC_OPTIONS = ["", "Mr", "Ms", "Mrs", "Miss", "Dr", "Prof"] as const;
+const NEWS_TOPIC_OPTIONS = ["World", "India", "Technology", "Business", "Markets", "Science", "Sports", "Entertainment", "Startups", "Politics"];
+const PRODUCTIVITY_GOAL_OPTIONS = ["Focus", "Planning", "Habit building", "Learning", "Writing", "Coding", "Career growth", "Personal finance", "Health routines", "Time management"];
+const MAIN_INTEREST_CARDS = [
+  { label: "Technology, AI & Science", detail: "Software, discovery and emerging intelligence", icon: "memory", image: "personalization/technology-ai.jpg" },
+  { label: "Business & Finance", detail: "Companies, markets and personal wealth", icon: "monitoring", image: "personalization/business-finance.jpg" },
+  { label: "Sports & Outdoors", detail: "Teams, competition and outdoor pursuits", icon: "sports_soccer", image: "personalization/sports-outdoors.jpg" },
+  { label: "Health & Fitness", detail: "Wellbeing, training and healthier routines", icon: "fitness_center", image: "personalization/health-fitness.jpg" },
+  { label: "Travel & Culture", detail: "Places, people and meaningful experiences", icon: "travel_explore", image: "personalization/travel-culture.jpg" },
+  { label: "Food & Lifestyle", detail: "Cooking, dining and everyday living", icon: "restaurant", image: "personalization/food-lifestyle.jpg" },
+  { label: "Movies & TV", detail: "Cinema, series and entertainment discovery", icon: "movie", image: "personalization/movies-tv.jpg" },
+  { label: "Gaming", detail: "Games, worlds and interactive experiences", icon: "sports_esports", image: "personalization/gaming.jpg" },
+  { label: "Books & Learning", detail: "Reading, education and personal growth", icon: "auto_stories", image: "personalization/books-learning.jpg" },
+  { label: "Music, Art & Design", detail: "Sound, creativity and visual culture", icon: "palette", image: "personalization/music-art-design.jpg" },
+] as const;
+
+function normalizeMainInterests(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const aliases: Record<string, string> = {
+    ai: "Technology, AI & Science",
+    technology: "Technology, AI & Science",
+    science: "Technology, AI & Science",
+    business: "Business & Finance",
+    finance: "Business & Finance",
+    health: "Health & Fitness",
+    fitness: "Health & Fitness",
+    travel: "Travel & Culture",
+    food: "Food & Lifestyle",
+    movies: "Movies & TV",
+    entertainment: "Movies & TV",
+    gaming: "Gaming",
+    books: "Books & Learning",
+    learning: "Books & Learning",
+    music: "Music, Art & Design",
+    art: "Music, Art & Design",
+    photography: "Music, Art & Design",
+    sports: "Sports & Outdoors",
+  };
+  const valid = new Set(MAIN_INTEREST_CARDS.map((item) => item.label));
+  return Array.from(new Set(value.flatMap((item) => {
+    if (typeof item !== "string") return [];
+    if (valid.has(item)) return [item];
+    return aliases[item.trim().toLocaleLowerCase()] ? [aliases[item.trim().toLocaleLowerCase()]] : [];
+  }))).slice(0, 10);
+}
+
+function loadPersonalizationProfile(): PersonalizationProfile {
+  try {
+    const parsed = parseJsonSafe<Partial<PersonalizationProfile>>(localStorage.getItem(STORAGE_PERSONALIZATION_PROFILE) ?? "");
+    if (!parsed) return { ...DEFAULT_PERSONALIZATION_PROFILE };
+    const list = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, 30) : [];
+    return {
+      ...DEFAULT_PERSONALIZATION_PROFILE,
+      ...parsed,
+      interests: normalizeMainInterests(parsed.interests),
+      movieGenres: list(parsed.movieGenres),
+      newsTopics: list(parsed.newsTopics),
+      productivityGoals: list(parsed.productivityGoals),
+    };
+  } catch {
+    return { ...DEFAULT_PERSONALIZATION_PROFILE };
+  }
+}
+
+function splitHonorificFromName(value: string): { honorific: string; name: string } {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  const match = cleaned.match(/^(mr|mrs|ms|miss|dr|prof)(?:\.)?\s+(.+)$/i);
+  if (!match) return { honorific: "", name: cleaned };
+  const honorific = HONORIFIC_OPTIONS.find((item) => item.toLowerCase() === match[1].toLowerCase()) ?? "";
+  return { honorific, name: match[2].trim() };
+}
+
+function normalizePersonName(value: string): string {
+  const { name } = splitHonorificFromName(value);
+  const lowercaseParticles = new Set(["de", "del", "da", "van", "von", "bin", "al"]);
+  return name
+    .toLocaleLowerCase()
+    .split(/(\s+|-)/)
+    .map((part, index) => {
+      if (!part.trim() || part === "-") return part;
+      if (index > 0 && lowercaseParticles.has(part)) return part;
+      return part.charAt(0).toLocaleUpperCase() + part.slice(1);
+    })
+    .join("");
+}
+
+function normalizeReadableLabel(value: string): string {
+  const cleaned = value.replace(/\s+/g, " ").trim();
+  if (!cleaned || (!/^[A-Z\s/&-]+$/.test(cleaned) && !/^[a-z\s/&-]+$/.test(cleaned))) return cleaned;
+  return cleaned
+    .toLocaleLowerCase()
+    .replace(/(^|[\s/-])([a-z])/g, (_match, boundary: string, letter: string) => `${boundary}${letter.toLocaleUpperCase()}`)
+    .replace(/\bAi\b/g, "AI")
+    .replace(/\bUi\b/g, "UI")
+    .replace(/\bUx\b/g, "UX");
+}
 
 export interface EmailImapConfig {
   imap_server: string;
@@ -1155,6 +1324,10 @@ const API_MODELS_UNLOAD_MEMORY = `${API_BASE}/api/models/unload/memory`;
 const API_MODELS_TOKEN = `${API_BASE}/api/models/token`;
 const API_MODELS_TOKEN_CLEAR = `${API_BASE}/api/models/token/clear`;
 const API_VOICE_TRANSCRIBE = `${API_BASE}/api/voice/transcribe`;
+const API_VOICE_PREPARE = `${API_BASE}/api/voice/prepare`;
+const API_VOICE_SYNTHESIZE = `${API_BASE}/api/voice/synthesize`;
+const API_VOICE_INTERRUPT = `${API_BASE}/api/voice/interrupt`;
+const VOICE_MODEL_ID = "meera-mini";
 const API_INFERENCE_MODE = `${API_BASE}/api/inference/mode`;
 const API_MODELS_CLOUD = `${API_BASE}/api/models/cloud-gguf`;
 const API_INFERENCE_CLOUD_MODEL = `${API_BASE}/api/inference/cloud/model`;
@@ -3435,7 +3608,6 @@ const isChatModelOption = (id: string | null | undefined): id is ModelOptionId =
 };
 
 const FRONTEND_TO_BACKEND_MODEL_ID_MAP: Record<string, string> = {
-  "meera-ultra-7b": "meera-ultra-8b",
 };
 
 const toBackendModelId = (id: string): string => {
@@ -11493,7 +11665,27 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     () => parseJsonSafe<boolean>(localStorage.getItem(STORAGE_SIDEBAR)) ?? true,
   );
   const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceSpeaking, setIsVoiceSpeaking] = useState(false);
+  const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
+  const [voiceAudioLevel, setVoiceAudioLevel] = useState(0);
   const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(false);
+  const [voiceCaption, setVoiceCaption] = useState<VoiceCaption | null>(null);
+  const [voiceAssistantOpen, setVoiceAssistantOpen] = useState(false);
+  const [voicePreparation, setVoicePreparation] = useState<VoicePreparationState>({
+    phase: "idle",
+    progress: 0,
+    detail: "Waiting to start",
+  });
+  const voicePreparationRunRef = useRef(0);
+  const voiceBackgroundWarmupStartedRef = useRef(false);
+  const voiceAssistantOpenRef = useRef(false);
+  const voiceSpeechTokenRef = useRef(0);
+  const voiceAutoListenTimerRef = useRef<number | null>(null);
+  const voicePlaybackRef = useRef<HTMLAudioElement | null>(null);
+  const voicePlaybackUrlRef = useRef<string | null>(null);
+  const voiceTtsAbortRef = useRef<AbortController | null>(null);
+  const voicePlaybackRejectRef = useRef<((reason?: unknown) => void) | null>(null);
+  const startVoiceInputRef = useRef<() => Promise<void>>(async () => undefined);
   const speechRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const voiceRecordingRef = useRef<VoiceRecordingSession | null>(null);
   const voiceRepliesEnabledRef = useRef(false);
@@ -11510,7 +11702,14 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState("");
   const [pinnedOpen, setPinnedOpen] = useState(false);
-  const [authUser, setAuthUser] = useState<AuthUserState | null>(null);
+const [authUser, setAuthUser] = useState<any | null>(() => ({
+    uid: "local-user",
+    email: "",
+    displayName: localStorage.getItem("meera_local_name") || "Meera User",
+    phoneNumber: "",
+    photoURL: "",
+    emailVerified: true,
+  }));
   const [authReady, setAuthReady] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authDismissed, setAuthDismissed] = useState(false);
@@ -11531,7 +11730,27 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   }, [authUserNew, authLoading]);
 
   useEffect(() => {
+    if (status !== "ready" || voiceBackgroundWarmupStartedRef.current) return;
+    voiceBackgroundWarmupStartedRef.current = true;
+    // Pay the expensive ASR/server startup cost while the normal desktop UI
+    // is already usable, instead of making the first voice-button click wait.
+    void fetch(API_VOICE_PREPARE, { method: "POST" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Voice warm-up failed (${response.status}).`);
+      })
+      .catch(() => {
+        voiceBackgroundWarmupStartedRef.current = false;
+      });
+  }, [status]);
+
+  useEffect(() => {
     return () => {
+      voiceAssistantOpenRef.current = false;
+      voiceSpeechTokenRef.current += 1;
+      if (voiceAutoListenTimerRef.current !== null) {
+        window.clearTimeout(voiceAutoListenTimerRef.current);
+        voiceAutoListenTimerRef.current = null;
+      }
       try {
         speechRecognitionRef.current?.abort();
       } catch {
@@ -11553,8 +11772,16 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           // ignore cleanup errors
         }
       }
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
+      voiceTtsAbortRef.current?.abort();
+      voiceTtsAbortRef.current = null;
+      if (voicePlaybackRef.current) {
+        voicePlaybackRef.current.pause();
+        voicePlaybackRef.current.src = "";
+        voicePlaybackRef.current = null;
+      }
+      if (voicePlaybackUrlRef.current) {
+        URL.revokeObjectURL(voicePlaybackUrlRef.current);
+        voicePlaybackUrlRef.current = null;
       }
     };
   }, []);
@@ -11594,6 +11821,22 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     };
   }, []);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+
+  const [localProfileSet, setLocalProfileSet] = useState(() => !!localStorage.getItem("meera_local_name"));
+  const [localNameInput, setLocalNameInput] = useState(() => normalizePersonName(localStorage.getItem("meera_local_name") || ""));
+  const [localBioInput, setLocalBioInput] = useState(() => localStorage.getItem("meera_local_bio") || "");
+  const [localRoleInput, setLocalRoleInput] = useState(() => normalizeReadableLabel(localStorage.getItem("meera_local_role") || ""));
+  const [localPreferredNameInput, setLocalPreferredNameInput] = useState(() => normalizePersonName(localStorage.getItem("meera_local_preferred_name") || ""));
+  const [personalizationProfile, setPersonalizationProfile] = useState<PersonalizationProfile>(() => {
+    const stored = loadPersonalizationProfile();
+    const legacyName = localStorage.getItem("meera_local_name") || "";
+    const detected = splitHonorificFromName(legacyName);
+    return detected.honorific && !stored.honorific ? { ...stored, honorific: detected.honorific } : stored;
+  });
+  const [profileSetupStep, setProfileSetupStep] = useState(0);
+  const [resumeImportState, setResumeImportState] = useState<"idle" | "reading" | "extracting" | "success" | "error">("idle");
+  const [resumeImportMessage, setResumeImportMessage] = useState("");
+
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -13155,24 +13398,24 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   }, [editingProjectId]);
 
   useEffect(() => {
-    if (authMode !== "signup") {
+    if (localProfileSet && authMode !== "signup") {
       setTermsOpen(false);
       setTermsScrolled(false);
       if (termsContext === "signup") {
         setTermsContext(null);
       }
     }
-  }, [authMode, termsContext]);
+  }, [authMode, localProfileSet, termsContext]);
 
   useEffect(() => {
-    if (!authOpen) {
+    if (localProfileSet && !authOpen) {
       if (termsContext !== "gate") {
         setTermsOpen(false);
         setTermsScrolled(false);
         setTermsContext(null);
       }
     }
-  }, [authOpen, termsContext]);
+  }, [authOpen, localProfileSet, termsContext]);
 
   useEffect(() => {
     if (!hfTokenPromptOpen) {
@@ -13218,7 +13461,8 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
   const handleTermsToggle = () => {
     if (termsAccepted) {
-      openTerms("signup");
+      setTermsAccepted(false);
+      clearTermsAccepted(authUser?.uid ?? null);
       return;
     }
     openTerms("signup");
@@ -13247,6 +13491,55 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
       setTermsScrolled(true);
     }
+  };
+
+  const togglePersonalizationChoice = (
+    field: "interests" | "movieGenres" | "newsTopics" | "productivityGoals",
+    value: string,
+  ) => {
+    setPersonalizationProfile((current) => {
+      const selected = current[field].includes(value);
+      return {
+        ...current,
+        [field]: selected ? current[field].filter((item) => item !== value) : [...current[field], value],
+      };
+    });
+  };
+
+  const normalizeLocalIdentity = () => {
+    const detected = splitHonorificFromName(localNameInput);
+    const nextName = normalizePersonName(detected.name);
+    const nextPreferredName = normalizePersonName(localPreferredNameInput);
+    setLocalNameInput(nextName);
+    setLocalPreferredNameInput(nextPreferredName);
+    setLocalRoleInput((value) => normalizeReadableLabel(value));
+    if (detected.honorific) {
+      setPersonalizationProfile((current) => ({ ...current, honorific: detected.honorific }));
+    }
+  };
+
+  const saveLocalPersonalization = () => {
+    const detected = splitHonorificFromName(localNameInput);
+    const normalizedName = normalizePersonName(detected.name);
+    const normalizedPreferredName = normalizePersonName(localPreferredNameInput);
+    const normalizedRole = normalizeReadableLabel(localRoleInput);
+    const nextPersonalization = {
+      ...personalizationProfile,
+      movieGenres: [],
+      honorific: personalizationProfile.honorific || detected.honorific,
+      preferredLanguage: personalizationProfile.preferredLanguage.trim() || "English",
+      homeRegion: personalizationProfile.homeRegion.replace(/\s+/g, " ").trim(),
+      contentAvoidances: personalizationProfile.contentAvoidances.trim(),
+    };
+    localStorage.setItem("meera_local_name", normalizedName);
+    localStorage.setItem("meera_local_preferred_name", normalizedPreferredName);
+    localStorage.setItem("meera_local_role", normalizedRole);
+    localStorage.setItem("meera_local_bio", localBioInput.trim());
+    localStorage.setItem(STORAGE_PERSONALIZATION_PROFILE, JSON.stringify(nextPersonalization));
+    setLocalNameInput(normalizedName);
+    setLocalPreferredNameInput(normalizedPreferredName);
+    setLocalRoleInput(normalizedRole);
+    setPersonalizationProfile(nextPersonalization);
   };
   const activeWallpaperId = useMemo(
     () =>
@@ -13875,7 +14168,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
   const ensureModelReadyForChat = async (
     id: ModelOptionId,
-    options?: { preferCloud?: boolean; cloudReason?: string },
+    options?: { preferCloud?: boolean; cloudReason?: string; silentUi?: boolean },
   ): Promise<{ ok: boolean; error?: string }> => {
     const preferCloud = Boolean(options?.preferCloud);
     if (preferCloud) {
@@ -13934,7 +14227,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
     setModelLoadError("");
     setModelLoadTargetId(id);
-    setModelLoadOpen(true);
+    if (!options?.silentUi) setModelLoadOpen(true);
 
     if (status === "offline" && canStartBackend && !backendStarting) {
       const started = await startBackend();
@@ -13997,6 +14290,204 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     const error = `${label} is still warming up. Let it finish loading, then try again.`;
     setModelLoadError(error);
     return { ok: false, error };
+  };
+
+  const prepareVoiceAssistant = async (): Promise<void> => {
+    const runId = voicePreparationRunRef.current + 1;
+    voicePreparationRunRef.current = runId;
+    const isCurrentRun = () => voicePreparationRunRef.current === runId;
+    const updateVoicePreparation = (next: VoicePreparationState) => {
+      if (!isCurrentRun()) return;
+      setVoicePreparation(next);
+      if (next.phase !== "ready") {
+        setVoiceCaption({ speaker: "status", text: next.detail });
+      }
+    };
+
+    setVoiceCaption({ speaker: "status", text: "Preparing your private voice session…" });
+    updateVoicePreparation({ phase: "checking", progress: 8, detail: "Inspecting the voice runtime" });
+    try {
+      let backendHealthy = false;
+      try {
+        const healthResponse = await fetch(API_HEALTH, { method: "GET", cache: "no-store" });
+        backendHealthy = healthResponse.ok;
+      } catch {
+        backendHealthy = false;
+      }
+      if (!backendHealthy && canStartBackend && !backendStarting) {
+        updateVoicePreparation({ phase: "checking", progress: 14, detail: "Starting the MeeraAI engine" });
+        const started = await startBackend();
+        if (!started.ok) throw new Error(started.error || "Unable to start the MeeraAI engine.");
+        backendHealthy = true;
+      }
+      if (!backendHealthy) throw new Error("The MeeraAI engine is offline and could not be started.");
+
+      if (!isCurrentRun()) return;
+      // ASR and Qwen-TTS are independent of the chat model. Start them now
+      // so their initialization overlaps the 2B model load below.
+      const voiceRuntimePromise = fetch(API_VOICE_PREPARE, { method: "POST" });
+      const liveStatus = await fetchModelLoadStatus();
+      if (!isCurrentRun()) return;
+      const activeModel = normalizeLegacyModelOptionId(String(liveStatus?.active_model || liveStatus?.model_id || ""));
+      const voiceModelAlreadyReady = liveStatus?.status === "ready" && activeModel === VOICE_MODEL_ID;
+
+      if (activeModel && liveStatus?.status === "ready" && activeModel !== VOICE_MODEL_ID) {
+        updateVoicePreparation({
+          phase: "unloading",
+          progress: 24,
+          detail: `Releasing ${resolveModelLabel(activeModel)} from memory`,
+        });
+        const unloadResponse = await fetch(API_MODELS_UNLOAD_MEMORY, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model_id: activeModel }),
+        });
+        const unloadData = await unloadResponse.json().catch(() => ({}));
+        if (!unloadResponse.ok || unloadData.ok === false) {
+          throw new Error(unloadData.message || unloadData.error || "Unable to release the current model.");
+        }
+        setModelLoadStatus(null);
+      }
+
+      if (!isCurrentRun()) return;
+      setSelectedModel(VOICE_MODEL_ID);
+      const localModeResponse = await fetch(API_INFERENCE_MODE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "local" }),
+      });
+      const localModeData = await localModeResponse.json().catch(() => ({}));
+      if (!localModeResponse.ok || localModeData.ok === false || localModeData.mode === "cloud") {
+        throw new Error(localModeData.error || "Unable to lock Meera Voice to local 2B inference.");
+      }
+      setInferenceMode("local");
+
+      if (!voiceModelAlreadyReady) {
+        updateVoicePreparation({ phase: "loading", progress: 38, detail: "Loading Meera Mini 2B" });
+        const loadResponse = await fetch(API_MODELS_LOAD, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: VOICE_MODEL_ID, quant_bits: 4 }),
+        });
+        const loadData = await loadResponse.json().catch(() => ({}));
+        if (!loadResponse.ok || loadData.ok === false) {
+          throw new Error(
+            loadData.detail ||
+              loadData.error ||
+              loadData.message ||
+              "The required Meera Mini 2B model was not found in the local models folder.",
+          );
+        }
+        if (loadData.status) setModelLoadStatus(loadData.status as ModelLoadStatus);
+
+        const loadStartedAt = Date.now();
+        let missedStatusChecks = 0;
+        while (Date.now() - loadStartedAt < 120000) {
+          if (!isCurrentRun()) return;
+          await new Promise((resolve) => window.setTimeout(resolve, 700));
+          const nextStatus = await fetchModelLoadStatus();
+          if (!isCurrentRun()) return;
+          if (!nextStatus) {
+            missedStatusChecks += 1;
+            if (missedStatusChecks >= 12) {
+              throw new Error("Lost contact with the local 2B model while it was starting.");
+            }
+            continue;
+          }
+          missedStatusChecks = 0;
+          const loadedModel = normalizeLegacyModelOptionId(
+            String(nextStatus.active_model || nextStatus.model_id || ""),
+          );
+          updateVoicePreparation({
+            phase: "loading",
+            progress: Math.max(38, Math.min(92, Number(nextStatus.progress) || 38)),
+            detail: nextStatus.stage ? `Loading Meera Mini 2B - ${nextStatus.stage}` : "Loading Meera Mini 2B",
+          });
+          if (nextStatus.status === "ready" && loadedModel === VOICE_MODEL_ID) break;
+          if (nextStatus.status === "error") {
+            throw new Error(nextStatus.error || "The Meera Mini 2B model could not be loaded.");
+          }
+        }
+
+        const confirmedStatus = await fetchModelLoadStatus();
+        const confirmedModel = normalizeLegacyModelOptionId(
+          String(confirmedStatus?.active_model || confirmedStatus?.model_id || ""),
+        );
+        if (confirmedStatus?.status !== "ready" || confirmedModel !== VOICE_MODEL_ID) {
+          throw new Error("Meera Mini 2B did not become ready in time.");
+        }
+      }
+
+      if (!isCurrentRun()) return;
+      updateVoicePreparation({
+        phase: "connecting",
+        progress: 94,
+        detail: "Loading neural speech recognition and Serena voice",
+      });
+      const voiceRuntimeResponse = await voiceRuntimePromise;
+      const voiceRuntimeData = await voiceRuntimeResponse.json().catch(() => ({}));
+      if (
+        !voiceRuntimeResponse.ok ||
+        voiceRuntimeData.ok === false ||
+        !String(voiceRuntimeData.model || "").toLowerCase().includes("1.7b") ||
+        String(voiceRuntimeData.speaker || "").toLowerCase() !== "serena" ||
+        !String(voiceRuntimeData.asr?.model || "").toLowerCase().includes("large-v3-turbo")
+      ) {
+        throw new Error(
+          voiceRuntimeData.detail ||
+            voiceRuntimeData.error ||
+            "The Qwen3-TTS 1.7B Serena voice could not be prepared.",
+        );
+      }
+      if (!isCurrentRun()) return;
+      voiceRepliesEnabledRef.current = true;
+      setVoiceRepliesEnabled(true);
+      updateVoicePreparation({ phase: "ready", progress: 100, detail: "Voice session ready" });
+      speakAssistantReply("Hi. I'm listening.", {
+        resumeListening: true,
+        force: true,
+      });
+    } catch (error) {
+      if (!isCurrentRun()) return;
+      const message = error instanceof Error ? error.message : "Voice session could not be prepared.";
+      setVoiceCaption({ speaker: "status", text: message });
+      updateVoicePreparation({ phase: "error", progress: 0, detail: message, error: message });
+    }
+  };
+
+  const openVoiceAssistant = (): void => {
+    if (voiceAssistantOpenRef.current) {
+      closeVoiceAssistant();
+      return;
+    }
+    voiceAssistantOpenRef.current = true;
+    setVoiceAssistantOpen(true);
+    void prepareVoiceAssistant();
+  };
+
+  const closeVoiceAssistant = (): void => {
+    voiceAssistantOpenRef.current = false;
+    voicePreparationRunRef.current += 1;
+    voiceSpeechTokenRef.current += 1;
+    if (voiceAutoListenTimerRef.current !== null) {
+      window.clearTimeout(voiceAutoListenTimerRef.current);
+      voiceAutoListenTimerRef.current = null;
+    }
+    if (voiceRecordingRef.current) {
+      void stopDesktopVoiceInput(false);
+    } else if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.abort();
+      speechRecognitionRef.current = null;
+      setIsRecording(false);
+    }
+    cancelVoiceSpeech();
+    voiceRepliesEnabledRef.current = false;
+    setVoiceRepliesEnabled(false);
+    setIsVoiceSpeaking(false);
+    setIsVoiceTranscribing(false);
+    setVoiceAudioLevel(0);
+    setVoiceCaption(null);
+    setVoiceAssistantOpen(false);
   };
 
   const dismissEnginePrompt = () => {
@@ -14580,6 +15071,15 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
   };
 
+  // Home and workspace use different glass compositions.  Keep the visual
+  // view in sync with the route here instead of relying on the exit-animation
+  // fallback, otherwise a previous chat can leave workspace styles on Home.
+  const openHome = () => {
+    setSidebarOpen(false);
+    setView("home");
+    setDisplayView("home");
+  };
+
   useEffect(() => {
     return () => {
       if (chatLoadingTimer.current) {
@@ -14676,6 +15176,19 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
               <span className="material-symbols-outlined">{SIDEBAR_ICON_NAMES.newChat}</span>
             </span>
             <span className="meera-label">New Chat</span>
+          </button>
+          <button
+            className="meera-action-btn meera-ripple has-tooltip"
+            type="button"
+            onClick={openVoiceAssistant}
+            onPointerDown={handleRipple}
+            data-label="Meera Voice"
+            aria-label="Open Meera voice conversation"
+          >
+            <span className="meera-action-icon" aria-hidden="true">
+              <span className="material-symbols-outlined">graphic_eq</span>
+            </span>
+            <span className="meera-label">Meera Voice</span>
           </button>
           <button
             className="meera-action-btn meera-ripple has-tooltip"
@@ -16737,8 +17250,17 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       return null;
     }
 
+    
     const profile: Record<string, string | boolean> = {};
+    const localName = localStorage.getItem("meera_local_name");
+    if (localName) profile.display_name = localName;
+    const localPref = localStorage.getItem("meera_local_preferred_name");
+    if (localPref) profile.preferred_name = localPref;
+    const localRole = localStorage.getItem("meera_local_role");
+    if (localRole) profile.role = localRole;
+    if (personalizationProfile.honorific) profile.honorific = personalizationProfile.honorific;
     if (userContextPrefs.includeDisplayName && authUser?.displayName?.trim()) {
+
       profile.display_name = authUser.displayName.trim();
     }
     if (userContextPrefs.includeEmail && authUser?.email?.trim()) {
@@ -16781,7 +17303,18 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     return {
       enabled: true,
       profile,
-      profile_notes: userContextPrefs.includeProfileNotes ? userProfileNotes.trim() : "",
+      profile_notes: userContextPrefs.includeProfileNotes ? (((localStorage.getItem("meera_local_preferred_name") ? "Call me: " + localStorage.getItem("meera_local_preferred_name") + "\n" : "") + (localStorage.getItem("meera_local_role") ? "Role: " + localStorage.getItem("meera_local_role") + "\n" : "") + (localStorage.getItem("meera_local_bio") || "")) || userProfileNotes.trim()) : "",
+      personalization: userContextPrefs.includeProfileNotes ? {
+        preferred_language: personalizationProfile.preferredLanguage,
+        home_region: personalizationProfile.homeRegion,
+        response_depth: personalizationProfile.responseDepth,
+        response_tone: personalizationProfile.responseTone,
+        interests: personalizationProfile.interests,
+        movie_genres: personalizationProfile.movieGenres,
+        news_topics: personalizationProfile.newsTopics,
+        productivity_goals: personalizationProfile.productivityGoals,
+        content_avoidances: personalizationProfile.contentAvoidances,
+      } : {},
       custom_facts: customFacts,
       chat_memory: chatMemory,
       agent_memory: agentMemory
@@ -16806,18 +17339,28 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     const modelEntry = resolvedModels.find((m) => m.id === modelId);
     const isCloud = modelEntry?.model_type === "cloud" || modelEntry?.folder?.startsWith("cloud/");
     const cloudProvider = isCloud && modelEntry?.folder ? (modelEntry.folder.split("/")[1] || modelEntry.folder.replace("cloud/", "")) : undefined;
+    const isVoiceConversation = voiceAssistantOpenRef.current && modelId === VOICE_MODEL_ID;
     
     return {
       message,
       model: modelId,
       quant_bits: 4,
-      max_tokens: 4096,
+      max_tokens: isVoiceConversation ? 256 : 4096,
+      ...(isVoiceConversation ? { temperature: 0.35, top_p: 0.85 } : {}),
+      // Conversational voice needs immediate first-token latency. Deep hidden
+      // reasoning remains available in chat, but wastes many seconds on a
+      // spoken question before the user hears anything.
+      reasoning: isVoiceConversation ? false : undefined,
+      strong_reasoning: isVoiceConversation ? false : undefined,
+      voice_mode: isVoiceConversation,
       messages: payloadMessages,
-      wikipedia_grounding: wikipediaGrounding,
-      use_rag: wikipediaGrounding,
-      enable_image_search: wikipediaGrounding,
-      enable_screen_tools: true,
-      allow_screen_control: screenControlEnabled,
+      wikipedia_grounding: isVoiceConversation ? false : wikipediaGrounding,
+      use_rag: isVoiceConversation ? false : wikipediaGrounding,
+      use_mcp: isVoiceConversation ? false : true,
+      enable_image_search: isVoiceConversation ? false : wikipediaGrounding,
+      enable_file_tools: isVoiceConversation ? false : true,
+      enable_screen_tools: isVoiceConversation ? false : true,
+      allow_screen_control: isVoiceConversation ? false : screenControlEnabled,
       user_context: userContext,
       user_integrations: userIntegrations,
       ...(emailImapConfig && userIntegrations.includes("email_imap") ? { email_config: { imap_server: emailImapConfig.imap_server, email_user: emailImapConfig.email_user, email_pass: emailImapConfig.email_pass, smtp_server: emailImapConfig.smtp_server, smtp_port: emailImapConfig.smtp_port, sender_name: emailImapConfig.sender_name } } : {}),
@@ -16976,6 +17519,10 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     let resolvedSnapshot = modelSnapshot;
     let pendingFrameId: number | null = null;
     let pendingRenderText = "";
+    const speakStreamReply = (text: string) => {
+      if (signal?.aborted) return;
+      void speakAssistantReply(text);
+    };
     // ── Multi-phase thinking tracking ────────────────────────────────
     let phasesAcc: ThinkingPhase[] = [];
     let currentPhaseId = "";
@@ -17239,6 +17786,15 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
             prompt?: string;
             workspace?: string;
           };
+          if (eventType === "intro" && typeof parsed.chunk === "string") {
+            const opening = parsed.chunk.trim();
+            if (opening && voiceAssistantOpenRef.current) {
+              // A separate TTS preamble competed with search and blocked the
+              // real answer. Keep progress visible, then speak the answer.
+              setVoiceCaption({ speaker: "status", text: opening });
+            }
+            continue;
+          }
           if (eventType === "browser_mission") {
             const missionPrompt = typeof parsed.prompt === "string" ? parsed.prompt.trim() : "";
             const missionUrl = typeof parsed.url === "string" ? parsed.url.trim() : "";
@@ -17892,14 +18448,14 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
       if (resolved.trim()) {
         flushAssistantRender(resolved, { touchSession: true, syncTitle: true });
-        speakAssistantReply(resolved);
+        speakStreamReply(resolved);
       } else if (!textAcc.trim() && !normalizeThinkingText(thinkingAcc)) {
         flushAssistantRender("No response received.", { touchSession: true, syncTitle: true });
-        speakAssistantReply("No response received.");
+        speakStreamReply("No response received.");
       } else {
         const fallbackMessage = "The model finished without a usable answer. Please try again.";
         flushAssistantRender(fallbackMessage, { touchSession: true, syncTitle: true });
-        speakAssistantReply(fallbackMessage);
+        speakStreamReply(fallbackMessage);
       }
       try {
         void reader.cancel();
@@ -17930,10 +18486,10 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     if (!cleanedText.trim()) {
       const fallbackMessage = signal?.aborted ? "Response cancelled." : "The connection closed before the response completed.";
       flushAssistantRender(fallbackMessage, { touchSession: true, syncTitle: true });
-      speakAssistantReply(fallbackMessage);
+      speakStreamReply(fallbackMessage);
     } else {
       flushAssistantRender(cleanedText, { touchSession: true, syncTitle: true });
-      speakAssistantReply(cleanedText);
+      speakStreamReply(cleanedText);
     }
     updateMessageVisualSnapshot(assistantId, {
       imagesLoading: false,
@@ -17963,7 +18519,12 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
 
   async function sendMessage(
     rawText: string,
-    options?: { sessionOverride?: Session; displayOverride?: string; hideUserMessage?: boolean },
+    options?: {
+      sessionOverride?: Session;
+      displayOverride?: string;
+      hideUserMessage?: boolean;
+      modelOverride?: ModelOptionId;
+    },
   ): Promise<void> {
     const trimmedRawText = rawText.trim();
     const hideUserMessage = Boolean(options?.hideUserMessage);
@@ -17981,7 +18542,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     // Local mode now overrides cloud intent routing.
     // Only use Hugging Face cloud inference when the user explicitly selected cloud and it is available.
     const requestUsesCloud = inferenceMode === "cloud";
-    const requestModelId = resolveModelForIntent(resolvedIntentForMessage);
+    const requestModelId = options?.modelOverride ?? resolveModelForIntent(resolvedIntentForMessage);
     if (!requestText || isSending) {
       return;
     }
@@ -18167,6 +18728,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         const message = modelReady.error || "Unable to prepare the selected model.";
         setError(message);
         pushMessage("assistant", message, targetSessionId);
+        speakAssistantReply(message);
         return;
       }
 
@@ -18229,6 +18791,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       setStatus("offline");
       setError(message);
       pushMessage("assistant", message || "Request failed. Verify backend and try again.", targetSessionId);
+      speakAssistantReply(message || "Request failed. Verify the MeeraAI engine and try again.");
     } finally {
       if (activeAbortRef.current === controller) {
         activeAbortRef.current = null;
@@ -18241,31 +18804,300 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   }
 
   function cleanTextForSpeech(text: string): string {
-    return text
+    const isNewsBriefing = /^\s*#{1,6}\s*Recent News Briefing\b/im.test(text);
+    let prepared = text
       .replace(/```[\s\S]*?```/g, " code block. ")
+      .replace(/^\s*#{1,6}\s+[^\n]+\n+/i, "")
+      .replace(/\n\s*#{1,6}\s*Sources\b[\s\S]*$/i, "")
+      .replace(/^\s*#{1,6}\s*Recent News Briefing\s*$/gim, "")
+      .replace(/\[Source(?:\s+\d+)?\]\([^)]*\)/gi, "")
+      .replace(/\[Read source\]\([^)]*\)/gi, "")
+      .replace(/[ \t]+\[[^\]]+\]\(https?:\/\/[^)]+\)[ \t]*$/gm, "");
+    if (isNewsBriefing) {
+      // Search-result page titles are useful as visible citations, but they
+      // sound robotic when read aloud. Speak the verified development itself.
+      prepared = prepared.replace(/^\s*[-*+]\s+\*\*[^*]+\*\*\s*[—–-]\s*/gm, "");
+    }
+    return prepared
       .replace(/`([^`]+)`/g, "$1")
       .replace(/!\[[^\]]*]\([^)]*\)/g, "")
       .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
-      .replace(/[#>*_~|]/g, " ")
-      .replace(/\s+/g, " ")
+      .replace(/^\s*#{1,6}\s*/gm, "")
+      .replace(/^\s*[-*+]\s+/gm, "")
+      .replace(/[>*_~|]/g, " ")
+      .replace(/\r\n?/g, "\n")
+      .replace(/[ \t]+/g, " ")
+      .replace(/ *\n */g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
       .trim()
-      .slice(0, 4000);
+      .slice(0, 12000);
   }
 
-  function speakAssistantReply(text: string): void {
-    if (!voiceRepliesEnabledRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) {
-      return;
+  function detectVoiceExpression(text: string): VoiceExpression {
+    const lower = text.toLowerCase();
+    if (/\b(sorry|grief|loss|sad|heartbreak|miss you|unfortunately)\b/.test(lower)) return "sad";
+    if (/\b(are you okay|i understand|that sounds hard|take your time|i'm here|do not worry|don't worry)\b/.test(lower)) return "empathetic";
+    if (/\b(warning|danger|immediately|urgent|critical|right now|as soon as possible)\b/.test(lower)) return "urgent";
+    if (/\b(wow|really|unexpected|surprisingly|no way)\b/.test(lower)) return "surprised";
+    if (/\b(great|wonderful|excellent|fantastic|congratulations|love that|glad)\b/.test(lower)) return "delighted";
+    if (/\b(funny|hilarious|ironic|amusing)\b/.test(lower)) return "amused";
+    if (text.includes("?")) return "curious";
+    if (/\b(perhaps|consider|imagine|it seems|i think|on reflection)\b/.test(lower)) return "reflective";
+    if (/\b(definitely|certainly|the answer is|you should|the best approach)\b/.test(lower)) return "confident";
+    if (/\b(careful|concern|problem|risk|issue|but)\b/.test(lower)) return "concerned";
+    if (/\b(welcome|thank you|happy to|of course|absolutely)\b/.test(lower)) return "warm";
+    return "composed";
+  }
+
+  function pauseAfterSpeech(text: string, paragraphEnd: boolean): number {
+    const trimmed = text.trim();
+    if (paragraphEnd) return 190;
+    if (/(?:\.\.\.|…)[”'\])}]*$/.test(trimmed)) return 220;
+    if (/\?[”'\])}]*$/.test(trimmed)) return 85;
+    if (/![”'\])}]*$/.test(trimmed)) return 70;
+    if (/\.[”'\])}]*$/.test(trimmed)) return 55;
+    if (/[;:][”'\])}]*$/.test(trimmed)) return 38;
+    if (/[—–][”'\])}]*$/.test(trimmed)) return 32;
+    if (/,[”'\])}]*$/.test(trimmed)) return 20;
+    return 10;
+  }
+
+  function splitTextForQwenSpeech(text: string, maxWords = 16): VoiceSpeechChunk[] {
+    const planned: VoiceSpeechChunk[] = [];
+    const paragraphs = text.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+
+    paragraphs.forEach((paragraph, paragraphIndex) => {
+      const sentences = paragraph.split(/(?<=[.!?…])\s+/).map((part) => part.trim()).filter(Boolean);
+      const breathGroups: string[] = [];
+      for (const sentence of sentences.length ? sentences : [paragraph]) {
+        const words = sentence.split(/\s+/).filter(Boolean);
+        if (words.length <= maxWords) {
+          breathGroups.push(sentence);
+          continue;
+        }
+        const clauses = sentence.split(/(?<=[,;:—–])\s+/).map((part) => part.trim()).filter(Boolean);
+        let current: string[] = [];
+        for (const clause of clauses) {
+          const clauseWords = clause.split(/\s+/).filter(Boolean);
+          if (current.length && current.length + clauseWords.length > maxWords) {
+            breathGroups.push(current.join(" "));
+            current = [];
+          }
+          if (clauseWords.length > maxWords) {
+            for (let index = 0; index < clauseWords.length; index += maxWords) {
+              breathGroups.push(clauseWords.slice(index, index + maxWords).join(" "));
+            }
+          } else {
+            current.push(...clauseWords);
+          }
+        }
+        if (current.length) breathGroups.push(current.join(" "));
+      }
+
+      breathGroups.forEach((chunk, chunkIndex) => {
+        const paragraphEnd = paragraphIndex < paragraphs.length - 1 && chunkIndex === breathGroups.length - 1;
+        planned.push({
+          text: chunk,
+          expression: detectVoiceExpression(chunk),
+          pauseAfterMs: pauseAfterSpeech(chunk, paragraphEnd),
+        });
+      });
+    });
+
+    return planned;
+  }
+
+  // Qwen's named Serena speaker can still render above the intended register.
+  // Re-declaring the PCM sample rate lowers both pitch and vocal tract resonance;
+  // playbackRate then restores the conversational tempo with pitch preservation.
+  // Keeping the two controls separate avoids the slow, drawn-out sound produced
+  // by simply playing the original WAV at a lower rate.
+  const MEERA_VOICE_PITCH_RATIO = 0.82;
+  const MEERA_VOICE_TEMPO = 1.04;
+
+  async function lowerMeeraVoicePitch(source: Blob): Promise<Blob> {
+    const bytes = await source.arrayBuffer();
+    const view = new DataView(bytes);
+    if (
+      bytes.byteLength < 44
+      || view.getUint32(0, false) !== 0x52494646
+      || view.getUint32(8, false) !== 0x57415645
+    ) {
+      return source;
+    }
+
+    let offset = 12;
+    while (offset + 8 <= bytes.byteLength) {
+      const chunkId = view.getUint32(offset, false);
+      const chunkSize = view.getUint32(offset + 4, true);
+      if (chunkId === 0x666d7420 && chunkSize >= 16 && offset + 24 <= bytes.byteLength) {
+        const formatOffset = offset + 8;
+        const sampleRate = view.getUint32(formatOffset + 4, true);
+        const byteRate = view.getUint32(formatOffset + 8, true);
+        if (sampleRate > 0 && byteRate > 0) {
+          view.setUint32(formatOffset + 4, Math.round(sampleRate * MEERA_VOICE_PITCH_RATIO), true);
+          view.setUint32(formatOffset + 8, Math.round(byteRate * MEERA_VOICE_PITCH_RATIO), true);
+          return new Blob([bytes], { type: "audio/wav" });
+        }
+        break;
+      }
+      offset += 8 + chunkSize + (chunkSize % 2);
+    }
+    return source;
+  }
+
+  function cancelVoiceSpeech(notifyBackend = true): void {
+    voiceSpeechTokenRef.current += 1;
+    voiceTtsAbortRef.current?.abort();
+    voiceTtsAbortRef.current = null;
+    voicePlaybackRejectRef.current?.(new DOMException("Speech interrupted", "AbortError"));
+    voicePlaybackRejectRef.current = null;
+    if (voicePlaybackRef.current) {
+      voicePlaybackRef.current.onended = null;
+      voicePlaybackRef.current.onerror = null;
+      voicePlaybackRef.current.pause();
+      voicePlaybackRef.current.currentTime = 0;
+      voicePlaybackRef.current.src = "";
+      voicePlaybackRef.current.load();
+      voicePlaybackRef.current = null;
+    }
+    if (voicePlaybackUrlRef.current) {
+      URL.revokeObjectURL(voicePlaybackUrlRef.current);
+      voicePlaybackUrlRef.current = null;
+    }
+    setIsVoiceSpeaking(false);
+    if (notifyBackend) {
+      void fetch(API_VOICE_INTERRUPT, { method: "POST" }).catch(() => undefined);
+    }
+  }
+
+  function scheduleVoiceAutoListen(delay = 360): void {
+    if (!voiceAssistantOpenRef.current) return;
+    if (voiceAutoListenTimerRef.current !== null) {
+      window.clearTimeout(voiceAutoListenTimerRef.current);
+    }
+    voiceAutoListenTimerRef.current = window.setTimeout(() => {
+      voiceAutoListenTimerRef.current = null;
+      if (!voiceAssistantOpenRef.current) return;
+      void startVoiceInputRef.current();
+    }, delay);
+  }
+
+  function speakAssistantReply(
+    text: string,
+    options?: { resumeListening?: boolean; force?: boolean },
+  ): Promise<void> {
+    const shouldResumeListening = options?.resumeListening ?? voiceAssistantOpenRef.current;
+    if ((!voiceRepliesEnabledRef.current && !options?.force) || typeof window === "undefined") {
+      return Promise.resolve();
     }
     const spoken = cleanTextForSpeech(text);
     if (!spoken) {
-      return;
+      if (shouldResumeListening) scheduleVoiceAutoListen();
+      return Promise.resolve();
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(spoken);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 0.95;
-    window.speechSynthesis.speak(utterance);
+
+    cancelVoiceSpeech(false);
+    const speechToken = voiceSpeechTokenRef.current + 1;
+    voiceSpeechTokenRef.current = speechToken;
+    const finishSpeech = () => {
+      if (voiceSpeechTokenRef.current !== speechToken) return;
+      setIsVoiceSpeaking(false);
+      if (shouldResumeListening && voiceAssistantOpenRef.current) {
+        scheduleVoiceAutoListen();
+      }
+    };
+    setIsVoiceSpeaking(true);
+    const speechChunks = splitTextForQwenSpeech(spoken);
+    setVoiceCaption({ speaker: "status", text: "Meera is preparing her voice…" });
+
+    return (async () => {
+      type SynthesizedSpeech = { chunk: VoiceSpeechChunk; blob: Blob };
+      let pendingSynthesis: Promise<SynthesizedSpeech> | null = null;
+
+      const synthesizeChunk = async (chunk: VoiceSpeechChunk): Promise<SynthesizedSpeech> => {
+        const controller = new AbortController();
+        voiceTtsAbortRef.current = controller;
+        const response = await fetch(API_VOICE_SYNTHESIZE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: chunk.text, expression: chunk.expression }),
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.detail || payload.error || "Qwen3-TTS speech generation failed.");
+        }
+        const engine = response.headers.get("X-Meera-Voice-Engine") || "";
+        const model = response.headers.get("X-Meera-Voice-Model") || "";
+        const speaker = response.headers.get("X-Meera-Voice-Speaker") || "";
+        if (!/qwen3-tts/i.test(engine) || !/1\.7b/i.test(model) || speaker.toLowerCase() !== "serena") {
+          throw new Error("MeeraAI returned an unexpected voice engine instead of Qwen3-TTS 1.7B Serena.");
+        }
+        const blob = await lowerMeeraVoicePitch(await response.blob());
+        if (voiceTtsAbortRef.current === controller) voiceTtsAbortRef.current = null;
+        return { chunk, blob };
+      };
+
+      try {
+        let currentSpeech = await synthesizeChunk(speechChunks[0]);
+        for (let index = 0; index < speechChunks.length; index += 1) {
+          if (voiceSpeechTokenRef.current !== speechToken) return;
+          if (index + 1 < speechChunks.length) {
+            pendingSynthesis = synthesizeChunk(speechChunks[index + 1]);
+            void pendingSynthesis.catch(() => undefined);
+          } else {
+            pendingSynthesis = null;
+          }
+
+          setVoiceCaption({ speaker: "meera", text: currentSpeech.chunk.text });
+          const audioUrl = URL.createObjectURL(currentSpeech.blob);
+          voicePlaybackUrlRef.current = audioUrl;
+          const audio = new Audio(audioUrl);
+          audio.playbackRate = MEERA_VOICE_TEMPO / MEERA_VOICE_PITCH_RATIO;
+          audio.preservesPitch = true;
+          voicePlaybackRef.current = audio;
+          try {
+            await new Promise<void>((resolve, reject) => {
+              voicePlaybackRejectRef.current = reject;
+              audio.onended = () => resolve();
+              audio.onerror = () => reject(new Error("The Qwen3-TTS audio could not be played."));
+              void audio.play().catch(reject);
+            });
+          } finally {
+            voicePlaybackRejectRef.current = null;
+            if (voicePlaybackRef.current === audio) voicePlaybackRef.current = null;
+            URL.revokeObjectURL(audioUrl);
+            if (voicePlaybackUrlRef.current === audioUrl) voicePlaybackUrlRef.current = null;
+          }
+
+          if (currentSpeech.chunk.pauseAfterMs > 0 && index + 1 < speechChunks.length) {
+            await new Promise<void>((resolve) => window.setTimeout(resolve, currentSpeech.chunk.pauseAfterMs));
+            if (voiceSpeechTokenRef.current !== speechToken) return;
+          }
+
+          if (pendingSynthesis) {
+            currentSpeech = await pendingSynthesis;
+            pendingSynthesis = null;
+          }
+        }
+        finishSpeech();
+      } catch (error) {
+        if (voiceSpeechTokenRef.current !== speechToken) return;
+        const wasCancelled = error instanceof DOMException && error.name === "AbortError";
+        if (!wasCancelled) {
+          const message = error instanceof Error ? error.message : "Meera Voice speech failed.";
+          setVoiceCaption({ speaker: "status", text: message });
+          showAppToast("error", message);
+        }
+        finishSpeech();
+      } finally {
+        if (pendingSynthesis) void pendingSynthesis.catch(() => undefined);
+        if (voiceTtsAbortRef.current?.signal.aborted || voiceSpeechTokenRef.current === speechToken) {
+          voiceTtsAbortRef.current = null;
+        }
+      }
+    })();
   }
 
   function mergeVoiceChunks(chunks: Float32Array[]): Float32Array {
@@ -18345,6 +19177,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     }
     void session.audioContext.close().catch(() => undefined);
     session.stream.getTracks().forEach((track) => track.stop());
+    setVoiceAudioLevel(0);
   }
 
   async function transcribeVoiceRecording(session: VoiceRecordingSession): Promise<string> {
@@ -18353,6 +19186,11 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       throw new Error("Voice recording was too short.");
     }
     const audio = await blobToBase64(wavBlob);
+    const recentNames = messages
+      .filter((message) => message.role === "user")
+      .slice(-4)
+      .flatMap((message) => String(message.content || "").match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}\b/g) || [])
+      .slice(-6);
     const res = await fetch(API_VOICE_TRANSCRIBE, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
@@ -18360,13 +19198,20 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         audio,
         format: "wav",
         language: navigator.language || "en-US",
+        hotwords: recentNames.join(", "),
       }),
     });
     const data = (await res.json().catch(() => ({}))) as VoiceTranscribeResponse;
     if (!res.ok || data.ok === false) {
-      throw new Error(data.message || data.error || `Voice transcription failed (${res.status}).`);
+      throw new Error(data.detail || data.message || data.error || `Voice transcription failed (${res.status}).`);
     }
-    const text = String(data.text || "").trim();
+    if (
+      String(data.engine || "").toLowerCase() !== "faster-whisper" ||
+      !String(data.model || "").toLowerCase().includes("large-v3-turbo")
+    ) {
+      throw new Error("Meera's neural speech recognizer is not active.");
+    }
+    const text = normalizeVoiceTranscript(String(data.text || ""));
     if (!text) {
       throw new Error("I could not hear clear speech.");
     }
@@ -18383,17 +19228,26 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     stopVoiceSession(session);
     setIsRecording(false);
     if (!submit) {
+      if (session.assistantSession && voiceAssistantOpenRef.current) scheduleVoiceAutoListen(500);
       return;
     }
+    setVoiceCaption({ speaker: "status", text: "Understanding what you said…" });
+    setIsVoiceTranscribing(true);
     try {
-      showAppToast("info", "Transcribing voice input...");
       const spokenText = await transcribeVoiceRecording(session);
+      if (session.assistantSession && !voiceAssistantOpenRef.current) return;
+      setVoiceCaption({ speaker: "you", text: spokenText });
       setInput(spokenText);
       setInputCaret(spokenText.length);
-      await sendMessage(spokenText);
+      setIsVoiceTranscribing(false);
+      await sendMessage(spokenText, { modelOverride: VOICE_MODEL_ID });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Voice input failed.";
+      setVoiceCaption({ speaker: "status", text: `${message} Listening again…` });
       showAppToast("error", message);
+      if (voiceAssistantOpenRef.current) scheduleVoiceAutoListen(700);
+    } finally {
+      setIsVoiceTranscribing(false);
     }
   }
 
@@ -18417,6 +19271,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     let audioContext: AudioContext | null = null;
 
     try {
+      setVoiceCaption({ speaker: "status", text: "I’m listening — speak naturally." });
       stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           autoGainControl: true,
@@ -18440,6 +19295,15 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         sampleRate: audioContext.sampleRate,
         stopTimer: null,
         stopped: false,
+        startedAt: performance.now(),
+        speechStarted: false,
+        voicedFrames: 0,
+        lastVoiceAt: 0,
+        noiseFloor: 0.006,
+        endpointTriggered: false,
+        lastMeterUpdate: 0,
+        assistantSession: voiceAssistantOpenRef.current,
+        speechCaptionShown: false,
       };
 
       processor.onaudioprocess = (event) => {
@@ -18448,6 +19312,48 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
         }
         const input = event.inputBuffer.getChannelData(0);
         session.chunks.push(new Float32Array(input));
+
+        let sumSquares = 0;
+        for (let index = 0; index < input.length; index += 1) {
+          sumSquares += input[index] * input[index];
+        }
+        const rms = Math.sqrt(sumSquares / Math.max(1, input.length));
+        const now = performance.now();
+        const elapsed = now - session.startedAt;
+
+        if (!session.speechStarted && rms < 0.035) {
+          session.noiseFloor = session.noiseFloor * 0.94 + rms * 0.06;
+        }
+        const speechThreshold = Math.max(0.011, Math.min(0.04, session.noiseFloor * 2.35 + 0.002));
+        if (rms >= speechThreshold) {
+          session.voicedFrames += 1;
+          if (session.voicedFrames >= 2) {
+            session.speechStarted = true;
+            session.lastVoiceAt = now;
+            if (!session.speechCaptionShown) {
+              session.speechCaptionShown = true;
+              setVoiceCaption({ speaker: "status", text: "I hear you — keep speaking." });
+            }
+          }
+        } else {
+          session.voicedFrames = Math.max(0, session.voicedFrames - 1);
+        }
+
+        if (now - session.lastMeterUpdate >= 45) {
+          session.lastMeterUpdate = now;
+          const normalizedLevel = Math.max(0, Math.min(1, (rms - session.noiseFloor) / 0.08));
+          setVoiceAudioLevel((current) => current * 0.38 + normalizedLevel * 0.62);
+        }
+
+        const reachedEndOfSpeech =
+          session.speechStarted &&
+          session.lastVoiceAt > 0 &&
+          now - session.lastVoiceAt >= 720 &&
+          elapsed >= 700;
+        if (reachedEndOfSpeech && !session.endpointTriggered) {
+          session.endpointTriggered = true;
+          window.setTimeout(() => void stopDesktopVoiceInput(true), 0);
+        }
       };
 
       source.connect(processor);
@@ -18456,13 +19362,12 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       await audioContext.resume();
 
       session.stopTimer = window.setTimeout(() => {
-        void stopDesktopVoiceInput(true);
-      }, 12000);
+        void stopDesktopVoiceInput(session.speechStarted);
+      }, 30000);
       voiceRecordingRef.current = session;
       voiceRepliesEnabledRef.current = true;
       setVoiceRepliesEnabled(true);
       setIsRecording(true);
-      showAppToast("info", "Listening... click the mic again to send.");
       return true;
     } catch (err) {
       if (stream) {
@@ -18481,10 +19386,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       }
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
+        setVoiceCaption({ speaker: "status", text: "Microphone access is blocked. Allow it, then try again." });
         showAppToast("error", "Microphone permission was blocked. Allow mic access and try again.");
       } else if (name === "NotFoundError") {
+        setVoiceCaption({ speaker: "status", text: "No microphone was found." });
         showAppToast("error", "No microphone was found.");
       } else {
+        setVoiceCaption({ speaker: "status", text: "I couldn’t start the microphone. Click the orb to retry." });
         showAppToast("error", "Unable to start desktop voice input.");
       }
       return true;
@@ -18494,6 +19402,13 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   async function startVoiceInput(): Promise<void> {
     if (typeof window === "undefined") {
       return;
+    }
+    if (voiceAutoListenTimerRef.current !== null) {
+      window.clearTimeout(voiceAutoListenTimerRef.current);
+      voiceAutoListenTimerRef.current = null;
+    }
+    if (isVoiceSpeaking || voicePlaybackRef.current || voiceTtsAbortRef.current) {
+      cancelVoiceSpeech();
     }
     if (isRecording) {
       if (voiceRecordingRef.current) {
@@ -18544,8 +19459,9 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           interimTranscript += transcript;
         }
       }
-      latestTranscript = `${finalTranscript} ${interimTranscript}`.trim();
+      latestTranscript = normalizeVoiceTranscript(`${finalTranscript} ${interimTranscript}`);
       if (latestTranscript) {
+        setVoiceCaption({ speaker: "you", text: latestTranscript });
         setInput(latestTranscript);
         setInputCaret(latestTranscript.length);
       }
@@ -18554,6 +19470,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       const reason = event.error ? ` (${event.error})` : "";
       hadRecognitionError = true;
       setIsRecording(false);
+      setVoiceCaption({ speaker: "status", text: `Voice input failed${reason}. Click the orb to try again.` });
       showAppToast("error", `Voice input failed${reason}. Try the desktop recorder fallback by allowing microphone access.`);
     };
     recognition.onend = () => {
@@ -18562,25 +19479,42 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       if (hadRecognitionError) {
         return;
       }
-      const spokenText = (finalTranscript || latestTranscript).trim();
+      const spokenText = normalizeVoiceTranscript(finalTranscript || latestTranscript);
       if (spokenText) {
+        setVoiceCaption({ speaker: "you", text: spokenText });
         setInput(spokenText);
         setInputCaret(spokenText.length);
-        void sendMessage(spokenText);
+        void sendMessage(spokenText, { modelOverride: VOICE_MODEL_ID });
+      } else if (voiceAssistantOpenRef.current) {
+        setVoiceCaption({ speaker: "status", text: "I didn’t catch that. Listening again…" });
+        scheduleVoiceAutoListen(650);
       }
     };
 
     voiceRepliesEnabledRef.current = true;
     setVoiceRepliesEnabled(true);
+    setVoiceCaption({ speaker: "status", text: "I’m listening — speak naturally." });
     setIsRecording(true);
     try {
       recognition.start();
     } catch {
       setIsRecording(false);
       speechRecognitionRef.current = null;
+      setVoiceCaption({ speaker: "status", text: "I couldn’t start voice input. Click the orb to retry." });
       showAppToast("error", "Unable to start voice input.");
     }
   }
+
+  function normalizeVoiceTranscript(text: string): string {
+    // Only repair distinctive name confusions, never rewrite the user's intent.
+    return text
+      .replace(/\b(?:arjit|arijith|areejit)\s+singh\b/gi, "Arijit Singh")
+      .replace(/\barijit\s+sing\b/gi, "Arijit Singh")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  startVoiceInputRef.current = startVoiceInput;
 
   const resetAuthStatus = () => {
     setAuthError("");
@@ -20770,6 +21704,21 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
     setStatus("ready");
   };
 
+  const interruptVoiceResponse = () => {
+    if (voiceAutoListenTimerRef.current !== null) {
+      window.clearTimeout(voiceAutoListenTimerRef.current);
+      voiceAutoListenTimerRef.current = null;
+    }
+    cancelVoiceSpeech(true);
+    stopActiveRequest();
+    if (!voiceAssistantOpenRef.current) return;
+    setVoiceCaption({ speaker: "status", text: "Interrupted — I’m listening." });
+    window.setTimeout(() => {
+      if (!voiceAssistantOpenRef.current || voiceRecordingRef.current) return;
+      void startDesktopVoiceInput();
+    }, 80);
+  };
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [showWallpaperIntro, setShowWallpaperIntro] = useState(false);
   const [bootBlocking, setBootBlocking] = useState(true);
@@ -20828,6 +21777,441 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
       mounted = false;
     };
   }, [wallpaperReady, activeWallpaper, showWelcome, showWallpaperIntro]);
+
+
+  /* Legacy client-only parser retained temporarily for migration reference.
+  const legacyHandleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      let fullText = "";
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await getDocument({ data: arrayBuffer }).promise;
+        for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+           const page = await pdf.getPage(i);
+           const content = await page.getTextContent();
+           fullText += content.items.map((item: any) => item.str).join(" ") + "\n";
+        }
+      } else {
+        fullText = await file.text();
+      }
+
+      // Smart Parsing Heuristic
+      const lines = fullText.split("\n").map((l: string) => l.trim()).filter(Boolean);
+      let nameGuess = "";
+      let roleGuess = "";
+      
+      if (lines.length > 0) {
+         let clean = lines[0].replace(/[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g, '');
+         clean = clean.replace(/\+?\d[\d\s-]{8,}\d/g, '');
+         
+         const splitByDelim = clean.split(/\||-|–|•/);
+         if (splitByDelim.length > 1) {
+             nameGuess = splitByDelim[0].trim();
+             roleGuess = splitByDelim[1].trim();
+         } else {
+             const roleKeywords = ["Engineer", "Developer", "Designer", "Manager", "Student", "Director", "Consultant", "Specialist", "Analyst", "Lead", "Architect", "Scientist", "Officer", "Founder", "CEO", "CTO"];
+             let foundKeyword = false;
+             for (const kw of roleKeywords) {
+                 const idx = clean.toLowerCase().indexOf(kw.toLowerCase());
+                 if (idx > 0) {
+                     const endOfName = clean.substring(0, idx).trim().lastIndexOf(" ");
+                     if (endOfName > 0) {
+                         nameGuess = clean.substring(0, endOfName).trim();
+                         roleGuess = clean.substring(endOfName).trim();
+                         foundKeyword = true;
+                         break;
+                     }
+                 }
+             }
+             if (!foundKeyword) {
+                 const words = clean.split(/\s+/);
+                 nameGuess = words.slice(0, 3).join(" ");
+             }
+         }
+         nameGuess = nameGuess.replace(/^(Mr\.|Mrs\.|Ms\.|Dr\.)\s+/i, '');
+      }
+      
+      if (nameGuess) {
+         setLocalNameInput(nameGuess);
+         setLocalPreferredNameInput(nameGuess.split(" ")[0]);
+      }
+      if (roleGuess) {
+         setLocalRoleInput(roleGuess);
+      }
+      
+      setLocalBioInput(prev => (prev ? prev + "\n\n" : "") + "Resume Context:\n" + fullText.slice(0, 1500));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  */
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    const inputElement = e.currentTarget;
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+    const supported = new Set(["pdf", "docx", "txt", "md", "markdown", "rtf"]);
+    if (!supported.has(extension)) {
+      setResumeImportState("error");
+      setResumeImportMessage("Use a PDF, DOCX, TXT, Markdown, or RTF resume.");
+      inputElement.value = "";
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setResumeImportState("error");
+      setResumeImportMessage("That resume is larger than 20 MB. Please choose a smaller file.");
+      inputElement.value = "";
+      return;
+    }
+    setResumeImportState("reading");
+    setResumeImportMessage(`Reading ${file.name}…`);
+    try {
+      if (status === "offline" && canStartBackend && !backendStarting) {
+        setResumeImportState("extracting");
+        setResumeImportMessage("Starting the private document engine…");
+        const started = await startBackend();
+        if (!started.ok) throw new Error(started.error || "The document engine could not be started.");
+      }
+      const contentBase64 = await blobToBase64(file);
+      setResumeImportState("extracting");
+      setResumeImportMessage(extension === "pdf" ? "Extracting text and checking scanned pages…" : "Understanding your experience and skills…");
+      const response = await fetch(`${API_BASE}/api/profile/resume/parse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+        body: JSON.stringify({ name: file.name, type: file.type || "application/octet-stream", size: file.size, content_base64: contentBase64 }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        const detail = typeof data.detail === "string" ? data.detail : data.message || data.error;
+        throw new Error(detail || `Resume extraction failed (${response.status}).`);
+      }
+      const profile = data.profile || {};
+      const detectedFields: string[] = [];
+      if (typeof profile.name === "string" && profile.name.trim()) {
+        setLocalNameInput(profile.name.trim());
+        detectedFields.push("name");
+      }
+      if (typeof profile.preferred_name === "string" && profile.preferred_name.trim()) {
+        setLocalPreferredNameInput(profile.preferred_name.trim());
+      }
+      if (typeof profile.role === "string" && profile.role.trim()) {
+        setLocalRoleInput(profile.role.trim());
+        detectedFields.push("role");
+      }
+      if (typeof profile.bio === "string" && profile.bio.trim()) {
+        setLocalBioInput(profile.bio.trim());
+        detectedFields.push("background");
+      }
+      if (detectedFields.length === 0) {
+        throw new Error("The document was readable, but no profile details could be identified. Try a resume with selectable text.");
+      }
+      const pageCount = Number(data.document?.page_count || 0);
+      const pageCopy = pageCount > 0 ? ` across ${pageCount} page${pageCount === 1 ? "" : "s"}` : "";
+      setResumeImportState("success");
+      setResumeImportMessage(`Imported ${detectedFields.join(", ")}${pageCopy}. Please review before continuing.`);
+    } catch (err) {
+      console.error(err);
+      setResumeImportState("error");
+      setResumeImportMessage(err instanceof Error ? err.message : "Meera could not read that resume.");
+    } finally {
+      inputElement.value = "";
+    }
+  };
+
+  const profileSetupSteps = [
+    { title: "Identity", short: "You", icon: "person" },
+    { title: "Response style", short: "Style", icon: "tune" },
+    { title: "Interests", short: "Interests", icon: "interests" },
+    { title: "Daily intelligence", short: "Daily", icon: "auto_awesome" },
+  ] as const;
+
+  const profileSetupPanel = (() => {
+    if (localProfileSet) return null;
+    return (
+      <AnimatePresence>
+        <motion.div className="auth-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+        <motion.div className="auth-panel" initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.25 }} role="dialog">
+          <div className="auth-card profile-setup-card">
+            <div className="auth-titlebar">
+              <div className="auth-titlebar-brand">
+                <BrandLogo className="auth-titlebar-logo" alt="MeeraAI logo" />
+                <div className="auth-titlebar-text">
+                  <strong>Welcome to MeeraAI</strong>
+                  <span>Let's personalize your AI experience.</span>
+                </div>
+              </div>
+            </div>
+            <div className="auth-body profile-setup-body">
+              <div className="auth-form profile-setup-form">
+                
+                <div className="profile-setup-toolbar">
+                   <div>
+                     <span>Personalization setup</span>
+                     <small>Step {profileSetupStep + 1} of {profileSetupSteps.length}</small>
+                   </div>
+                   <label className={`resume-import-trigger ${resumeImportState === "reading" || resumeImportState === "extracting" ? "is-busy" : ""}`}>
+                      <span className={`material-symbols-outlined ${resumeImportState === "reading" || resumeImportState === "extracting" ? "resume-import-spin" : ""}`} aria-hidden="true">
+                        {resumeImportState === "reading" || resumeImportState === "extracting" ? "progress_activity" : "upload_file"}
+                      </span>
+                      {resumeImportState === "reading" || resumeImportState === "extracting" ? "Importing…" : "Import from Resume"}
+                      <input type="file" accept=".pdf,.docx,.txt,.md,.markdown,.rtf" disabled={resumeImportState === "reading" || resumeImportState === "extracting"} onChange={handleResumeUpload} />
+                   </label>
+                </div>
+
+                <nav className="profile-stepper" aria-label="Personalization progress">
+                  {profileSetupSteps.map((step, index) => (
+                    <button
+                      key={step.title}
+                      type="button"
+                      className={`${index === profileSetupStep ? "active" : ""} ${index < profileSetupStep ? "complete" : ""}`}
+                      disabled={index > profileSetupStep}
+                      aria-current={index === profileSetupStep ? "step" : undefined}
+                      onClick={() => setProfileSetupStep(index)}
+                    >
+                      <span className="profile-step-number">
+                        <span className="material-symbols-outlined" aria-hidden="true">{index < profileSetupStep ? "check" : step.icon}</span>
+                      </span>
+                      <span className="profile-step-copy"><strong>{step.short}</strong><small>{step.title}</small></span>
+                    </button>
+                  ))}
+                </nav>
+
+                {resumeImportState !== "idle" && (
+                  <div className={`resume-import-status ${resumeImportState}`} role={resumeImportState === "error" ? "alert" : "status"} aria-live="polite">
+                    <span className="material-symbols-outlined" aria-hidden="true">
+                      {resumeImportState === "success" ? "check_circle" : resumeImportState === "error" ? "error" : "description"}
+                    </span>
+                    <div>
+                      <strong>{resumeImportState === "success" ? "Resume imported" : resumeImportState === "error" ? "Import needs attention" : "Analyzing securely"}</strong>
+                      <span>{resumeImportMessage}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="profile-step-layout">
+                <div className="auth-fields profile-setup-fields" key={profileSetupStep}>
+                  {profileSetupStep === 0 && <>
+                  <div className="profile-section-head">
+                    <div>
+                      <strong>About you</strong>
+                      <span>Used for how Meera addresses you and frames professional answers.</span>
+                    </div>
+                    <span className="profile-privacy-pill">Stored locally</span>
+                  </div>
+                  <div className="profile-name-grid">
+                    <label>Title <span className="profile-optional">Optional</span>
+                      <select
+                        value={personalizationProfile.honorific}
+                        onChange={(event) => setPersonalizationProfile((current) => ({ ...current, honorific: event.target.value }))}
+                      >
+                        {HONORIFIC_OPTIONS.map((item) => <option key={item || "none"} value={item}>{item || "None"}</option>)}
+                      </select>
+                    </label>
+                    <label>Full name
+                      <input
+                        value={localNameInput}
+                        onChange={e => setLocalNameInput(e.target.value)}
+                        onBlur={normalizeLocalIdentity}
+                        autoComplete="name"
+                        placeholder="e.g. Vidit Shah"
+                      />
+                    </label>
+                  </div>
+                  <div className="profile-two-column">
+                    <label>What should Meera call you?
+                      <input value={localPreferredNameInput} onChange={e => setLocalPreferredNameInput(e.target.value)} onBlur={normalizeLocalIdentity} placeholder="Your first name or preferred name" />
+                    </label>
+                    <label>Occupation / role
+                      <input value={localRoleInput} onChange={e => setLocalRoleInput(e.target.value)} onBlur={normalizeLocalIdentity} placeholder="e.g. Senior Software Engineer" />
+                    </label>
+                    <label>Preferred language
+                      <input value={personalizationProfile.preferredLanguage} onChange={e => setPersonalizationProfile((current) => ({ ...current, preferredLanguage: e.target.value }))} placeholder="e.g. English, Hindi, Hinglish" />
+                    </label>
+                    <label>Region or city <span className="profile-optional">Optional</span>
+                      <input value={personalizationProfile.homeRegion} onChange={e => setPersonalizationProfile((current) => ({ ...current, homeRegion: e.target.value }))} placeholder="For local news and recommendations" />
+                    </label>
+                  </div>
+                  </>}
+
+                  {profileSetupStep === 1 && <>
+                  <div className="profile-section-head profile-section-spaced">
+                    <div>
+                      <strong>How you want answers</strong>
+                      <span>Meera adapts the writing style without forcing it into unrelated replies.</span>
+                    </div>
+                  </div>
+                  <div className="profile-two-column">
+                    <label>Answer depth
+                      <select value={personalizationProfile.responseDepth} onChange={(event) => setPersonalizationProfile((current) => ({ ...current, responseDepth: event.target.value as PersonalizationProfile["responseDepth"] }))}>
+                        <option value="concise">Concise — essentials first</option>
+                        <option value="balanced">Balanced — context when useful</option>
+                        <option value="deep">Deep — thorough and structured</option>
+                      </select>
+                    </label>
+                    <label>Conversation tone
+                      <select value={personalizationProfile.responseTone} onChange={(event) => setPersonalizationProfile((current) => ({ ...current, responseTone: event.target.value as PersonalizationProfile["responseTone"] }))}>
+                        <option value="professional">Professional</option>
+                        <option value="friendly">Friendly</option>
+                        <option value="direct">Direct and decisive</option>
+                        <option value="coach">Supportive coach</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>Background & custom instructions <span className="profile-optional">Optional</span>
+                    <textarea value={localBioInput} onChange={e => setLocalBioInput(e.target.value)} placeholder="Add current goals, expertise, accessibility needs, or a response preference Meera should remember." />
+                  </label>
+                  </>}
+
+                  {profileSetupStep === 2 && <>
+                    <div className="profile-section-head">
+                      <div>
+                        <strong>Choose your main interests</strong>
+                        <span>Select any of the ten areas that should influence examples, discovery, and recommendations.</span>
+                      </div>
+                      <span className="profile-selection-count">{personalizationProfile.interests.length} selected</span>
+                    </div>
+                    <div className="profile-interest-card-grid">
+                      {MAIN_INTEREST_CARDS.map((interest) => {
+                        const selected = personalizationProfile.interests.includes(interest.label);
+                        return (
+                          <button
+                            key={interest.label}
+                            type="button"
+                            className={`profile-interest-card ${selected ? "selected" : ""}`}
+                            aria-pressed={selected}
+                            onClick={() => togglePersonalizationChoice("interests", interest.label)}
+                            style={{ backgroundImage: `url("${import.meta.env.BASE_URL}${interest.image}")` }}
+                          >
+                            <span className="profile-interest-wash" aria-hidden="true" />
+                            <span className="profile-interest-icon material-symbols-outlined" aria-hidden="true">{selected ? "check" : interest.icon}</span>
+                            <span className="profile-interest-copy">
+                              <strong>{interest.label}</strong>
+                              <small>{interest.detail}</small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>}
+
+                  {profileSetupStep === 3 && <>
+                  {([[
+                    "newsTopics", "News you care about", "Prioritizes relevant briefings and updates.", NEWS_TOPIC_OPTIONS,
+                  ], [
+                    "productivityGoals", "Productivity & growth", "Tailors plans, routines, and work advice.", PRODUCTIVITY_GOAL_OPTIONS,
+                  ]] as const).map(([field, title, description, options]) => (
+                    <fieldset className="profile-choice-group" key={field}>
+                      <legend>{title}</legend>
+                      <p>{description}</p>
+                      <div className="profile-choice-grid">
+                        {options.map((option) => {
+                          const selected = personalizationProfile[field].includes(option);
+                          return (
+                            <button key={option} type="button" className={`profile-choice-chip ${selected ? "selected" : ""}`} aria-pressed={selected} onClick={() => togglePersonalizationChoice(field, option)}>
+                              <span className="material-symbols-outlined" aria-hidden="true">{selected ? "check" : "add"}</span>
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  ))}
+                  <label>Anything to avoid? <span className="profile-optional">Optional</span>
+                    <input value={personalizationProfile.contentAvoidances} onChange={e => setPersonalizationProfile((current) => ({ ...current, contentAvoidances: e.target.value }))} placeholder="Topics, genres, sources, or styles you do not want" />
+                  </label>
+                  
+                  <div className="auth-terms">
+                    <label className="profile-terms-consent">
+                      <input type="checkbox" checked={termsAccepted} onChange={handleTermsToggle} />
+                      <span>I agree to the Terms & Conditions</span>
+                    </label>
+                    <button type="button" className="auth-terms-link" onClick={() => openTerms("signup")}>
+                      Read terms
+                    </button>
+                  </div>
+                  </>}
+                </div>
+                </div>
+
+                <div className="profile-setup-footer">
+                  <button className="profile-nav-btn secondary" type="button" disabled={profileSetupStep === 0} onClick={() => setProfileSetupStep((step) => Math.max(0, step - 1))}>
+                    <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                    Back
+                  </button>
+                  <span className="profile-edit-later">Everything can be changed later in Settings</span>
+                  {profileSetupStep < profileSetupSteps.length - 1 ? (
+                    <button
+                      className="profile-nav-btn primary"
+                      type="button"
+                      disabled={profileSetupStep === 0 && !localNameInput.trim()}
+                      onClick={() => {
+                        if (profileSetupStep === 0) normalizeLocalIdentity();
+                        setProfileSetupStep((step) => Math.min(profileSetupSteps.length - 1, step + 1));
+                      }}
+                    >
+                      Continue
+                      <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="profile-nav-btn primary finish"
+                      type="button"
+                      disabled={!termsAccepted || !localNameInput.trim()}
+                      onClick={() => {
+                        saveLocalPersonalization();
+                        setLocalProfileSet(true);
+                        window.location.reload();
+                      }}
+                    >
+                      <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                      {termsAccepted ? "Finish personalization" : "Accept terms to finish"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  })();
+
+  const profileTermsPanel = !localProfileSet && termsOpen ? (
+    <div className="terms-backdrop profile-terms-backdrop" role="presentation">
+      <div className="terms-card" role="dialog" aria-modal="true" aria-labelledby="profile-terms-title">
+        <div className="terms-header">
+          <div>
+            <span className="terms-eyebrow">Before you continue</span>
+            <h3 id="profile-terms-title">MeeraAI Terms & Conditions</h3>
+            <p>Read the agreement below. The decision buttons remain available at all times.</p>
+          </div>
+          <button className="terms-close" type="button" aria-label="Close terms" onClick={() => setTermsOpen(false)}>
+            <UiIcon name="close.svg" />
+          </button>
+        </div>
+        <div className="terms-body" onScroll={handleTermsScroll} tabIndex={0}>
+          <section><h4>1. Account and eligibility</h4><p>You confirm that you can legally use the service, that your profile information is accurate, and that you will protect access to your account and device.</p></section>
+          <section><h4>2. Permitted use</h4><p>MeeraAI is licensed for lawful personal and business productivity. You may not use it to violate laws, abuse others, infringe rights, disrupt systems, or resell the service without permission.</p></section>
+          <section><h4>3. Your content and personalization</h4><p>You keep ownership of content you provide. Profile details, interests, preferences, resume-derived information, and conversation memory may be processed to personalize answers and operate requested features. Local profile information is stored on this device unless a connected service explicitly synchronizes it.</p></section>
+          <section><h4>4. AI output</h4><p>AI responses can be incomplete or incorrect. Review important medical, legal, financial, safety, employment, and purchasing decisions with an appropriate qualified source. You remain responsible for how you use generated output.</p></section>
+          <section><h4>5. Privacy, diagnostics, and connected services</h4><p>MeeraAI may process necessary diagnostics and feature usage to maintain reliability and security. When you connect an external provider, content required for your request may be sent to that provider under its own terms and privacy policy.</p></section>
+          <section><h4>6. Security and availability</h4><p>Reasonable safeguards are used, but no system is perfectly secure or continuously available. Keep credentials private, install updates, and report suspected unauthorized access promptly.</p></section>
+          <section><h4>7. Plans, changes, and termination</h4><p>Paid features, renewals, cancellation, and refund conditions are shown at purchase. Features may change or be interrupted. You may stop using the service, and access may be suspended for misuse or material violation of these terms.</p></section>
+          <section><h4>8. Agreement</h4><p>Selecting “Agree & continue” confirms that you have read, understood, and accepted these terms. Selecting “Not now” returns you to profile setup without recording acceptance.</p></section>
+        </div>
+        <div className="terms-actions">
+          <span className="terms-scroll-status">{termsScrolled ? "You reached the end" : "Scroll to review every section"}</span>
+          <div className="terms-action-buttons">
+            <button className="terms-btn ghost" type="button" onClick={handleTermsDecline}>Not now</button>
+            <button className="terms-btn primary" type="button" onClick={handleTermsAgree}>Agree & continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const browserAgentPanel = null;
 
@@ -21229,7 +22613,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                       <p>
                         {termsContext === "gate"
                           ? "Accept the terms to activate your account."
-                          : "Scroll to the end to unlock Agree/Not Agree."}
+                          : "Review the terms, then choose whether to agree."}
                       </p>
                     </div>
                     <button className="terms-close" type="button" aria-label="Close terms" onClick={handleTermsDecline}>
@@ -21302,7 +22686,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                     <button
                       className="terms-btn ghost"
                       type="button"
-                      disabled={!termsScrolled}
                       onClick={handleTermsDecline}
                     >
                       {termsContext === "gate" ? "Decline & sign out" : "Not agree"}
@@ -21310,7 +22693,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                     <button
                       className="terms-btn primary"
                       type="button"
-                      disabled={!termsScrolled}
                       onClick={handleTermsAgree}
                     >
                       {termsContext === "gate" ? "Agree & continue" : "Agree"}
@@ -21329,7 +22711,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
   return (
     <div
       ref={appRootRef}
-      className={`app-root theme-${theme} view-${displayView} ${sidebarOpen ? "sidebar-open" : ""} ${settingsOpen ? "settings-open" : ""} ${browserAgentOpen ? "browser-agent-open" : ""} ${terminalOpen ? "terminal-open" : ""} ${bootReveal ? "boot-reveal" : ""}`}
+      className={`app-root professional-chat theme-${theme} view-${displayView} ${sidebarOpen ? "sidebar-open" : ""} ${settingsOpen ? "settings-open" : ""} ${browserAgentOpen ? "browser-agent-open" : ""} ${terminalOpen ? "terminal-open" : ""} ${voiceAssistantOpen ? "voice-assistant-open" : ""} ${bootReveal ? "boot-reveal" : ""}`}
       style={appRootStyle}
     >
       <style>{MEERA_SIDEBAR_CSS}</style>
@@ -21417,9 +22799,27 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           )}
         </AnimatePresence>
       )}
-      {!showWelcome && !bootBlocking && firebaseSetupPanel}
-      {!showWelcome && !bootBlocking && firebaseConfigured && authPanel}
+      {!showWelcome && !bootBlocking && profileSetupPanel}
+      {!showWelcome && !bootBlocking && profileTermsPanel}
+      {!showWelcome && !bootBlocking && false && authPanel}
       {!showWelcome && !bootBlocking && browserAgentPanel}
+      {!showWelcome && !bootBlocking && (
+        <VoiceAssistant
+          open={voiceAssistantOpen}
+          preparation={voicePreparation}
+          isListening={isRecording}
+          isSpeaking={isVoiceSpeaking}
+          isTranscribing={isVoiceTranscribing}
+          isThinking={isSending}
+          audioLevel={voiceAudioLevel}
+          caption={voiceCaption}
+          onStart={startVoiceInput}
+          onStop={startVoiceInput}
+          onInterrupt={interruptVoiceResponse}
+          onRetry={prepareVoiceAssistant}
+          onClose={closeVoiceAssistant}
+        />
+      )}
       {!showWelcome && !bootBlocking && (
         <AgentInteractionDialog
           interaction={agentInteractionDialog?.interaction ?? null}
@@ -22659,7 +24059,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                 <UiIcon name="menu.svg" />
               </button>
               {view === "workspace" && (
-                <button className="icon-btn copilot-icon-btn home-toggle" onClick={() => setView("home")} title="Home">
+                <button className="icon-btn copilot-icon-btn home-toggle" onClick={openHome} title="Home">
                   <UiIcon name="home.svg" />
                 </button>
               )}
@@ -22701,12 +24101,19 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
               </button>
             </div>
 
-            <div className="copilot-topbar-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "10px", pointerEvents: "none" }}>
+            <button
+              className="copilot-topbar-center"
+              type="button"
+              onClick={openHome}
+              title="Go to Home"
+              aria-label="Go to Home"
+              style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", border: 0, background: "transparent", padding: 0 }}
+            >
               <span style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
               </span>
               <span style={{ fontSize: "38px", fontWeight: 400, fontFamily: '"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive', letterSpacing: "0.01em", color: "#0f172a", transform: "translateY(2px)" }}>MeeraAI</span>
-            </div>
+            </button>
 
             <div className="copilot-topbar-right titlebar-controls">
               {activeDownloadInfo && (
@@ -22853,7 +24260,6 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                   <div className="home-center-stack">
                     <div className="copilot-home-hero">
                       <div className="copilot-home-greeting">{dashboardGreeting}, {userName} ✨</div>
-                      <div className="copilot-home-inspiration" style={{ fontSize: '0.85em', opacity: 0.75, marginTop: 6, fontStyle: 'italic', letterSpacing: '0.3px', maxWidth: 700, margin: '6px auto 0', lineHeight: 1.4 }}>{activeInspirationText}</div>
                       <h1>What can I help you with today?</h1>
                     </div>
 
@@ -22887,7 +24293,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                             type="button"
                             aria-label={isRecording ? "Stop voice input" : "Talk to Meera"}
                             title={voiceRepliesEnabled ? "Voice replies enabled" : "Talk to Meera"}
-                            onClick={startVoiceInput}
+                            onClick={openVoiceAssistant}
                           >
                             {isRecording ? <UiIcon name="mic-off.svg" /> : <UiIcon name="mic.svg" />}
                           </button>
@@ -23063,17 +24469,20 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                       </div>
                     </div>
 
-                    <div className="copilot-home-chips">
-                      {HOME_SUGGESTIONS.map((idea) => (
+                    <div className="copilot-home-suggestions copilot-home-suggestions-below" aria-label="Suggested prompts">
+                      {HOME_SUGGESTIONS.slice(0, 5).map((idea) => (
                         <button
                           key={idea.label}
-                          className="copilot-suggestion-chip"
+                          className="copilot-suggestion copilot-home-suggestion"
                           type="button"
                           onClick={() => openPromptFromDashboard(idea)}
                         >
                           {idea.label}
                         </button>
                       ))}
+                    </div>
+                    <div className="copilot-home-quote-note" role="note">
+                      <span className="copilot-home-quote-text">{activeInspirationText}</span>
                     </div>
                   </div>
 
@@ -23463,7 +24872,7 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                               stopActiveRequest={stopActiveRequest}
                               sendMessage={sendMessage}
                               isRecording={isRecording}
-                              startVoiceInput={startVoiceInput}
+                              startVoiceInput={openVoiceAssistant}
                               voiceRepliesEnabled={voiceRepliesEnabled}
                               openAttachmentPicker={openAttachmentPicker}
                               attachmentsBusy={attachmentsBusy}
@@ -24243,539 +25652,79 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
                         {resolvedSettingsSection === "account" && (
                           <section className="settings-section settings-account">
                             <div className="settings-section-head">
-                              <h3>{renderSettingsQueryHighlights("Account")}</h3>
-                              <span>{renderSettingsQueryHighlights("Identity, security, and sync")}</span>
+                              <h3>{renderSettingsQueryHighlights("Local Profile")}</h3>
+                              <span>{renderSettingsQueryHighlights("Your personalized AI context")}</span>
                             </div>
                             <div className="settings-account-body">
-                            <div className="settings-info-card">
-                              <strong>{renderSettingsQueryHighlights("Firebase configuration")}</strong>
-                              <span>{renderSettingsQueryHighlights("Stored locally on this device.")}</span>
-                            </div>
-                            <div className="settings-action-inline">
-                              <button
-                                className="settings-secondary-btn"
-                                type="button"
-                                onClick={handleFirebaseConfigReset}
-                                disabled={!firebaseConfigReady}
-                              >
-                                Reset Firebase Config
-                              </button>
-                            </div>
-                            <div className="settings-divider" />
-                            {!authUser ? (
-                              <>
                                 <div className="settings-info-card">
-                                  <strong>{renderSettingsQueryHighlights("Guest mode")}</strong>
-                                  <span>
-                                    {renderSettingsQueryHighlights("Sign in to sync across devices and protect sessions.")}
-                                  </span>
+                                  <strong>{renderSettingsQueryHighlights(localStorage.getItem("meera_local_name") || "Meera User")}</strong>
+                                  <span>{renderSettingsQueryHighlights("Your data is stored locally and used to personalize responses.")}</span>
                                 </div>
-                                {authDisabled && (
-                                  <div className="settings-alert error">
-                                    {renderSettingsQueryHighlights("Sign-in unavailable. Connect Firebase first.")}
-                                  </div>
-                                )}
-                                <div className="settings-action-inline">
-                                  <button
-                                    className="settings-primary-btn"
-                                    type="button"
-                                    onClick={openAuthPanel}
-                                    disabled={authDisabled}
-                                  >
-                                    {authDisabled ? "Sign-in unavailable" : "Sign in"}
-                                  </button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="settings-info-card">
-                                  <strong>{renderSettingsQueryHighlights(authUser?.displayName || "Guest mode")}</strong>
-                                  <span>
-                                    {renderSettingsQueryHighlights(
-                                      authUser?.email || "Sign in to sync across devices and protect sessions.",
-                                    )}
-                                  </span>
-                                </div>
-                                {accountError && <div className="settings-alert error">{cleanAuthMessage(accountError)}</div>}
-                                {accountNotice && <div className="settings-alert info">{accountNotice}</div>}
+                                
                                 <div className="settings-form-grid">
                                   <label>
-                                    Full name
+                                    Full Name
                                     <input
-                                      value={accountName}
-                                      onChange={(event) => setAccountName(event.target.value)}
+                                      value={localNameInput}
+                                      onChange={(event) => setLocalNameInput(event.target.value)}
                                       placeholder="Your full name"
                                     />
                                   </label>
                                   <label>
-                                    Email
+                                    Preferred Name
                                     <input
-                                      value={accountEmail}
-                                      onChange={(event) => setAccountEmail(event.target.value)}
-                                      type="email"
-                                      placeholder="you@company.com"
+                                      value={localPreferredNameInput}
+                                      onChange={(event) => setLocalPreferredNameInput(event.target.value)}
+                                      placeholder="What should I call you?"
                                     />
                                   </label>
                                   <label>
-                                    Phone number
+                                    Occupation / Role
                                     <input
-                                      value={accountPhone}
-                                      onChange={(event) => setAccountPhone(event.target.value)}
-                                      type="tel"
-                                      placeholder="+1 555 012 3456"
+                                      value={localRoleInput}
+                                      onChange={(event) => setLocalRoleInput(event.target.value)}
+                                      placeholder="e.g. Senior Software Engineer"
                                     />
                                   </label>
                                 </div>
-                                <div className="settings-action-inline">
-                                  <button
-                                    className="settings-primary-btn"
-                                    type="button"
-                                    onClick={handleAccountSaveProfile}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    {accountLoading ? "Saving..." : "Save profile"}
-                                  </button>
+                                
+                                <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', fontSize: '12px', fontWeight: 600 }}>
+                                    Custom Instructions & Bio
+                                    <textarea
+                                      value={localBioInput}
+                                      onChange={(event) => setLocalBioInput(event.target.value)}
+                                      placeholder="Tell the AI how you want it to respond, what your interests are, or paste your background."
+                                      style={{ minHeight: '120px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', resize: 'vertical' }}
+                                    />
+                                </label>
+                                
+                                <div className="settings-action-inline" style={{ marginTop: '24px' }}>
                                   <button
                                     className="settings-secondary-btn"
-                                    type="button"
-                                    onClick={refreshAuthUser}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    Refresh
-                                  </button>
-                                </div>
-
-                                <div className="settings-divider" />
-                                <div className="settings-section-head">
-                                  <h3>{renderSettingsQueryHighlights("Password")}</h3>
-                                  <span>{renderSettingsQueryHighlights("Update your password securely")}</span>
-                                </div>
-                                <div className="settings-form-grid">
-                                  <label>
-                                    New password
-                                    <input
-                                      value={accountPassword}
-                                      onChange={(event) => setAccountPassword(event.target.value)}
-                                      type="password"
-                                      placeholder="••••••••"
-                                    />
-                                  </label>
-                                  <label>
-                                    Confirm password
-                                    <input
-                                      value={accountPasswordConfirm}
-                                      onChange={(event) => setAccountPasswordConfirm(event.target.value)}
-                                      type="password"
-                                      placeholder="••••••••"
-                                    />
-                                  </label>
-                                </div>
-                                <div className="settings-action-inline">
-                                  <button
-                                    className="settings-primary-btn"
-                                    type="button"
-                                    onClick={handleAccountPasswordUpdate}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    Update password
-                                  </button>
-                                  <button
-                                    className="settings-secondary-btn"
-                                    type="button"
-                                    onClick={handleAccountPasswordReset}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    Send reset link
-                                  </button>
-                                </div>
-
-                                <div className="settings-divider" />
-                                <div className="settings-section-head">
-                                  <h3>{renderSettingsQueryHighlights("Phone verification")}</h3>
-                                  <span>{renderSettingsQueryHighlights("Verify or update your phone number")}</span>
-                                </div>
-                                <div className="settings-form-grid">
-                                  <label>
-                                    Phone number
-                                    <input
-                                      value={accountPhone}
-                                      onChange={(event) => setAccountPhone(event.target.value)}
-                                      type="tel"
-                                      placeholder="+1 555 012 3456"
-                                    />
-                                  </label>
-                                  {accountOtpSent && (
-                                    <label>
-                                      OTP code
-                                      <OtpInput
-                                        value={accountOtp}
-                                        onChange={setAccountOtp}
-                                        disabled={accountLoading || !authUser}
-                                        onComplete={(code) => {
-                                          if (accountLoading || !authUser) {
-                                            return;
-                                          }
-                                          void handleAccountVerifyPhone(code);
-                                        }}
-                                      />
-                                    </label>
-                                  )}
-                                </div>
-                                <div id="account-phone-recaptcha" className="settings-recaptcha" />
-                                <div className="settings-action-inline">
-                                  <button
-                                    className="settings-secondary-btn"
-                                    type="button"
-                                    onClick={handleAccountSendOtp}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    Send OTP
-                                  </button>
-                                  <button
-                                    className="settings-primary-btn"
-                                    type="button"
-                                    // @ts-ignore
-                                    onClick={handleAccountVerifyPhone}
-                                    disabled={accountLoading || !authUser}
-                                  >
-                                    Verify phone
-                                  </button>
-                                </div>
-
-                                <div className="settings-toggle-list">
-                                  <button
-                                    className={`settings-toggle ${syncAcrossDevices ? "active" : ""}`}
-                                    type="button"
-                                    onClick={() => setSyncAcrossDevices((value) => !value)}
-                                  >
-                                    <span className="settings-toggle-text">
-                                      <strong>{renderSettingsQueryHighlights("Sync across devices")}</strong>
-                                      <span>{renderSettingsQueryHighlights("Keep settings and sessions aligned.")}</span>
-                                    </span>
-                                    <span className="settings-toggle-right">
-                                      <span className="settings-toggle-pill">{syncAcrossDevices ? "On" : "Off"}</span>
-                                      <span className="settings-toggle-switch" aria-hidden="true" />
-                                    </span>
-                                  </button>
-                                </div>
-
-                                <div className="settings-divider" />
-                                <div className="settings-section-head">
-                                  <h3>{renderSettingsQueryHighlights("Account actions")}</h3>
-                                  <span>{renderSettingsQueryHighlights("Manage your session or permanently remove this account")}</span>
-                                </div>
-                                <div className="settings-account-actions">
-                                  <button
-                                    className="settings-action-row danger"
                                     type="button"
                                     onClick={() => {
-                                      void handleAccountSignOutRequest();
+                                      setSettingsOpen(false);
+                                      setLocalProfileSet(false);
                                     }}
-                                    disabled={!authUser}
                                   >
-                                    <span className="settings-toggle-text">
-                                      <strong>{renderSettingsQueryHighlights("Sign out")}</strong>
-                                      <span>{renderSettingsQueryHighlights("End this session on this device.")}</span>
-                                    </span>
-                                    <span className="settings-action-pill danger">Sign out</span>
+                                    Edit full personalization
                                   </button>
                                   <button
-                                    className="settings-action-row danger"
+                                    className="settings-primary-btn"
                                     type="button"
                                     onClick={() => {
-                                      void handleAccountDeleteRequest();
+                                      saveLocalPersonalization();
+                                      window.location.reload();
                                     }}
-                                    disabled={!authUser}
                                   >
-                                    <span className="settings-toggle-text">
-                                      <strong>{renderSettingsQueryHighlights("Delete account")}</strong>
-                                      <span>{renderSettingsQueryHighlights("Permanently delete your account.")}</span>
-                                    </span>
-                                    <span className="settings-action-pill danger">Delete</span>
+                                    Save and Reload
                                   </button>
                                 </div>
-                              </>
-                            )}
                             </div>
                           </section>
                         )}
-
-                        {resolvedSettingsSection === "memory" && (
-                          <section className="settings-section">
-                            <div className="settings-section-head">
-                              <h3>{renderSettingsQueryHighlights("User memory context")}</h3>
-                              <span>{renderSettingsQueryHighlights("Control what the model should always know about you.")}</span>
-                            </div>
-                            <div className="settings-toggle-list">
-                              <button
-                                className={`settings-toggle ${userContextPrefs.enabled ? "active" : ""}`}
-                                type="button"
-                                onClick={() => setUserContextPrefs((prev) => ({ ...prev, enabled: !prev.enabled }))}
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Enable user context memory")}</strong>
-                                  <span>{renderSettingsQueryHighlights("Send your profile and memory data with each request.")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.enabled ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                              <button
-                                className={`settings-toggle ${userContextPrefs.includeChatMemory ? "active" : ""}`}
-                                type="button"
-                                onClick={() =>
-                                  setUserContextPrefs((prev) => ({ ...prev, includeChatMemory: !prev.includeChatMemory }))
-                                }
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Use past chats as memory")}</strong>
-                                  <span>{renderSettingsQueryHighlights("Include key snippets from prior chats as long-term context.")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.includeChatMemory ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                            </div>
-
-                            <div className="settings-form-grid">
-                              <label>
-                                Max memory chats
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={24}
-                                  value={userContextPrefs.chatMemoryMaxSessions}
-                                  onChange={(event) =>
-                                    setUserContextPrefs((prev) => ({
-                                      ...prev,
-                                      chatMemoryMaxSessions: clampInteger(event.target.value, 1, 24, prev.chatMemoryMaxSessions),
-                                    }))
-                                  }
-                                />
-                              </label>
-                              <label>
-                                Snippets per chat
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={4}
-                                  value={userContextPrefs.chatMemoryMaxSnippetsPerSession}
-                                  onChange={(event) =>
-                                    setUserContextPrefs((prev) => ({
-                                      ...prev,
-                                      chatMemoryMaxSnippetsPerSession: clampInteger(
-                                        event.target.value,
-                                        1,
-                                        4,
-                                        prev.chatMemoryMaxSnippetsPerSession,
-                                      ),
-                                    }))
-                                  }
-                                />
-                              </label>
-                            </div>
-
-                            <div className="settings-toggle-list">
-                              <button
-                                className={`settings-toggle ${userContextPrefs.includeDisplayName ? "active" : ""}`}
-                                type="button"
-                                onClick={() =>
-                                  setUserContextPrefs((prev) => ({ ...prev, includeDisplayName: !prev.includeDisplayName }))
-                                }
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Include display name")}</strong>
-                                  <span>{renderSettingsQueryHighlights(authUser?.displayName || "No display name available")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.includeDisplayName ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                              <button
-                                className={`settings-toggle ${userContextPrefs.includeEmail ? "active" : ""}`}
-                                type="button"
-                                onClick={() => setUserContextPrefs((prev) => ({ ...prev, includeEmail: !prev.includeEmail }))}
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Include email")}</strong>
-                                  <span>{renderSettingsQueryHighlights(authUser?.email || "No email available")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.includeEmail ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                              <button
-                                className={`settings-toggle ${userContextPrefs.includePhone ? "active" : ""}`}
-                                type="button"
-                                onClick={() => setUserContextPrefs((prev) => ({ ...prev, includePhone: !prev.includePhone }))}
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Include phone")}</strong>
-                                  <span>{renderSettingsQueryHighlights(authUser?.phoneNumber || "No phone number available")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.includePhone ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                              <button
-                                className={`settings-toggle ${userContextPrefs.includeUid ? "active" : ""}`}
-                                type="button"
-                                onClick={() => setUserContextPrefs((prev) => ({ ...prev, includeUid: !prev.includeUid }))}
-                              >
-                                <span className="settings-toggle-text">
-                                  <strong>{renderSettingsQueryHighlights("Include account ID")}</strong>
-                                  <span>{renderSettingsQueryHighlights("Use only when workflows require strict identity matching.")}</span>
-                                </span>
-                                <span className="settings-toggle-right">
-                                  <span className="settings-toggle-pill">{userContextPrefs.includeUid ? "On" : "Off"}</span>
-                                  <span className="settings-toggle-switch" aria-hidden="true" />
-                                </span>
-                              </button>
-                            </div>
-
-                            <div className="settings-form-grid">
-                              <label>
-                                Profile notes for model memory
-                                <textarea
-                                  value={userProfileNotes}
-                                  onChange={(event) => setUserProfileNotes(event.target.value)}
-                                  placeholder="Example: I am a founder building MeeraAI. Prefer concise architecture decisions first, then implementation."
-                                  rows={4}
-                                />
-                              </label>
-                              <label>
-                                Custom facts (one per line)
-                                <textarea
-                                  value={userCustomFacts}
-                                  onChange={(event) => setUserCustomFacts(event.target.value)}
-                                  placeholder={"Example:\nPreferred stack: React + FastAPI\nTimezone: Asia/Kolkata\nI want execution, not generic advice"}
-                                  rows={5}
-                                />
-                              </label>
-                            </div>
-
-
-
-                            <div className="settings-divider" />
-                            <div className="settings-section-head">
-                              <h3>{renderSettingsQueryHighlights("Bulk chat deletion")}</h3>
-                              <span>{renderSettingsQueryHighlights("Select chats, select all, and delete instantly.")}</span>
-                            </div>
-                            <div className="settings-info-card">
-                              <strong>{renderSettingsQueryHighlights("Chats with history")}</strong>
-                              <span>{historicalSessions.length} available</span>
-                            </div>
-                            <div className="settings-action-inline">
-                              <button
-                                className="settings-secondary-btn"
-                                type="button"
-                                onClick={() => setAllHistoricalSelected(!allHistoricalSelected)}
-                                disabled={historicalSessions.length === 0}
-                              >
-                                {allHistoricalSelected ? "Unselect all" : "Select all"}
-                              </button>
-                              <button
-                                className="settings-secondary-btn"
-                                type="button"
-                                onClick={() => setSelectedChatIds([])}
-                                disabled={selectedChatIds.length === 0}
-                              >
-                                Clear selection
-                              </button>
-                              <button
-                                className="settings-primary-btn"
-                                type="button"
-                                onClick={() => {
-                                  void handleDeleteSelectedChats();
-                                }}
-                                disabled={selectedChatIds.length === 0}
-                              >
-                                Delete selected ({selectedChatIds.length})
-                              </button>
-                              <button
-                                className="settings-secondary-btn"
-                                type="button"
-                                onClick={() => {
-                                  void handleDeleteAllChats();
-                                }}
-                                disabled={historicalSessions.length === 0}
-                              >
-                                Delete all chats
-                              </button>
-                            </div>
-                            <div className="settings-chat-bulk-list">
-                              {historicalSessions.length === 0 ? (
-                                <div className="settings-info-card">
-                                  <span>No chats available for deletion.</span>
-                                </div>
-                              ) : (
-                                historicalSessions.map((session) => (
-                                  <label key={session.id} className="settings-chat-bulk-item">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedChatIdSet.has(session.id)}
-                                      onChange={() => toggleSelectedChat(session.id)}
-                                    />
-                                    <span className="settings-chat-bulk-copy">
-                                      <strong>{deriveSessionHeading(session)}</strong>
-                                      <span>{formatMessageCount(session)} • {formatRelativeTime(session.updatedAt)}</span>
-                                    </span>
-                                  </label>
-                                ))
-                              )}
-                            </div>
-                          </section>
-                        )}
-
-                        {resolvedSettingsSection === "shortcuts" && (
-                          <section className="settings-section">
-                            <div className="settings-section-head">
-                              <h3>{renderSettingsQueryHighlights("Keyboard shortcuts")}</h3>
-                              <span>{renderSettingsQueryHighlights("Customize how you navigate MeeraAI.")}</span>
-                            </div>
-                            <div className="settings-shortcut-list">
-                              {SHORTCUT_ACTIONS.map((action) => (
-                                <div className="settings-shortcut-row" key={action.id}>
-                                  <div className="settings-shortcut-text">
-                                    <strong>{renderSettingsQueryHighlights(action.label)}</strong>
-                                    <span>{renderSettingsQueryHighlights(action.description)}</span>
-                                  </div>
-                                  <button
-                                    className={`settings-shortcut-key ${shortcutCaptureId === action.id ? "capture" : ""}`}
-                                    type="button"
-                                    onClick={() =>
-                                      setShortcutCaptureId((current) => (current === action.id ? null : action.id))
-                                    }
-                                  >
-                                    {shortcutCaptureId === action.id
-                                      ? "Press keys"
-                                      : formatShortcut(shortcuts[action.id])}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="settings-action-inline">
-                              <button
-                                className="settings-secondary-btn"
-                                type="button"
-                                onClick={() => {
-                                  setShortcuts({ ...DEFAULT_SHORTCUTS });
-                                  setShortcutCaptureId(null);
-                                }}
-                              >
-                                Reset shortcuts
-                              </button>
-                            </div>
-                          </section>
-                        )}
-
                         {resolvedSettingsSection === "context" && (
-                          <section className="settings-section settings-context">
+                        <section className="settings-section settings-context">
                             <div className="settings-section-head">
                               <h3>{renderSettingsQueryHighlights("Personal Data & Context")}</h3>
                               <span>{renderSettingsQueryHighlights("Manage the credentials, tokens, and data you've provided to MeeraAI")}</span>
@@ -25129,6 +26078,27 @@ function App({ onOpenAuth, onCloseAuth }: { onOpenAuth?: () => void; onCloseAuth
           {/* @ts-ignore */}
           {terminalOpen && <IntegratedTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} globalModelLoadStatus={modelLoadStatus} openAttachmentViewer={openAttachmentViewer} terminalHistory={terminalHistory} setTerminalHistory={setTerminalHistory} />}
         </AnimatePresence>
+
+        <ModelFloatingSwitcher
+          selectedModel={selectedModel}
+          selectedCloudTierModel={selectedCloudTierModel}
+          resolvedModels={resolvedModels}
+          modelLoadStatus={modelLoadStatus}
+          inferenceMode={inferenceMode}
+          engineRunning={engineRunning}
+          cloudAvailable={cloudAvailable}
+          onSelectLocalModel={(id) => handleLocalTierSelect(id as ModelOptionId)}
+          onSelectCloudModel={(id) => handleCloudTierSelect(id as ModelOptionId)}
+          onToggleInferenceMode={(mode) => void setInferenceModeExplicit(mode)}
+          onUnloadModel={async (modelId) => {
+            await unloadLocalModelFromMemory(modelId);
+          }}
+          onReloadModel={(modelId) => {
+            void startModelLoad(modelId as ModelOptionId);
+          }}
+          onOpenModelStudio={() => void openSettingsPanel("models")}
+          onOpenDownloadPrompt={(modelId) => openDownloadPrompt(modelId as ModelOptionId)}
+        />
     </div>
   );
 }

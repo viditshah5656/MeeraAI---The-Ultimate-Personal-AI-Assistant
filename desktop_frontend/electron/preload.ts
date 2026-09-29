@@ -23,11 +23,11 @@ contextBridge.exposeInMainWorld("meera", {
   scanModels: async () => {
     // Primary source: native scan via main process
     const local = (await ipcRenderer.invoke("meera:models:scan")) as any;
-    // Secondary: try to enrich with backend /api/models/list (has_gguf, local_bytes)
+    // Secondary: enrich with the vNext model inventory.
     try {
       const host = process.env.MEERA_BACKEND_HOST || "127.0.0.1";
       const port = process.env.MEERA_BACKEND_PORT || "8000";
-      const url = `http://${host}:${port}/api/models/list`;
+      const url = `http://${host}:${port}/api/v1/models/list`;
       // fetch is available in preload context
       const resp = await fetch(url, { cache: "no-store" });
       if (resp.ok) {

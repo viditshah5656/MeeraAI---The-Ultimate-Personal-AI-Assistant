@@ -141,6 +141,22 @@ desktop_frontend/src/v5_block.css
 desktop_frontend/temp_parse_babel.js
 desktop_frontend/trim_css.js
 
+# Voice/runtime dependencies and downloaded binaries
+*.msixbundle
+*.whl
+MeeraAI Voice/tts-env/
+MeeraAI Voice/tmp/
+MeeraAI Voice/.meera/
+MeeraAI Voice/Qwen3-TTS-*/
+MeeraAI Voice/Qwen3.5-*/
+
+# One-off migration/patch helpers; keep shipped source, not local repair scripts
+desktop_frontend/src/fix_*.py
+desktop_frontend/src/patch_*.py
+desktop_frontend/src/inject_*.py
+desktop_frontend/src/replace_*.py
+desktop_frontend/src/upgrade_*.py
+
 # Editor and OS files
 .vscode/
 .idea/

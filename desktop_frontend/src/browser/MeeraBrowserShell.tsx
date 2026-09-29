@@ -108,6 +108,7 @@ import {
 import { LuGlobe, LuLink, LuSearch, LuChevronLeft, LuChevronRight, LuRotateCw, LuLock, LuLockOpen, LuChevronDown } from "react-icons/lu";
 import { useAuth } from "../AuthProvider";
 import { SiYoutube, SiGmail, SiWikipedia, SiReddit } from "react-icons/si";
+import { copyText } from "../utils/clipboard";
 
 type BrowserMode = "local" | "hybrid" | "cloud";
 type BrowserWorkspace = "research" | "sandbox" | "build" | "workspaces";
@@ -478,7 +479,7 @@ type BrowserChatMessage = {
 };
 
 const MEERA_API_BASE = (import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
-const BROWSER_CHAT_API = `${MEERA_API_BASE}/api/chat/stream`;
+const BROWSER_CHAT_API = `${MEERA_API_BASE}/api/v1/chat/stream`;
 
 type ServerGeneratedFile = {
   name: string;
@@ -1958,6 +1959,8 @@ export function MeeraBrowserShell() {
           use_rag: false,
           enable_image_search: false,
           use_web_grounding: true,
+          web: "on",
+          tools: "auto",
           skip_terminal_autoexec: true,
         }),
         signal: controller.signal,
@@ -1986,12 +1989,16 @@ export function MeeraBrowserShell() {
           if (!raw || raw === "[DONE]") continue;
 
           try {
-            const parsed = JSON.parse(raw);
-            const tokenChunk = typeof parsed.token === "string" && parsed.token
-              ? parsed.token
-              : typeof parsed.chunk === "string" && parsed.chunk
-                ? parsed.chunk
-                : "";
+            const wire = JSON.parse(raw);
+            const parsed = wire?.data && typeof wire.data === "object" ? wire.data : wire;
+            const eventType = typeof wire?.type === "string" ? wire.type : "";
+            const tokenChunk = eventType === "generation.token" && typeof parsed.text === "string"
+              ? parsed.text
+              : typeof parsed.token === "string" && parsed.token
+                ? parsed.token
+                : typeof parsed.chunk === "string" && parsed.chunk
+                  ? parsed.chunk
+                  : "";
             if (tokenChunk) {
               textAcc += tokenChunk;
               const snapshot = textAcc;
@@ -2005,7 +2012,7 @@ export function MeeraBrowserShell() {
               });
               scrollChatToBottom();
             }
-            if (parsed.reply) {
+            if (parsed.reply && !textAcc) {
               textAcc = parsed.reply;
               const snapshot = textAcc;
               setBrowserChatMessages(prev => {
@@ -3032,7 +3039,7 @@ export function MeeraBrowserShell() {
   const fetchServerFiles = useCallback(async () => {
     setServerFilesLoading(true);
     try {
-      const res = await fetch(`${MEERA_API_BASE}/api/files/list`);
+      const res = await fetch(`${MEERA_API_BASE}/api/v1/files/list`);
       if (res.ok) {
         const data = await res.json();
         setServerFiles(Array.isArray(data?.files) ? data.files : []);
@@ -3047,7 +3054,7 @@ export function MeeraBrowserShell() {
   const downloadServerFile = useCallback(async (name: string) => {
     try {
       showToast(`Downloading ${name}...`, <PiFileArrowDown size={14} />);
-      const res = await fetch(`${MEERA_API_BASE}/api/files/download/${encodeURIComponent(name)}`);
+      const res = await fetch(`${MEERA_API_BASE}/api/v1/files/download/${encodeURIComponent(name)}`);
       if (!res.ok) throw new Error("Download failed");
       const blob = await res.blob();
       const arrayBuffer = await blob.arrayBuffer();
@@ -3847,7 +3854,7 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
 
             {shareMenuOpen && (
               <div className="omnibox-popover share-popover" ref={shareMenuRef} onClick={(e) => e.stopPropagation()}>
-                <button className="share-item" onClick={() => { navigator.clipboard?.writeText(activeTab?.url || ""); showToast("Link copied"); setShareMenuOpen(false); }}>
+                <button className="share-item" onClick={() => { void copyText(activeTab?.url || ""); showToast("Link copied"); setShareMenuOpen(false); }}>
                   <PiCopySimple size={15} /> Copy link
                 </button>
                 <button className="share-item" onClick={() => { printPage(); setShareMenuOpen(false); }}>
@@ -4954,7 +4961,7 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
               <button
                 className="selection-pill-btn"
                 onClick={() => {
-                  navigator.clipboard.writeText(selectedTextInfo.text);
+                  void copyText(selectedTextInfo.text);
                   showToast("Copied to clipboard", <PiCopySimple size={14} />);
                   setSelectedTextInfo(null);
                 }}
@@ -5163,7 +5170,7 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
                                           <button
                                             className="neo-msg-action-btn"
                                             onClick={() => {
-                                              navigator.clipboard.writeText(msg.content);
+                                              void copyText(msg.content);
                                               showToast("Copied to clipboard", <PiCopySimple size={14} />);
                                             }}
                                             title="Copy response"
@@ -5439,7 +5446,7 @@ ${content.replace(/\\n\\n/g, '<p>').replace(/\\n/g, '<br/>')}
           <button onClick={() => { goForward(); closeContextMenu(); }}><LuChevronRight size={14} /> Forward</button>
           <button onClick={() => { reloadTab(); closeContextMenu(); }}><LuRotateCw size={14} /> Reload</button>
           <div className="main-menu-divider" />
-          <button onClick={() => { navigator.clipboard?.writeText(activeTab?.url || ""); showToast("Link copied"); closeContextMenu(); }}><PiCopySimple size={14} /> Copy page link</button>
+          <button onClick={() => { void copyText(activeTab?.url || ""); showToast("Link copied"); closeContextMenu(); }}><PiCopySimple size={14} /> Copy page link</button>
           <button onClick={() => { openFindInPage(); closeContextMenu(); }}><PiMagnifyingGlass size={14} /> Find in page</button>
           <button onClick={() => { toggleReaderMode(); closeContextMenu(); }}><PiBookOpenText size={14} /> Reader mode</button>
           <button onClick={() => { printPage(); closeContextMenu(); }}><PiPrinter size={14} /> Print</button>

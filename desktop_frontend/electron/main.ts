@@ -20,6 +20,10 @@ const execFileAsync = promisify(execFile);
 
 // Natively hide all Chromium scrollbars globally (removes flash and injection lag)
 app.commandLine.appendSwitch('hide-scrollbars');
+// Voice replies are generated asynchronously after the initiating click. Keep
+// Chromium from treating the completed local Qwen-TTS request as unrelated
+// autoplay and silently rejecting Meera's audio.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Platform-aware performance & GPU hardware acceleration flags
 // Optimized for MacBook Pro (Intel Iris GPU) / macOS Retina & low-end hardware
@@ -2840,9 +2844,21 @@ function isAuthUrl(targetUrl: string): boolean {
   }
 }
 
+function isSupportedExternalUrl(targetUrl: string): boolean {
+  try {
+    const protocol = new URL(String(targetUrl || "")).protocol;
+    return ["http:", "https:", "mailto:", "tel:", "whatsapp:"].includes(protocol);
+  } catch {
+    return false;
+  }
+}
+
 function openExternal(targetUrl: string): void {
-  // Meera is a chat client, not a second browser. Browser links are only
-  // opened after an explicit user action and always use the OS default app.
+  // Never hand custom schemes (including chrome-extension://) to the OS.
+  // Unsupported document/protocol links stay inside Meera's own viewer.
+  if (!isSupportedExternalUrl(targetUrl)) {
+    return;
+  }
   void shell.openExternal(targetUrl);
 }
 
@@ -3817,31 +3833,18 @@ app.whenReady().then(async () => {
     }
   }
 
-  // Run TypeScript compile check (preferred) or a minimal Node parse fallback.
+  // Run the TypeScript compile check. Never require the Electron entry through
+  // plain Node: Electron APIs are intentionally unavailable in that process.
   try {
     const isRoot = process.cwd().endsWith("desktop_frontend") ? false : true;
     const tsconfigPath = isRoot ? path.resolve(process.cwd(), "desktop_frontend", "electron", "tsconfig.json") : path.resolve(process.cwd(), "electron", "tsconfig.json");
-    try {
-      // check if tsc is available
-      await execFileAsync("tsc", ["-v"]);
-      if (existsSync(tsconfigPath)) {
-        await execFileAsync("tsc", ["-p", tsconfigPath], { maxBuffer: 10 * 1024 * 1024 });
-        console.log("TypeScript check passed for", tsconfigPath);
-      } else {
-        // Fallback to minimal parse check using node require of compiled JS (if present)
-        const mainJsPath = isRoot ? path.resolve(process.cwd(), "desktop_frontend", "electron", "main.js") : path.resolve(process.cwd(), "electron", "main.js");
-        await execFileAsync("node", ["-e", `require("${mainJsPath}")`], {
-          maxBuffer: 10 * 1024 * 1024,
-        });
-      }
-    } catch (err) {
-      // tsc not available or failed; try minimal parse check
-      await execFileAsync("node", ["-e", `require("${path.resolve(process.cwd(), "desktop_frontend", "electron", "main.js")}")`], {
-        maxBuffer: 10 * 1024 * 1024,
-      });
+    if (existsSync(tsconfigPath)) {
+      const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+      await execFileAsync(npxCommand, ["tsc", "-p", tsconfigPath], { maxBuffer: 10 * 1024 * 1024 });
+      console.log("TypeScript check passed for", tsconfigPath);
     }
   } catch (checkErr) {
-    console.warn("TypeScript/runtime parse check failed:", checkErr instanceof Error ? checkErr.message : checkErr);
+    console.warn("TypeScript check skipped:", checkErr instanceof Error ? checkErr.message : checkErr);
   }
 
   // Ensure cache directories exist to prevent Chromium cache errors

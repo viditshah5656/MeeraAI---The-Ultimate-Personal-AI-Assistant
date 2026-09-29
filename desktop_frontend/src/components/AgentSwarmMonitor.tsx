@@ -17,6 +17,7 @@ import {
   LuCopy,
   LuSparkles
 } from "react-icons/lu";
+import { copyText } from "../utils/clipboard";
 
 export type AgentStatus =
   | "queued"
@@ -160,11 +161,12 @@ export const AgentSwarmMonitor: React.FC<AgentSwarmMonitorProps> = ({
     if (onAgentClick) onAgentClick(agent);
   }, [onAgentClick]);
 
-  const handleCopyChapter = useCallback(() => {
+  const handleCopyChapter = useCallback(async () => {
     if (!selectedAgent?.chapterDraft) return;
-    void navigator.clipboard.writeText(selectedAgent.chapterDraft);
-    setCopiedChapter(true);
-    setTimeout(() => setCopiedChapter(false), 1600);
+    if (await copyText(selectedAgent.chapterDraft)) {
+      setCopiedChapter(true);
+      setTimeout(() => setCopiedChapter(false), 1600);
+    }
   }, [selectedAgent?.chapterDraft]);
 
   if (!agents || agents.length === 0) {

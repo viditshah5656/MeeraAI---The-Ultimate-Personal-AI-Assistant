@@ -9,6 +9,7 @@ import {
   LuShieldCheck,
   LuExternalLink
 } from "react-icons/lu";
+import { copyText } from "../utils/clipboard";
 
 export interface DocumentItem {
   format: "pdf" | "docx" | "html" | "markdown" | string;
@@ -210,9 +211,7 @@ export const DocumentDownloadHub: React.FC<DocumentDownloadHubProps> = ({
     const fullUrl = doc.url.startsWith("http")
       ? doc.url
       : `${origin}${doc.url}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(fullUrl).catch(() => {});
-    }
+    void copyText(fullUrl);
     setCopiedFormat(doc.format || "doc");
     setTimeout(() => {
       setCopiedFormat(null);
@@ -239,9 +238,7 @@ export const DocumentDownloadHub: React.FC<DocumentDownloadHubProps> = ({
         return `${fmt}: ${fullUrl}`;
       })
       .join("\n");
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(manifest).catch(() => {});
-    }
+    void copyText(manifest);
     setBatchCopied(true);
     setTimeout(() => {
       setBatchCopied(false);

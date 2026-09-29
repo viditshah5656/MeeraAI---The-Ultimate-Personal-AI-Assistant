@@ -1,0 +1,6 @@
+[submodule "gemini-web2api"]
+	path = gemini-web2api
+	url = https://github.com/viditshah5656/Infera.git
+[submodule "MeeraAI Voice/qwentts.cpp"]
+	path = MeeraAI Voice/qwentts.cpp
+	url = https://github.com/ServeurpersoCom/qwentts.cpp.git

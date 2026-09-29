@@ -1,0 +1,34 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="60" x2="560" y2="570" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A2A52"/>
+      <stop offset="0.45" stop-color="#0E1833"/>
+      <stop offset="1" stop-color="#030B1C"/>
+    </linearGradient>
+    <linearGradient id="mGlow" x1="180" y1="140" x2="460" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BDF5FF"/>
+      <stop offset="0.5" stop-color="#7CCBFF"/>
+      <stop offset="1" stop-color="#9C7BFF"/>
+    </linearGradient>
+    <linearGradient id="textGlow" x1="122" y1="170" x2="500" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DDEBFF"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#091423" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect x="48" y="48" width="544" height="544" rx="160" fill="url(#bg)"/>
+  <rect x="75" y="75" width="490" height="490" rx="136" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M168 404V200C168 192.268 174.268 186 182 186H214L320 312L426 186H458C465.732 186 472 192.268 472 200V404H426V255L320 379L214 255V404H168Z" fill="url(#mGlow)"/>
+    <path d="M204 404V230L320 352L436 230V404H404V286L320 380L236 286V404H204Z" fill="rgba(255,255,255,0.18)"/>
+  </g>
+
+  <circle cx="470" cy="164" r="18" fill="#E0F7FF" fill-opacity="0.9"/>
+  <circle cx="175" cy="444" r="14" fill="#8AD8FF" fill-opacity="0.8"/>
+
+  <text x="320" y="550" text-anchor="middle" fill="url(#textGlow)" font-family="Segoe Script, Brush Script MT, Lucida Handwriting, cursive" font-size="74" font-weight="700" letter-spacing="1">MeeraAI</text>
+</svg>

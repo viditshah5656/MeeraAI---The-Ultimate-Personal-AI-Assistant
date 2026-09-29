@@ -28,6 +28,11 @@ export interface SmartComposerBarProps {
   onSmartComposerKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   mathMode: MathModeSetting;
   setMathMode: (mode: MathModeSetting) => void;
+  reasoningEnabled: boolean;
+  strongReasoningEnabled: boolean;
+  reasoningSupported?: boolean;
+  onToggleReasoning: () => void;
+  onToggleStrongReasoning: () => void;
   activeSessionId?: string;
 }
 
@@ -55,6 +60,11 @@ const SmartComposerBar: React.FC<SmartComposerBarProps> = (props) => {
     onChatInputBlur,
     onSmartComposerKeyDown,
     mathMode,
+    reasoningEnabled,
+    strongReasoningEnabled,
+    reasoningSupported = true,
+    onToggleReasoning,
+    onToggleStrongReasoning,
     activeSessionId = "default",
   } = props;
 
@@ -156,6 +166,33 @@ const SmartComposerBar: React.FC<SmartComposerBarProps> = (props) => {
           >
             <FiPlus aria-hidden="true" />
           </button>
+
+          <button
+            type="button"
+            className={`meera-composer-v2__reasoning${reasoningEnabled ? " is-active" : ""}`}
+            aria-pressed={reasoningEnabled}
+            aria-label={reasoningEnabled ? "Turn reasoning off" : "Turn reasoning on"}
+            title={!reasoningSupported ? "Reasoning is not available for the selected model" : (reasoningEnabled ? "Reasoning is on — click to use fast mode" : "Reasoning off — click to let the model think")}
+            onClick={onToggleReasoning}
+            disabled={isSending || !reasoningSupported}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">neurology</span>
+          </button>
+
+          {reasoningEnabled ? (
+            <button
+              type="button"
+              className={`meera-composer-v2__strong-reasoning${strongReasoningEnabled ? " is-active" : ""}`}
+              aria-pressed={strongReasoningEnabled}
+              aria-label={strongReasoningEnabled ? "Turn strong reasoning off" : "Turn strong reasoning on"}
+              title={strongReasoningEnabled ? "Strong reasoning is on" : "Strong reasoning — spend more tokens thinking before answering"}
+              onClick={onToggleStrongReasoning}
+              disabled={isSending || !reasoningSupported}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+              <span>Deep</span>
+            </button>
+          ) : null}
 
           <div className="meera-composer-v2__editor">
             {inlineGhostSuffix ? (

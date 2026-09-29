@@ -16,7 +16,7 @@ export default function ProcessPanel({ apiBase, workspaceId }: ProcessPanelProps
 
   const subscribe = (id: string) => {
     sourceRef.current?.close();
-    const source = new EventSource(`${apiBase}/api/processes/${encodeURIComponent(id)}/events`);
+    const source = new EventSource(`${apiBase}/api/v1/processes/${encodeURIComponent(id)}/events`);
     source.addEventListener("process", (event) => {
       try {
         const line = JSON.parse((event as MessageEvent).data) as { stream: string; text: string };
@@ -31,7 +31,7 @@ export default function ProcessPanel({ apiBase, workspaceId }: ProcessPanelProps
     if (!workspaceId || !command.trim()) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/processes`, {
+      const response = await fetch(`${apiBase}/api/v1/processes`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace_id: workspaceId, command: command.trim() }),
       });
@@ -47,7 +47,7 @@ export default function ProcessPanel({ apiBase, workspaceId }: ProcessPanelProps
     if (!process) return;
     setBusy(true);
     try {
-      const response = await fetch(`${apiBase}/api/processes/${encodeURIComponent(process.id)}/${name}`, { method: "POST" });
+      const response = await fetch(`${apiBase}/api/v1/processes/${encodeURIComponent(process.id)}/${name}`, { method: "POST" });
       if (!response.ok) return;
       const payload = await response.json();
       setProcess(payload.process);

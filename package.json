@@ -1,0 +1,145 @@
+{
+  "name": "meeraai-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Premium desktop frontend for MeeraAI",
+  "author": "Vidit Shah",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "setup-deps": "node scripts/setup-electron-deps.js",
+    "predev": "node scripts/prepare-build-assets.js",
+    "prebuild": "node scripts/prepare-build-assets.js",
+    "dev": "npx concurrently \"vite --host 127.0.0.1 --port 5173\" \"wait-on http-get://127.0.0.1:5173 && npx tsc -p electron/tsconfig.json && electron .\"",
+    "build": "vite build && tsc -p electron/tsconfig.json",
+    "package": "npm run build && node scripts/run-electron-builder.js --win --x64",
+    "package:mac": "npm run build && node scripts/run-mac-builder.js all",
+    "package:mac:intel": "npm run build && node scripts/run-mac-builder.js intel",
+    "package:mac:silicon": "npm run build && node scripts/run-mac-builder.js silicon",
+    "package:mac:universal": "npm run build && node scripts/run-mac-builder.js universal",
+    "dist": "npm run build && node scripts/run-electron-builder.js",
+    "backend": "cd .. && python Meera.py --api --host 127.0.0.1 --port 8000",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.meera.desktop",
+    "productName": "MeeraAI",
+    "copyright": "Copyright © Vidit Shah",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "logo.ico",
+      "executableName": "MeeraAI"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "category": "public.app-category.productivity",
+      "icon": "build/logo.png",
+      "identity": null,
+      "type": "distribution",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "MeeraAI requires microphone access for voice input.",
+        "NSCameraUsageDescription": "MeeraAI requires camera access for image capture and video features.",
+        "NSAppleEventsUsageDescription": "MeeraAI requires Apple Events access to communicate with other applications (placeholder)."
+      },
+      "extraResources": [
+        {
+          "from": "../Meera.py",
+          "to": "Meera.py"
+        },
+        {
+          "from": "scripts/install-backend-mac.sh",
+          "to": "scripts/install-backend-mac.sh"
+        },
+        {
+          "from": "scripts/requirements-backend-remote-mac.txt",
+          "to": "scripts/requirements-backend-remote-mac.txt"
+        },
+        {
+          "from": "../config",
+          "to": "config"
+        },
+        {
+          "from": "../MCP",
+          "to": "MCP"
+        },
+        {
+          "from": "../mcp_servers.example.json",
+          "to": "mcp_servers.example.json"
+        }
+      ]
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "../Meera.py",
+        "to": "Meera.py"
+      }
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "logo.ico",
+      "uninstallerIcon": "logo.ico",
+      "installerHeaderIcon": "logo.ico",
+      "installerHeader": "installer-header.bmp",
+      "installerSidebar": "installer-welcome.bmp",
+      "uninstallerSidebar": "installer-welcome.bmp"
+    }
+  },
+  "dependencies": {
+    "@heyputer/puter.js": "^2.6.1",
+    "@react-three/drei": "^9.121.5",
+    "@react-three/fiber": "^8.18.0",
+    "an-array-of-english-words": "^2.0.0",
+    "firebase": "^10.14.1",
+    "framer-motion": "^11.18.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.6.0",
+    "react-markdown": "^9.1.0",
+    "react-syntax-highlighter": "^15.6.6",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "three": "^0.183.2",
+    "wordlist-english": "^1.2.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "wait-on": "^8.0.1"
+  }
+}
